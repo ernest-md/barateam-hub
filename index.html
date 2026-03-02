@@ -286,7 +286,6 @@
       line-height: 1.45;
       font-size: 13px;
     }
-    /* ✅ Imagen del post (debajo del título) */
     .postImg{
       width:100%;
       max-height: 260px;
@@ -297,7 +296,7 @@
       display:block;
     }
 
-    /* Admin editor */
+    /* Editor (manual enable) */
     .editor{
       border-radius: 18px;
       border: 1px dashed rgba(15,23,42,.18);
@@ -543,17 +542,15 @@
   </div>
 
   <div class="wrap">
-    <!-- (1) Hero limpio -->
     <div class="hero">
       <h1>Bienvenidos al hub del equipo</h1>
     </div>
 
     <div class="grid">
-      <!-- (2) Posts -->
       <div class="card">
         <div class="sectionTitle">Posts</div>
 
-        <!-- editor solo si username === estereo -->
+        <!-- ✅ CHAPUZA TEMPORAL: editor oculto por CSS inline -->
         <div class="editor" id="postEditor" style="display:none;">
           <div class="row two">
             <div>
@@ -566,7 +563,6 @@
             </div>
           </div>
 
-          <!-- ✅ CAMBIO: imagen por archivo (Supabase Storage: post-images) -->
           <div class="row">
             <div>
               <label for="post_image_file">Imagen</label>
@@ -585,7 +581,7 @@
           </div>
 
           <div class="editorActions">
-            <span class="muted">Solo “estereo” puede publicar.</span>
+            <span class="muted">Editor oculto por defecto.</span>
             <button class="btn btnDark" id="btnPublish" type="button">Publicar</button>
           </div>
 
@@ -595,7 +591,6 @@
         <div id="postsList"></div>
       </div>
 
-      <!-- (3) Calendario + (4) Próximos eventos -->
       <div class="card">
         <div class="sectionTitle">Eventos</div>
 
@@ -766,7 +761,6 @@
       return data || [];
     }
 
-    // ✅ Subida de imagen a Supabase Storage (bucket: post-images)
     async function uploadPostImage(file, userId){
       if (!file) return null;
 
@@ -782,7 +776,6 @@
 
       if (upErr) throw upErr;
 
-      // Bucket PUBLIC:
       const { data } = sb.storage.from("post-images").getPublicUrl(path);
       return data?.publicUrl || null;
     }
@@ -992,21 +985,6 @@
       }
     }
 
-    // ===== Admin check (username) =====
-    async function getProfileUsername(){
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) return null;
-
-      const { data, error } = await sb
-        .from("profiles")
-        .select("username")
-        .eq("id", session.user.id)
-        .single();
-
-      if (error) return null;
-      return (data?.username || "").toLowerCase();
-    }
-
     // ===== Utils =====
     function escapeHtml(s){
       return String(s ?? "")
@@ -1023,17 +1001,11 @@
     let monthEventsMap = new Map();
 
     async function refreshHome(){
-      const user = await refreshSession();
-
-      // posts
-      const username = await getProfileUsername();
-      const isAdmin = (username === "estereo");
-      $("postEditor").style.display = isAdmin ? "block" : "none";
+      await refreshSession();
 
       const posts = await fetchPosts();
       renderPosts(posts);
 
-      // events
       monthEvents = await fetchEventsForMonth(viewDate);
       monthEventsMap = groupEventsByDay(monthEvents);
 
@@ -1045,16 +1017,10 @@
       const { data } = await sb.auth.getSession();
       const user = data?.session?.user || null;
 
-      const username = await getProfileUsername();
-      if (username !== "estereo") {
-        showPostMsg("No autorizado.", "err");
-        return;
-      }
       if (!user) {
         showPostMsg("Tienes que estar logueado.", "err");
         return;
       }
-
       await publishPost(user);
     });
 
