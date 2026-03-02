@@ -8,25 +8,186 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
+    :root{
+      --bg:#0b1220;
+      --card: rgba(255,255,255,.92);
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+
+      --p1:#7c3aed;
+      --p2:#06b6d4;
+      --p4:#f59e0b;
+    }
+
     body{
       margin:0;
-      font-family: system-ui, sans-serif; 
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color:#0f172a;
+    }
+
+    body::before{
+      content:"";
+      position: fixed;
+      inset:0;
       background:
         radial-gradient(1200px 800px at 10% 10%, rgba(124,58,237,.35), transparent 60%),
         radial-gradient(900px 650px at 90% 20%, rgba(6,182,212,.28), transparent 60%),
         radial-gradient(1000px 700px at 40% 95%, rgba(245,158,11,.20), transparent 55%),
         linear-gradient(180deg, rgba(11,18,32,.78), rgba(11,18,32,.78)),
         url("bg.png");
-      color:#0f172a;
+      background-size: cover;
+      background-position: center;
+      filter: saturate(1.1);
+      z-index:-2;
+    }
+    body::after{
+      content:"";
+      position: fixed;
+      inset:0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
+      opacity:.18;
+      mix-blend-mode: overlay;
+      pointer-events:none;
+      z-index:-1;
     }
 
+    /* ===== Topbar / navegación ===== */
+    .topbar{
+      position: sticky;
+      top:0;
+      z-index:10;
+      backdrop-filter: blur(14px);
+      background: rgba(15, 23, 42, .55);
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      padding: 12px 14px;
+    }
+
+    .bar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .brand{
+      display:flex;
+      flex-direction: column;
+      gap:2px;
+      color:#fff;
+      font-weight:900;
+      letter-spacing:.4px;
+      margin-right: 6px;
+      line-height: 1.1;
+    }
+    .brand small{
+      font-weight:700;
+      color: rgba(255,255,255,.72);
+      letter-spacing:.2px;
+    }
+
+    .nav{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .btn{
+      appearance:none;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.10);
+      color:#fff;
+      padding: 9px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      transition: transform .08s ease, background .2s ease, border-color .2s ease;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      text-decoration:none;
+      user-select:none;
+      white-space: nowrap;
+    }
+    .btn:hover{
+      background: rgba(255,255,255,.16);
+      border-color: rgba(255,255,255,.28);
+    }
+    .btn:active{ transform: translateY(1px); }
+
+    .btn.primary{
+      border-color: rgba(255,255,255,.22);
+      background: linear-gradient(135deg, rgba(124,58,237,.40), rgba(6,182,212,.22));
+    }
+    .btn.primary:hover{
+      background: linear-gradient(135deg, rgba(124,58,237,.52), rgba(6,182,212,.30));
+    }
+    .btn.active{
+      background: rgba(255,255,255,.22);
+      border-color: rgba(255,255,255,.35);
+      box-shadow: 0 6px 18px rgba(0,0,0,.22);
+    }
+
+    .spacer{ flex:1; }
+
+    /* ===== User dropdown ===== */
+    .userWrap{ position: relative; }
+    .menu{
+      position:absolute;
+      right:0;
+      top: calc(100% + 10px);
+      min-width: 220px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(15,23,42,.88);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+      padding: 6px;
+      display:none;
+    }
+    .menu.open{ display:block; }
+    .menu a, .menu button{
+      width:100%;
+      text-align:left;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: rgba(255,255,255,.92);
+      padding: 10px 10px;
+      cursor:pointer;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      font-weight: 800;
+      font-size: 13px;
+      text-decoration:none;
+    }
+    .menu a:hover, .menu button:hover{
+      background: rgba(255,255,255,.08);
+      border-color: rgba(255,255,255,.10);
+    }
+    .menu .sep{
+      height:1px;
+      background: rgba(255,255,255,.10);
+      margin: 6px 6px;
+    }
+
+    /* ===== Contenido perfil ===== */
     .wrap{
+      max-width: 1100px;
+      margin: 16px auto 28px;
+      padding: 0 14px;
+    }
+
+    .panel{
       max-width: 640px;
-      margin: 60px auto;
+      margin: 18px auto 0;
       background: rgba(255,255,255,.92);
       border-radius: 22px;
       padding: 18px;
-      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,.20);
     }
 
     h1{ margin:0 0 10px; }
@@ -43,21 +204,27 @@
       width:100%;
       padding:10px 12px;
       border-radius:12px;
-      border:1px solid #cbd5f5;
+      border:1px solid rgba(15,23,42,.18);
       box-sizing:border-box;
       margin-bottom:12px;
       font-size:14px;
+      background:#fff;
+      outline:none;
+    }
+    input:focus, textarea:focus{
+      border-color: rgba(124,58,237,.55);
+      box-shadow: 0 0 0 4px rgba(124,58,237,.15);
     }
 
     textarea{ resize:vertical; min-height:80px; }
 
-    button{
+    .saveBtn{
       border:none;
       border-radius:12px;
       padding:10px 14px;
       font-weight:900;
       cursor:pointer;
-      background: linear-gradient(135deg, #7c3aed, #06b6d4);
+      background: linear-gradient(135deg, rgba(124,58,237,.92), rgba(6,182,212,.72));
       color:#fff;
     }
 
@@ -66,32 +233,66 @@
       padding:10px 12px;
       border-radius:12px;
       font-size:13px;
+      border: 1px solid rgba(15,23,42,.10);
+      background: rgba(255,255,255,.65);
     }
-    .ok{ background:#dcfce7; color:#166534; }
-    .err{ background:#fee2e2; color:#991b1b; }
+    .ok{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.10); color:#166534; }
+    .err{ border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.10); color:#991b1b; }
   </style>
 </head>
 
 <body>
+  <div class="topbar">
+    <div class="bar">
+      <div class="brand">
+        TEAM HUB
+        <small>perfil</small>
+      </div>
+
+      <div class="nav">
+        <a class="btn" href="index.html">🏠 Home</a>
+        <a class="btn" href="sim-stats.html">📊 Visor Excel</a>
+        <a class="btn" href="op-wrapped.html">🎴 OP Wrapped</a>
+        <a class="btn" href="#" onclick="alert('Próximamente')">➕ Más</a>
+      </div>
+
+      <div class="spacer"></div>
+
+      <!-- ✅ derecha del todo: login o usuario -->
+      <a class="btn" id="navLogin" href="login.html">🔐 Login</a>
+
+      <div class="userWrap" id="userWrap" style="display:none;">
+        <button class="btn primary" id="userBtn" type="button">👤 Usuario</button>
+        <div class="menu" id="userMenu">
+          <a href="profile.html">👁️ Ver perfil</a>
+          <div class="sep"></div>
+          <button type="button" onclick="doLogout()">🚪 Cerrar sesión</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="wrap">
-    <h1>Tu perfil</h1>
-    <p>Edita cómo apareces en el Team Hub.</p>
+    <div class="panel">
+      <h1>Tu perfil</h1>
+      <p>Edita cómo apareces en el Team Hub.</p>
 
-    <label>Email</label>
-    <input id="email" disabled>
+      <label>Email</label>
+      <input id="email" disabled>
 
-    <label>Username</label>
-    <input id="username" placeholder="ej: coquito">
+      <label>Username</label>
+      <input id="username" placeholder="ej: coquito">
 
-    <label>Nombre visible</label>
-    <input id="display_name" placeholder="Ej: Ernest">
+      <label>Nombre visible</label>
+      <input id="display_name" placeholder="Ej: Ernest">
 
-    <label>Bio</label>
-    <textarea id="bio" placeholder="Jugador de OP, main X…"></textarea>
+      <label>Bio</label>
+      <textarea id="bio" placeholder="Jugador de OP, main X…"></textarea>
 
-    <button onclick="saveProfile()">Guardar cambios</button>
+      <button class="saveBtn" onclick="saveProfile()">Guardar cambios</button>
 
-    <div id="msg" class="msg" style="display:none;"></div>
+      <div id="msg" class="msg" style="display:none;"></div>
+    </div>
   </div>
 
   <script>
@@ -108,6 +309,51 @@
       m.textContent = text;
     }
 
+    /* ===== Nav auth UI ===== */
+    function setNavUser(user){
+      const navLogin = $("navLogin");
+      const userWrap = $("userWrap");
+      const userBtn = $("userBtn");
+
+      if (user){
+        navLogin.style.display = "none";
+        userWrap.style.display = "block";
+        userBtn.textContent = "👤 " + (user.email || "Usuario");
+      } else {
+        navLogin.style.display = "inline-flex";
+        userWrap.style.display = "none";
+      }
+    }
+
+    function closeUserMenu(){
+      $("userMenu").classList.remove("open");
+    }
+
+    function toggleUserMenu(){
+      $("userMenu").classList.toggle("open");
+    }
+
+    document.addEventListener("click", (e) => {
+      const wrap = $("userWrap");
+      const menu = $("userMenu");
+      if (!wrap || wrap.style.display === "none") return;
+      if (menu.classList.contains("open") && !wrap.contains(e.target)) closeUserMenu();
+    });
+
+    $("userBtn")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleUserMenu();
+    });
+
+    async function doLogout(){
+      closeUserMenu();
+      const { error } = await sb.auth.signOut();
+      if (error) alert("Error al salir: " + error.message);
+      location.href = "index.html";
+    }
+
+    /* ===== Perfil ===== */
     async function loadProfile(){
       const { data: { session } } = await sb.auth.getSession();
       if (!session){
@@ -116,7 +362,9 @@
       }
 
       const user = session.user;
-      $("email").value = user.email;
+      setNavUser(user);
+
+      $("email").value = user.email || "";
 
       const { data, error } = await sb
         .from("profiles")
@@ -124,13 +372,15 @@
         .eq("id", user.id)
         .single();
 
+      // PGRST116 = no rows (depende de versión), lo tratamos como "no existe"
       if (error && error.code !== "PGRST116"){
-        show("Error cargando perfil", "err");
+        show("Error cargando perfil: " + error.message, "err");
         return;
       }
 
       if (!data){
-        await sb.from("profiles").insert({ id: user.id });
+        const { error: insErr } = await sb.from("profiles").insert({ id: user.id });
+        if (insErr) show("No pude crear tu perfil: " + insErr.message, "err");
         return;
       }
 
@@ -148,12 +398,10 @@
         username: $("username").value.trim(),
         display_name: $("display_name").value.trim(),
         bio: $("bio").value.trim(),
-        updated_at: new Date()
+        updated_at: new Date().toISOString()
       };
 
-      const { error } = await sb
-        .from("profiles")
-        .upsert(payload);
+      const { error } = await sb.from("profiles").upsert(payload);
 
       if (error){
         show("Error guardando perfil: " + error.message, "err");
@@ -162,7 +410,17 @@
       }
     }
 
-    loadProfile();
+    // init
+    (async function(){
+      const { data: { session } } = await sb.auth.getSession();
+      setNavUser(session?.user || null);
+
+      sb.auth.onAuthStateChange((_event, session2) => {
+        setNavUser(session2?.user || null);
+      });
+
+      await loadProfile();
+    })();
   </script>
 </body>
 </html>
