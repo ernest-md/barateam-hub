@@ -315,7 +315,7 @@
             <strong id="userEmail">—</strong>
             <span>Sesión iniciada</span>
           </div>
-          <a href="#" id="goProfile">👤 Ver perfil</a>
+          <a href="profile.html" id="goProfile">👤 Ver perfil</a>
           <div class="sep"></div>
           <button class="danger" id="menuLogout" type="button">🚪 Cerrar sesión</button>
         </div>
@@ -461,13 +461,6 @@
       e.preventDefault();
       closeUserMenu();
       await window.doLogout();
-    });
-
-    $("goProfile").addEventListener("click", (e) => {
-      e.preventDefault();
-      closeUserMenu();
-      alert("Perfil: pendiente 🙂");
-      // futuro: location.href = "profile.html";
     });
 
     // Cerrar menú al clicar fuera / Escape
