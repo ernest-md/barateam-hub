@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>OP Wrapped · Team Hub</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     :root{
       --bg1:#0b1220;
@@ -52,7 +54,7 @@
       z-index:-1;
     }
 
-    /* ===== Topbar / Navegación (como Home/Visor) ===== */
+    /* ===== Topbar / Navegación ===== */
     .topbar{
       position: sticky;
       top:0;
@@ -103,13 +105,14 @@
       padding: 9px 12px;
       border-radius: 12px;
       cursor:pointer;
-      transition: transform .08s ease, background .2s ease, border-color .2s ease;
+      transition: transform .08s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
       display:inline-flex;
       align-items:center;
       gap:8px;
       text-decoration:none;
       user-select:none;
       white-space: nowrap;
+      font: inherit;
     }
     .btn:hover{
       background: rgba(255,255,255,.16);
@@ -142,6 +145,69 @@
       color: rgba(255,255,255,.86);
       white-space: nowrap;
     }
+
+    .hint{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    /* ===== User menu (derecha) ===== */
+    .userwrap{ position: relative; display:flex; align-items:center; }
+    .userbtn{
+      border-color: rgba(255,255,255,.22);
+      background: rgba(255,255,255,.12);
+    }
+    .userbtn .avatar{
+      width: 22px; height: 22px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(124,58,237,.9), rgba(6,182,212,.6));
+      box-shadow: 0 8px 18px rgba(0,0,0,.18);
+      display:inline-block;
+    }
+    .userbtn .chev{ opacity:.85; font-size: 12px; margin-left: 2px; }
+
+    .menu{
+      position:absolute;
+      right:0;
+      top: calc(100% + 10px);
+      min-width: 220px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(15, 23, 42, .85);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+      overflow:hidden;
+      display:none;
+      z-index: 999;
+    }
+    .menu.open{ display:block; }
+    .menu .head{
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      color: rgba(255,255,255,.9);
+      font-size: 12px;
+      line-height: 1.2;
+    }
+    .menu .head strong{ display:block; font-size: 13px; }
+    .menu a, .menu button{
+      width:100%;
+      text-align:left;
+      background: transparent;
+      border:0;
+      color: rgba(255,255,255,.92);
+      padding: 10px 12px;
+      cursor:pointer;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      font: inherit;
+    }
+    .menu a{ text-decoration:none; }
+    .menu a:hover, .menu button:hover{ background: rgba(255,255,255,.10); }
+    .menu .danger{ color: #fecaca; }
+    .menu .sep{ height:1px; background: rgba(255,255,255,.10); }
 
     /* ===== Contenido ===== */
     .wrap{
@@ -412,9 +478,8 @@
 
       <div class="nav">
         <a class="btn" href="index.html">🏠 Home</a>
-        <a class="btn" href="sim-stats.html">📊 Visor Excel</a>
+        <a class="btn" href="visor.html">📊 Visor Excel</a>
         <a class="btn primary active" href="op-wrapped.html">🎴 OP Wrapped</a>
-        <a class="btn" href="login.html">🔐 Login</a>
         <a class="btn" href="#" onclick="alert('Próximamente')">➕ Más</a>
       </div>
 
@@ -424,6 +489,27 @@
         <span class="pill" id="apiStatus">Cargando cartas…</span>
         <span class="pill" id="countPill">0 cartas</span>
         <span class="pill" id="today"></span>
+      </div>
+
+      <!-- ✅ Derecha del todo: Login O Usuario -->
+      <a class="btn" id="navLogin" href="login.html">🔐 Login</a>
+
+      <div class="userwrap" id="navUser" style="display:none;">
+        <button class="btn userbtn" id="userBtn" type="button">
+          <span class="avatar"></span>
+          <span id="userLabel">Usuario</span>
+          <span class="chev">▾</span>
+        </button>
+
+        <div class="menu" id="userMenu">
+          <div class="head">
+            <strong id="userEmail">—</strong>
+            <span>Sesión iniciada</span>
+          </div>
+          <a href="#" id="goProfile">👤 Ver perfil</a>
+          <div class="sep"></div>
+          <button class="danger" id="menuLogout" type="button">🚪 Cerrar sesión</button>
+        </div>
       </div>
     </div>
   </div>
@@ -453,9 +539,64 @@
   <datalist id="nonLeadersList"></datalist>
 
   <script>
-    // Fecha en topbar
+    // ===== Supabase navbar auth =====
+    const SUPABASE_URL = "https://ceunhkqhskwnsoqyunze.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNldW5oa3Foc2t3bnNvcXl1bnplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NDQ0ODcsImV4cCI6MjA4ODAyMDQ4N30.qBGXYYQXlyQwFGeyaeMOtLPHrjBy-eU05AO37yLvi5o";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const $ = (id) => document.getElementById(id);
+
+    function closeUserMenu(){ $("userMenu").classList.remove("open"); }
+    function toggleUserMenu(){ $("userMenu").classList.toggle("open"); }
+
+    function setNavAuthUI(user){
+      const navLogin = $("navLogin");
+      const navUser  = $("navUser");
+
+      if (user){
+        navLogin.style.display = "none";
+        navUser.style.display = "flex";
+
+        const email = user.email || "user";
+        $("userEmail").textContent = email;
+        $("userLabel").textContent = (email.split("@")[0] || "Usuario");
+      } else {
+        navLogin.style.display = "inline-flex";
+        navUser.style.display = "none";
+        closeUserMenu();
+      }
+    }
+
+    async function refreshSession(){
+      const { data } = await sb.auth.getSession();
+      setNavAuthUI(data?.session?.user || null);
+    }
+
+    async function doLogout(){
+      await sb.auth.signOut();
+      await refreshSession();
+    }
+
+    $("userBtn").addEventListener("click", (e) => { e.preventDefault(); toggleUserMenu(); });
+    $("menuLogout").addEventListener("click", async (e) => { e.preventDefault(); closeUserMenu(); await doLogout(); });
+    $("goProfile").addEventListener("click", (e) => { e.preventDefault(); closeUserMenu(); alert("Perfil: pendiente 🙂"); });
+
+    document.addEventListener("click", (e) => {
+      const wrap = $("navUser");
+      if (!wrap || wrap.style.display === "none") return;
+      if (!wrap.contains(e.target)) closeUserMenu();
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeUserMenu(); });
+
+    // init auth
+    (async function(){
+      await refreshSession();
+      sb.auth.onAuthStateChange((_event, session) => setNavAuthUI(session?.user || null));
+    })();
+
+    // Fecha
     (function(){
-      const el = document.getElementById("today");
+      const el = $("today");
       const d = new Date();
       const y = d.getFullYear();
       const m = String(d.getMonth()+1).padStart(2,"0");
@@ -463,6 +604,7 @@
       el.textContent = `📅 ${y}-${m}-${da}`;
     })();
 
+    // ===== OP Wrapped =====
     const API_URLS = [
       "https://www.optcgapi.com/api/allSetCards/",
       "https://www.optcgapi.com/api/allSTCards/",
@@ -508,12 +650,10 @@
       return card.card_image || card.image || card.imageUrl || card.cardImage || card.img || card.art || "";
     }
 
-    function setStatus(text){
-      document.getElementById("apiStatus").textContent = text;
-    }
+    function setStatus(text){ $("apiStatus").textContent = text; }
 
     function renderPlayerQuestions(){
-      const root = document.getElementById("playerQuestions");
+      const root = $("playerQuestions");
       root.innerHTML = "";
 
       for (const q of PLAYER_QUESTIONS){
@@ -541,19 +681,17 @@
             <small>${q.hint}</small>
           `;
         }
-
         root.appendChild(div);
       }
     }
 
     function renderCardQuestionBlock(rootId, questions, listId){
-      const root = document.getElementById(rootId);
+      const root = $(rootId);
       root.innerHTML = "";
 
       for (const q of questions){
         const div = document.createElement("div");
         div.className = "q";
-
         div.innerHTML = `
           <label for="${q.id}">${q.title}</label>
           <input type="text"
@@ -569,8 +707,8 @@
     }
 
     function fillDatalists(){
-      const dlLeaders = document.getElementById("leadersList");
-      const dlNon = document.getElementById("nonLeadersList");
+      const dlLeaders = $("leadersList");
+      const dlNon = $("nonLeadersList");
       dlLeaders.innerHTML = "";
       dlNon.innerHTML = "";
 
@@ -580,7 +718,6 @@
       for (const c of cards){
         const opt = document.createElement("option");
         opt.value = c.label;
-
         const isLeader = (c.card_type || "").toLowerCase() === "leader";
         if (isLeader) fragL.appendChild(opt);
         else fragN.appendChild(opt);
@@ -590,9 +727,7 @@
       dlNon.appendChild(fragN);
     }
 
-    function onPickChanged(){
-      buildPreview();
-    }
+    function onPickChanged(){ buildPreview(); }
 
     async function fetchJson(url){
       const res = await fetch(url, { cache: "no-store" });
@@ -640,7 +775,7 @@
         cards = Array.from(uniq.values());
         cardsByLabel = new Map(cards.map(c => [c.label, c]));
 
-        document.getElementById("countPill").textContent = `${cards.length} cartas`;
+        $("countPill").textContent = `${cards.length} cartas`;
         setStatus("API OK");
 
         fillDatalists();
@@ -663,12 +798,12 @@
     }
 
     function buildPreview(){
-      const playerName = normalize(document.getElementById("player_name")?.value || "") || "Jugador";
-      const startExp = normalize(document.getElementById("start_expansion")?.value || "") || "—";
-      const favColor = normalize(document.getElementById("fav_color")?.value || "") || "—";
+      const playerName = normalize($("player_name")?.value || "") || "Jugador";
+      const startExp = normalize($("start_expansion")?.value || "") || "—";
+      const favColor = normalize($("fav_color")?.value || "") || "—";
       const sw = colorToHex(favColor);
 
-      document.getElementById("previewHero").innerHTML = `
+      $("previewHero").innerHTML = `
         <div class="heroRow">
           <div class="heroLeft">
             <div class="heroTitle">${escapeHtml(playerName)} · OP Wrapped</div>
@@ -682,14 +817,13 @@
         </div>
       `;
 
-      const grid = document.getElementById("previewGrid");
+      const grid = $("previewGrid");
       grid.innerHTML = "";
 
       let n = 1;
 
       const pushCard = ({ title, label, tag, dotClass, img }) => {
         const hasImg = !!img;
-
         const item = document.createElement("div");
         item.className = "pCard";
         item.innerHTML = `
@@ -705,9 +839,8 @@
       };
 
       for (const q of LEADER_QUESTIONS){
-        const label = normalize(document.getElementById(q.id)?.value || "");
+        const label = normalize($(q.id)?.value || "");
         const card = cardsByLabel.get(label);
-
         pushCard({
           title: q.title,
           label: card ? card.label : "—",
@@ -718,9 +851,8 @@
       }
 
       for (const q of CARD_QUESTIONS){
-        const label = normalize(document.getElementById(q.id)?.value || "");
+        const label = normalize($(q.id)?.value || "");
         const card = cardsByLabel.get(label);
-
         pushCard({
           title: q.title,
           label: card ? card.label : "—",
@@ -740,6 +872,7 @@
       return String(s).replace(/"/g, "&quot;");
     }
 
+    // init
     renderPlayerQuestions();
     renderCardQuestionBlock("leaderQuestions", LEADER_QUESTIONS, "leadersList");
     renderCardQuestionBlock("cardQuestions", CARD_QUESTIONS, "nonLeadersList");
