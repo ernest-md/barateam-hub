@@ -333,7 +333,7 @@
             <strong id="userEmail">—</strong>
             <span>Sesión iniciada</span>
           </div>
-          <a href="#" id="goProfile">👤 Ver perfil</a>
+          <a href="profile.html" id="goProfile">👤 Ver perfil</a>
           <div class="sep"></div>
           <button class="danger" id="menuLogout" type="button">🚪 Cerrar sesión</button>
         </div>
@@ -406,7 +406,6 @@
     // dropdown
     $("userBtn").addEventListener("click", (e) => { e.preventDefault(); toggleUserMenu(); });
     $("menuLogout").addEventListener("click", async (e) => { e.preventDefault(); closeUserMenu(); await doLogout(); });
-    $("goProfile").addEventListener("click", (e) => { e.preventDefault(); closeUserMenu(); alert("Perfil: pendiente 🙂"); });
 
     document.addEventListener("click", (e) => {
       const wrap = $("navUser");
