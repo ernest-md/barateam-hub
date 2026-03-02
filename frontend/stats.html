@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Stats · Team Hub</title>
+
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+
+    .statsCard{
+      background: rgba(255,255,255,.92);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.25);
+      margin-bottom: 25px;
+    }
+
+    .statsRow{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+    }
+
+    .statBox{
+      flex:1;
+      min-width:150px;
+      background:#fff;
+      border-radius:14px;
+      padding:12px;
+      border:1px solid rgba(0,0,0,.08);
+      text-align:center;
+    }
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      margin-top:10px;
+      font-size:13px;
+    }
+
+    th{
+      text-align:left;
+      padding:8px;
+      border-bottom:2px solid #ddd;
+      background:#f8fafc;
+      font-size:13px;
+    }
+
+    td{
+      padding:6px 6px;
+      border-bottom:1px solid #eee;
+      vertical-align:middle;
+      font-size:13px;
+    }
+
+    tr:hover{
+      background:#f1f5f9;
+    }
+
+    td strong{
+      font-size:14px;
+    }
+
+    .matchupsRow{
+      display:flex;
+      gap:40px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+
+    .matchupCol{
+      flex:1;
+      min-width:300px;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <div class="wrap">
+
+    <!-- ===================== -->
+    <!-- RESUMEN SUPERIOR -->
+    <!-- ===================== -->
+    <div class="statsCard">
+
+      <h2>Barateam Stats</h2>
+
+      <div style="margin-bottom:15px;">
+        <label>Jugador:</label>
+        <select id="playerSelect"></select>
+
+        <label style="margin-left:20px;">Expansión:</label>
+        <select id="expansionSelect"></select>
+      </div>
+
+      <div class="statsRow">
+        <div class="statBox">
+          <div>Total</div>
+          <strong id="total">-</strong>
+        </div>
+        <div class="statBox">
+          <div>Victorias</div>
+          <strong id="wins">-</strong>
+        </div>
+        <div class="statBox">
+          <div>Derrotas</div>
+          <strong id="losses">-</strong>
+        </div>
+        <div class="statBox">
+          <div>WR</div>
+          <strong id="wr">-</strong>
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- ===================== -->
+    <!-- ESTADÍSTICAS POR LÍDER -->
+    <!-- ===================== -->
+    <div class="statsCard">
+
+      <h3>Estadísticas por líder</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:90px;">Img</th>
+            <th>Líder</th>
+            <th style="width:60px;">P</th>
+            <th style="width:60px;">W</th>
+            <th style="width:60px;">L</th>
+            <th style="width:70px;">WR</th>
+            <th style="width:110px;">Fav</th>
+            <th style="width:110px;">Desf</th>
+          </tr>
+        </thead>
+        <tbody id="leaderStats"></tbody>
+      </table>
+
+      <div id="leaderDetail" style="margin-top:25px;"></div>
+
+    </div>
+
+
+    <!-- ===================== -->
+    <!-- MATCHUPS GLOBALES -->
+    <!-- ===================== -->
+    <div class="statsCard">
+
+      <h3>Matchups Globales</h3>
+
+      <div class="matchupsRow">
+
+        <!-- MÁS VICTORIAS -->
+        <div class="matchupCol">
+          <h4>Más victorias</h4>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width:90px;">Img</th>
+                <th style="width:70px;">Victorias</th>
+                <th style="width:70px;">Partidas</th>
+              </tr>
+            </thead>
+            <tbody id="topWins"></tbody>
+          </table>
+        </div>
+
+        <!-- MÁS DERROTAS -->
+        <div class="matchupCol">
+          <h4>Más derrotas</h4>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width:90px;">Img</th>
+                <th style="width:70px;">Derrotas</th>
+                <th style="width:70px;">Partidas</th>
+              </tr>
+            </thead>
+            <tbody id="topLosses"></tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <script type="module" src="./js/stats.js"></script>
+
+</body>
+</html>

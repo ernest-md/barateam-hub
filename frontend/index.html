@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Barateam Stats</title>
+</head>
+
+<body>
+
+  <h1>Barateam Stats</h1>
+
+  <!-- 🔹 Selectores -->
+  <div style="margin-bottom:20px;">
+    <label for="playerSelect"><strong>Jugador:</strong></label>
+    <select id="playerSelect"></select>
+
+    <label for="expansionSelect" style="margin-left:20px;">
+      <strong>Expansión:</strong>
+    </label>
+    <select id="expansionSelect"></select>
+  </div>
+
+  <hr>
+
+  <!-- 🔹 Resumen global -->
+  <h2>Resumen General</h2>
+
+  <p>Total partidas: <span id="total">-</span></p>
+  <p>Victorias: <span id="wins">-</span></p>
+  <p>Derrotas: <span id="losses">-</span></p>
+  <p>Win Rate: <span id="wr">-</span></p>
+
+  <hr>
+
+  <!-- 🔹 Estadísticas por líder -->
+  <h2>Estadísticas por líder</h2>
+  <div id="leaderStats"></div>
+
+<div id="leaderDetail" style="margin-top:30px;"></div>
+
+  <hr>
+
+  <!-- 🔹 Matchups Globales -->
+  <h2>Matchups Globales</h2>
+
+  <div style="display:flex; gap:60px;">
+
+    <div>
+      <h3>Más victorias contra</h3>
+      <div id="topWins"></div>
+    </div>
+
+    <div>
+      <h3>Más derrotas contra</h3>
+      <div id="topLosses"></div>
+    </div>
+
+  </div>
+
+  <!-- 🔥 Script SIEMPRE al final -->
+  <script type="module" src="./js/stats.js"></script>
+
+</body>
+</html>
