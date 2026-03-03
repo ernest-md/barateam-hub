@@ -284,10 +284,10 @@
         <article class="panel">
           <h2 class="sectionTitle">Top metajuegos</h2>
           <h3 class="question" id="pieQuestion">Distribucion principal</h3>
-          <p class="sub" id="pieSub">Con agrupacion de categorias menores en "Otros".</p>
+          <p class="sub" id="pieSub">Se ocultan mazos con 2 votos o menos.</p>
           <div class="chartMid"><canvas id="pieMain"></canvas></div>
           <ul class="legendList" id="legendMain"></ul>
-          <p class="tip">Tip: puedes fijar columnas manualmente con <code>?csv=archivo.csv&amp;q=NombreColumna&amp;q2=OtraColumna</code>.</p>
+          <p class="tip">Tip: puedes fijar las 2 preguntas con <code>?csv=archivo.csv&amp;q=Pregunta1&amp;q2=Pregunta2</code>.</p>
         </article>
 
         <article class="panel" id="pieSecondaryPanel" style="display:none;">
@@ -403,13 +403,6 @@
       }
       candidates.sort((a, b) => (b.total - a.total) || (b.unique - a.unique));
       return candidates;
-    }
-
-    function topWithOthers(counts, topN){
-      const top = counts.slice(0, topN);
-      const rest = counts.slice(topN).reduce((acc, x) => acc + x[1], 0);
-      if (rest > 0) top.push(["Otros", rest]);
-      return top;
     }
 
     function colorFor(i){
@@ -542,58 +535,61 @@
           return;
         }
 
-        const candidates = selectQuestions(headers, rows);
-        $("usableQuestions").textContent = String(candidates.length);
-
-        let main = null;
-        let second = null;
         const forcedMain = findForced(headers, forcedQ);
         const forcedSecond = findForced(headers, forcedQ2);
+        const defaultMain = headers[1] || null;
+        const defaultSecond = headers[2] || null;
+        const mainHeader = forcedMain || defaultMain;
+        const secondHeader = forcedSecond || defaultSecond;
 
-        if (forcedMain){
-          main = scoreQuestion(forcedMain, rows);
-        } else {
-          main = candidates[0] || null;
+        if (!mainHeader || !secondHeader){
+          showError("El CSV debe tener 3 columnas: timestamp + 2 preguntas.");
+          return;
         }
-
-        if (forcedSecond){
-          second = scoreQuestion(forcedSecond, rows);
-        } else if (candidates.length > 1){
-          second = candidates.find((c) => c.header !== main?.header) || null;
-        }
-
-        if (!main || main.counts.length < 2){
-          showError("No encontre ninguna columna util para graficar. Revisa el CSV.");
+        if (mainHeader === secondHeader){
+          showError("Las dos preguntas no pueden ser la misma columna.");
           return;
         }
 
-        $("qPill").textContent = `Pregunta principal: ${main.header}`;
+        const main = scoreQuestion(mainHeader, rows);
+        const second = scoreQuestion(secondHeader, rows);
+        $("usableQuestions").textContent = "2";
+
+        if (!main.counts.length || !second.counts.length){
+          showError("No hay respuestas validas en una de las dos preguntas.");
+          return;
+        }
+
+        const mainFilteredForDonut = main.counts.filter((x) => x[1] > 2);
+        const secondFilteredForDonut = second.counts.filter((x) => x[1] > 2);
+        const allCats = new Set([...main.counts.map((x) => x[0]), ...second.counts.map((x) => x[0])]);
+
+        $("qPill").textContent = `Preguntas: ${main.header} | ${second.header}`;
         $("mainQuestion").textContent = main.header;
-        $("mainSub").textContent = `${main.total} votos agregados en ${main.unique} categorias.`;
+        $("mainSub").textContent = `${main.total} votos en ${main.unique} categorias (barras: todo).`;
         $("pieQuestion").textContent = main.header;
-        $("pieSub").textContent = "Top categorias de la votacion general.";
-        $("topCats").textContent = String(main.unique);
+        $("pieSub").textContent = "Donut sin mazos de 2 votos o menos.";
+        $("topCats").textContent = String(allCats.size);
 
-        const mainBar = main.counts.slice(0, 34);
-        makeBarChart("barMain", mainBar.map((x) => x[0]), mainBar.map((x) => x[1]));
+        makeBarChart("barMain", main.counts.map((x) => x[0]), main.counts.map((x) => x[1]));
+        if (mainFilteredForDonut.length){
+          makePieChart("pieMain", mainFilteredForDonut.map((x) => x[0]), mainFilteredForDonut.map((x) => x[1]));
+          renderLegend("legendMain", mainFilteredForDonut.map((x) => x[0]), mainFilteredForDonut.map((x) => x[1]));
+        } else {
+          showError("Pregunta 1: no hay mazos con mas de 2 votos para donut.");
+        }
 
-        const mainPie = topWithOthers(main.counts, 12);
-        const pieLabels = mainPie.map((x) => x[0]);
-        const pieVals = mainPie.map((x) => x[1]);
-        makePieChart("pieMain", pieLabels, pieVals);
-        renderLegend("legendMain", pieLabels, pieVals);
+        $("secondaryPanel").style.display = "";
+        $("secondaryQuestion").textContent = second.header;
+        $("secondarySub").textContent = `${second.total} votos en ${second.unique} categorias (barras: todo).`;
+        makeBarChart("barSecondary", second.counts.map((x) => x[0]), second.counts.map((x) => x[1]));
 
-        if (second && second.counts.length >= 2 && second.header !== main.header){
-          $("secondaryPanel").style.display = "";
-          $("secondaryQuestion").textContent = second.header;
-          $("secondarySub").textContent = `${second.total} votos agregados en ${second.unique} categorias.`;
-          const secBar = second.counts.slice(0, 20);
-          makeBarChart("barSecondary", secBar.map((x) => x[0]), secBar.map((x) => x[1]));
-
-          $("pieSecondaryPanel").style.display = "";
-          $("pieSecondaryQuestion").textContent = second.header;
-          const secPie = topWithOthers(second.counts, 8);
-          makePieChart("pieSecondary", secPie.map((x) => x[0]), secPie.map((x) => x[1]));
+        $("pieSecondaryPanel").style.display = "";
+        $("pieSecondaryQuestion").textContent = second.header;
+        if (secondFilteredForDonut.length){
+          makePieChart("pieSecondary", secondFilteredForDonut.map((x) => x[0]), secondFilteredForDonut.map((x) => x[1]));
+        } else {
+          showError("Pregunta 2: no hay mazos con mas de 2 votos para donut.");
         }
       } catch (e){
         console.error(e);
