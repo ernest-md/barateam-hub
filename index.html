@@ -674,12 +674,18 @@
   }
 
   async function refreshSession(){
-    const { data } = await sb.auth.getSession();
-    const user = data?.session?.user || null;
-    currentUser = user;
-    window.__barateamCurrentUser = user;
-    setNavAuthUI(user);
-    return user;
+    try{
+      const { data } = await sb.auth.getSession();
+      const user = data?.session?.user || null;
+      currentUser = user;
+      window.__barateamCurrentUser = user;
+      setNavAuthUI(user);
+      return user;
+    }catch(e){
+      console.warn("refreshSession:", e.message);
+      // No forzamos logout visual por un fallo/transitorio de red
+      return currentUser;
+    }
   }
 
   async function doLogout(){
@@ -698,10 +704,6 @@
   // ===== POSTS =====
   let currentUser = null;
   const profileNameCache = new Map();
-  async function getSessionUser(){
-    const { data } = await sb.auth.getSession();
-    return data?.session?.user || null;
-  }
 
   function showPostMsg(text, type){
     const el = $("postMsg");
@@ -1020,7 +1022,8 @@
 
     try{
       if (btn) btn.disabled = true;
-      const user = await getSessionUser();
+      const { data } = await sb.auth.getSession();
+      const user = data?.session?.user || null;
       if (!user){
         showPostMsg("No hay sesion activa.", "err");
         return;
@@ -1069,7 +1072,8 @@
     const start_at = startLocal ? new Date(startLocal).toISOString() : null;
 
     try{
-      const user = await getSessionUser();
+      const { data } = await sb.auth.getSession();
+      const user = data?.session?.user || null;
       if (!user){
         showEventMsg("No hay sesion activa.", "err");
         return;
