@@ -102,15 +102,31 @@
     <div class="bar">
       <div class="brand">BARATEAM HUB · resultados</div>
       <div class="nav">
-        <a class="btn" href="index.html">Home</a>
-        <a class="btn" href="sim-stats.html" data-requires-auth="1">SIM Stats</a>
-        <a class="btn" href="decks.html">Decks</a>
-        <a class="btn primary" href="results.html" data-requires-auth="1">Resultados</a>
-        <a class="btn" href="encuestas.html">Encuestas</a>
+        <a class="btn" href="index.html">🏠 Home</a>
+        <a class="btn" href="sim-stats.html" data-requires-auth="1">📊 SIM Stats</a>
+        <a class="btn" href="op-wrapped.html">🎴 OP Wrapped</a>
+        <a class="btn" href="decks.html">🃏 DeckLists</a>
+        <a class="btn primary active" href="results.html" data-requires-auth="1">🏆 Results</a>
+        <a class="btn" href="encuestas.html">🗳️ Encuestas</a>
       </div>
       <div class="spacer"></div>
-      <span class="pill" id="today"></span>
-      <button class="btn" id="btnLogout" type="button">Cerrar sesión</button>
+      <a class="btn" id="navLogin" href="login.html">Login</a>
+      <div class="userwrap" id="navUser" style="display:none;">
+        <button class="btn userbtn" id="userBtn" type="button">
+          <span class="avatar"></span>
+          <span id="userLabel">Usuario</span>
+          <span class="chev">v</span>
+        </button>
+        <div class="menu" id="userMenu">
+          <div class="head">
+            <strong id="userEmail">-</strong>
+            <span>Sesion iniciada</span>
+          </div>
+          <a href="profile.html">Ver perfil</a>
+          <div class="sep"></div>
+          <button class="danger" id="menuLogout" type="button">Cerrar sesion</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -228,6 +244,14 @@
     const $ = window.BarateamApp.byId;
 
     window.BarateamApp.bindProtectedNavLinks(sb);
+    const navController = window.BarateamApp.initUserNav({
+      onLogout: async () => {
+        await sb.auth.signOut();
+        location.href = "login.html";
+      },
+      formatLabel: (user) => (user?.email || "Usuario").split("@")[0] || "Usuario",
+      formatEmail: (user) => user?.email || "user"
+    });
 
     let currentUser = null;
     let events = [];
@@ -268,6 +292,12 @@
       return "";
     }
 
+    function eventDateKey(row){
+      const raw = String(row?.start_at || row?.date || row?.event_date || "").trim();
+      if (!raw) return "";
+      return raw.slice(0, 10);
+    }
+
     async function loadCurrentUsername(){
       if (!currentUser?.id) return;
       const { data, error } = await sb
@@ -291,6 +321,7 @@
         return null;
       }
       currentUser = user;
+      navController.setUser(user);
       return user;
     }
 
@@ -298,14 +329,15 @@
       const { data, error } = await sb
         .from("events")
         .select("*")
-        .order("start_at", { ascending: false })
         .limit(500);
 
       if (error){
         console.warn("events:", error.message);
         events = [];
       } else {
-        events = data || [];
+        events = (data || []).slice().sort((a, b) => {
+          return eventDateKey(b).localeCompare(eventDateKey(a));
+        });
       }
 
       eventsById = new Map(
@@ -556,13 +588,6 @@
       const isOpen = $("createResultBody").classList.contains("open");
       setCreateResultOpen(!isOpen);
     });
-    $("btnLogout").addEventListener("click", async () => {
-      await sb.auth.signOut();
-      location.href = "login.html";
-    });
-
-    window.BarateamApp.setTopbarDate("today");
-
     (async function init(){
       const user = await requireSession();
       if (!user) return;
@@ -574,7 +599,10 @@
       allResults = await fetchResults();
       applyResultsFilters(true);
       setResultsLoading(false);
-      sb.auth.onAuthStateChange((_e, s) => { if (!s?.user) location.href = "login.html"; });
+      sb.auth.onAuthStateChange((_e, s) => {
+        navController.setUser(s?.user || null);
+        if (!s?.user) location.href = "login.html";
+      });
     })();
   </script>
 </body>

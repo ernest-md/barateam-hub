@@ -214,12 +214,9 @@
         <a class="btn" href="decks.html">🃏 DeckLists</a>
         <a class="btn" href="results.html" data-requires-auth="1">🏆 Results</a>
         <a class="btn" href="encuestas.html">🗳️ Encuestas</a>
-        <a class="btn" href="#" onclick="alert('Próximamente')">➕ Más</a>
       </div>
 
       <div class="spacer"></div>
-      <span class="pill" id="today"></span>
-
       <!-- ✅ Derecha del todo: Login O Usuario -->
       <a class="btn" id="navLogin" href="login.html">🔐 Login</a>
 
@@ -295,9 +292,6 @@
       await sb.auth.signOut();
       await refreshSession();
     }
-
-    // fecha
-    window.BarateamApp.setTopbarDate("today", { prefix: "📅 " });
 
     // init auth
     (async function(){

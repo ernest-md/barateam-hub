@@ -328,17 +328,15 @@
       </div>
 
       <div class="nav">
-        <a class="btn" href="index.html">Home</a>
-        <a class="btn" href="sim-stats.html" data-requires-auth="1">Visor Excel</a>
-        <a class="btn" href="op-wrapped.html">OP Wrapped</a>
-        <a class="btn primary active" href="decks.html">Decks</a>
-        <a class="btn" href="results.html" data-requires-auth="1">Results</a>
-        <a class="btn" href="encuestas.html">Encuestas</a>
+        <a class="btn" href="index.html">🏠 Home</a>
+        <a class="btn" href="sim-stats.html" data-requires-auth="1">📊 SIM Stats</a>
+        <a class="btn" href="op-wrapped.html">🎴 OP Wrapped</a>
+        <a class="btn primary active" href="decks.html">🃏 DeckLists</a>
+        <a class="btn" href="results.html" data-requires-auth="1">🏆 Results</a>
+        <a class="btn" href="encuestas.html">🗳️ Encuestas</a>
       </div>
 
       <div class="spacer"></div>
-
-      <span class="pill" id="today"></span>
 
       <a class="btn" id="navLogin" href="login.html">Login</a>
 
@@ -498,9 +496,6 @@
     const $ = window.BarateamApp.byId;
 
     window.BarateamApp.bindProtectedNavLinks(sb);
-
-    // Fecha topbar
-    window.BarateamApp.setTopbarDate("today", { prefix: "Hoy: " });
 
     // ===== NAV auth =====
     const navController = window.BarateamApp.initUserNav({

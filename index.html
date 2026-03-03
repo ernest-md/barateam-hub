@@ -516,12 +516,9 @@
         <a class="btn" href="decks.html">🃏 DeckLists</a>
         <a class="btn" href="results.html" data-requires-auth="1">🏆 Results</a>
         <a class="btn" href="encuestas.html">🗳️ Encuestas</a>
-        <a class="btn" href="#" onclick="alert('Próximamente')">➕ Más</a>
       </div>
 
       <div class="spacer"></div>
-
-      <span class="pill" id="today"></span>
 
       <a class="btn" id="navLogin" href="login.html">🔐 Login</a>
 
@@ -681,9 +678,6 @@
       location.href = "login.html";
     }
   }
-
-  // Fecha topbar
-  window.BarateamApp.setTopbarDate("today", { prefix: "📅 " });
 
   // ===== POSTS =====
   let currentUser = null;
@@ -1083,21 +1077,27 @@
       ];
     }
 
-    const start = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
-    const end = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 1);
-
     const { data, error } = await sb
       .from("events")
-      .select("id,title,start_at,location,description")
-      .gte("start_at", start.toISOString())
-      .lt("start_at", end.toISOString())
-      .order("start_at", { ascending:true });
+      .select("*")
+      .limit(1000);
 
     if (error){
       console.warn("events:", error.message);
       return [];
     }
-    return data || [];
+    const all = data || [];
+    const ym = `${viewDate.getFullYear()}-${String(viewDate.getMonth()+1).padStart(2,"0")}`;
+    return all
+      .filter((e) => {
+        const raw = String(e?.start_at || e?.date || e?.event_date || "").trim();
+        return raw.slice(0,7) === ym;
+      })
+      .sort((a,b) => {
+        const av = String(a?.start_at || a?.date || a?.event_date || "");
+        const bv = String(b?.start_at || b?.date || b?.event_date || "");
+        return av.localeCompare(bv);
+      });
   }
 
   function groupEventsByDay(events){
@@ -1216,13 +1216,23 @@
 
   async function refreshHome(){
     await refreshSession();
-    await refreshPostsSection();
 
-    monthEvents = await fetchEventsForMonth(viewDate);
-    const map = groupEventsByDay(monthEvents);
+    try{
+      await refreshPostsSection();
+    }catch(e){
+      console.warn("refreshPostsSection:", e.message || e);
+    }
 
-    renderCalendar(viewDate, map);
-    renderUpcoming(monthEvents);
+    try{
+      monthEvents = await fetchEventsForMonth(viewDate);
+      const map = groupEventsByDay(monthEvents);
+      renderCalendar(viewDate, map);
+      renderUpcoming(monthEvents);
+    }catch(e){
+      console.warn("calendar:", e.message || e);
+      renderCalendar(viewDate, new Map());
+      renderUpcoming([]);
+    }
   }
 
   $("btnPrev")?.addEventListener("click", async () => {

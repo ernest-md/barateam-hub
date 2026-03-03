@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>OP Wrapped · Barateam Hub</title>
+  <title>OP Wrapped Â· Barateam Hub</title>
 
   <link rel="stylesheet" href="app.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -56,7 +56,7 @@
       z-index:-1;
     }
 
-    /* ===== Topbar / Navegación ===== */
+    /* ===== Topbar / NavegaciÃ³n ===== */
 
     .brand{
       display:flex;
@@ -378,48 +378,45 @@
         <a class="btn" href="decks.html">🃏 DeckLists</a>
         <a class="btn" href="results.html" data-requires-auth="1">🏆 Results</a>
         <a class="btn" href="encuestas.html">🗳️ Encuestas</a>
-        <a class="btn" href="#" onclick="alert('Próximamente')">➕ Más</a>
       </div>
 
       <div class="spacer"></div>
 
       <div class="hint">
-        <span class="pill" id="apiStatus">Cargando cartas…</span>
-        <span class="pill" id="countPill">0 cartas</span>
-        <span class="pill" id="today"></span>
-      </div>
+        <span class="pill" id="apiStatus">Cargando cartasâ€¦</span>
+        <span class="pill" id="countPill">0 cartas</span>      </div>
 
-      <!-- ✅ Derecha del todo: Login O Usuario -->
-      <a class="btn" id="navLogin" href="login.html">🔐 Login</a>
+      <!-- âœ… Derecha del todo: Login O Usuario -->
+      <a class="btn" id="navLogin" href="login.html">ðŸ” Login</a>
 
       <div class="userwrap" id="navUser" style="display:none;">
         <button class="btn userbtn" id="userBtn" type="button">
           <span class="avatar"></span>
           <span id="userLabel">Usuario</span>
-          <span class="chev">▾</span>
+          <span class="chev">â–¾</span>
         </button>
 
         <div class="menu" id="userMenu">
           <div class="head">
-            <strong id="userEmail">—</strong>
-            <span>Sesión iniciada</span>
+            <strong id="userEmail">â€”</strong>
+            <span>SesiÃ³n iniciada</span>
           </div>
-          <a href="profile.html" id="goProfile">👤 Ver perfil</a>
+          <a href="profile.html" id="goProfile">ðŸ‘¤ Ver perfil</a>
           <div class="sep"></div>
-          <button class="danger" id="menuLogout" type="button">🚪 Cerrar sesión</button>
+          <button class="danger" id="menuLogout" type="button">ðŸšª Cerrar sesiÃ³n</button>
         </div>
       </div>
     </div>
   </div>
 
   <div class="wrap">
-    <h1>Tu “Wrapped” del mazo</h1>
-    <p>Rellena y mira la vista previa. Luego lo convertimos a modo “captura para compartir”.</p>
+    <h1>Tu â€œWrappedâ€ del mazo</h1>
+    <p>Rellena y mira la vista previa. Luego lo convertimos a modo â€œcaptura para compartirâ€.</p>
 
     <div class="sectionTitle">Datos del jugador</div>
     <div class="grid" id="playerQuestions"></div>
 
-    <div class="sectionTitle">Líderes</div>
+    <div class="sectionTitle">LÃ­deres</div>
     <div class="grid" id="leaderQuestions"></div>
 
     <div class="sectionTitle">Cartas individuales</div>
@@ -473,8 +470,6 @@
     })();
 
     // Fecha
-    window.BarateamApp.setTopbarDate("today", { prefix: "📅 " });
-
     // ===== OP Wrapped =====
     const API_URLS = [
       "https://www.optcgapi.com/api/allSetCards/",
@@ -484,29 +479,29 @@
 
     const PLAYER_QUESTIONS = [
       { id: "player_name", title: "Nombre de jugador", hint: "Tu nick.", type: "text", placeholder: "Ernest" },
-      { id: "start_expansion", title: "Expansión en la que empecé a jugar", hint: "Ej: OP01 / OP05 / STxx / EB01…", type: "text", placeholder: "OP01" },
+      { id: "start_expansion", title: "ExpansiÃ³n en la que empecÃ© a jugar", hint: "Ej: OP01 / OP05 / STxx / EB01â€¦", type: "text", placeholder: "OP01" },
       { id: "fav_color", title: "Color favorito", hint: "Elige un color.", type: "select",
         options: ["Rojo","Verde","Azul","Lila","Negro","Amarillo"]
       }
     ];
 
     const LEADER_QUESTIONS = [
-      { id: "fav_leader", title: "Tu líder favorito", hint: "El líder que más te representa." },
-      { id: "first_leader", title: "Primer líder jugado", hint: "Tu primer main." },
-      { id: "last_leader", title: "Último líder jugado", hint: "El más reciente." },
-      { id: "best_results_leader", title: "Líder con mejores resultados", hint: "El que mejor te ha ido." },
-      { id: "meme_leader", title: "Líder más meme", hint: "Por las risas, no por winrate." },
-      { id: "hate_against_leader", title: "Líder que odias jugar en contra", hint: "Ese matchup que da pereza." }
+      { id: "fav_leader", title: "Tu lÃ­der favorito", hint: "El lÃ­der que mÃ¡s te representa." },
+      { id: "first_leader", title: "Primer lÃ­der jugado", hint: "Tu primer main." },
+      { id: "last_leader", title: "Ãšltimo lÃ­der jugado", hint: "El mÃ¡s reciente." },
+      { id: "best_results_leader", title: "LÃ­der con mejores resultados", hint: "El que mejor te ha ido." },
+      { id: "meme_leader", title: "LÃ­der mÃ¡s meme", hint: "Por las risas, no por winrate." },
+      { id: "hate_against_leader", title: "LÃ­der que odias jugar en contra", hint: "Ese matchup que da pereza." }
     ];
 
     const CARD_QUESTIONS = [
-      { id: "most_played", title: "La carta más jugada", hint: "La que no sale nunca del deck." },
+      { id: "most_played", title: "La carta mÃ¡s jugada", hint: "La que no sale nunca del deck." },
       { id: "mvp", title: "MVP del mazo", hint: "La que te gana partidas." },
-      { id: "guilty_pleasure", title: "Guilty pleasure", hint: "Esa carta que metes aunque no sea óptima." },
-      { id: "nemesis", title: "Tu némesis", hint: "La carta que más odias ver enfrente." },
+      { id: "guilty_pleasure", title: "Guilty pleasure", hint: "Esa carta que metes aunque no sea Ã³ptima." },
+      { id: "nemesis", title: "Tu nÃ©mesis", hint: "La carta que mÃ¡s odias ver enfrente." },
       { id: "best_art", title: "Mejor artwork", hint: "Elegida por puro arte." },
-      { id: "clutch", title: "La más clutch", hint: "La que salva a última hora." },
-      { id: "tech", title: "Tech del meta", hint: "La carta “respuesta” para el entorno." }
+      { id: "clutch", title: "La mÃ¡s clutch", hint: "La que salva a Ãºltima hora." },
+      { id: "tech", title: "Tech del meta", hint: "La carta â€œrespuestaâ€ para el entorno." }
     ];
 
     let cards = [];
@@ -536,7 +531,7 @@
           div.innerHTML = `
             <label for="${q.id}">${q.title}</label>
             <select id="${q.id}" onchange="onPickChanged()">
-              <option value="">Selecciona…</option>
+              <option value="">Seleccionaâ€¦</option>
               ${opts}
             </select>
             <small>${q.hint}</small>
@@ -568,7 +563,7 @@
           <input type="text"
                  id="${q.id}"
                  list="${listId}"
-                 placeholder="Escribe para buscar…"
+                 placeholder="Escribe para buscarâ€¦"
                  oninput="onPickChanged()"
                  autocomplete="off" />
           <small>${q.hint}</small>
@@ -615,7 +610,7 @@
 
     async function loadCards(){
       try{
-        setStatus("Cargando cartas…");
+        setStatus("Cargando cartasâ€¦");
 
         const all = [];
         for (const url of API_URLS){
@@ -633,7 +628,7 @@
             const card_type = normalize(guessType(raw));
             const image = normalize(guessImageUrl(raw));
 
-            const label = `${name} — ${set_name} (${card_set_id})`.replace(/\s+/g, " ").trim();
+            const label = `${name} â€” ${set_name} (${card_set_id})`.replace(/\s+/g, " ").trim();
             return { label, name, set_name, card_set_id, card_type, image, raw };
           })
           .filter(Boolean);
@@ -670,19 +665,19 @@
 
     function buildPreview(){
       const playerName = normalize($("player_name")?.value || "") || "Jugador";
-      const startExp = normalize($("start_expansion")?.value || "") || "—";
-      const favColor = normalize($("fav_color")?.value || "") || "—";
+      const startExp = normalize($("start_expansion")?.value || "") || "â€”";
+      const favColor = normalize($("fav_color")?.value || "") || "â€”";
       const sw = colorToHex(favColor);
 
       $("previewHero").innerHTML = `
         <div class="heroRow">
           <div class="heroLeft">
-            <div class="heroTitle">${escapeHtml(playerName)} · OP Wrapped</div>
-            <div class="heroSub">Empecé en <strong>${escapeHtml(startExp)}</strong> · Color favorito <strong>${escapeHtml(favColor)}</strong></div>
+            <div class="heroTitle">${escapeHtml(playerName)} Â· OP Wrapped</div>
+            <div class="heroSub">EmpecÃ© en <strong>${escapeHtml(startExp)}</strong> Â· Color favorito <strong>${escapeHtml(favColor)}</strong></div>
             <div class="heroBadges">
               <span class="badge"><span class="swatch" style="background:${sw}"></span>${escapeHtml(favColor)}</span>
-              <span class="badge">📦 ${escapeHtml(startExp)}</span>
-              <span class="badge">👤 ${escapeHtml(playerName)}</span>
+              <span class="badge">ðŸ“¦ ${escapeHtml(startExp)}</span>
+              <span class="badge">ðŸ‘¤ ${escapeHtml(playerName)}</span>
             </div>
           </div>
         </div>
@@ -702,7 +697,7 @@
           <img class="pImg" ${hasImg ? `src="${escapeAttr(img)}"` : ""} alt="" style="opacity:${hasImg ? 1 : .25}">
           <div class="pMeta">
             <div class="pTitle">${escapeHtml(title)}</div>
-            <div class="pLabel">${escapeHtml(label || "—")}</div>
+            <div class="pLabel">${escapeHtml(label || "â€”")}</div>
             <div class="tag"><span class="dot ${dotClass}"></span>${escapeHtml(tag)}</div>
           </div>
         `;
@@ -714,7 +709,7 @@
         const card = cardsByLabel.get(label);
         pushCard({
           title: q.title,
-          label: card ? card.label : "—",
+          label: card ? card.label : "â€”",
           tag: "Leader",
           dotClass: "",
           img: card?.image || ""
@@ -726,7 +721,7 @@
         const card = cardsByLabel.get(label);
         pushCard({
           title: q.title,
-          label: card ? card.label : "—",
+          label: card ? card.label : "â€”",
           tag: "Card",
           dotClass: "c2",
           img: card?.image || ""
@@ -743,3 +738,4 @@
   </script>
 </body>
 </html>
+
