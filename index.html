@@ -1288,7 +1288,6 @@
   let monthEvents = [];
 
   async function refreshCalendarOnly(){
-    await refreshSession();
     // Navegacion instantanea aunque Supabase tarde/falle.
     renderCalendar(viewDate, new Map());
     renderUpcoming([]);
