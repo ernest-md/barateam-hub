@@ -656,16 +656,15 @@
 
   async function refreshSession(){
     try{
-      const { data } = await withTimeout(sb.auth.getSession());
+      const { data } = await sb.auth.getSession();
       const user = data?.session?.user || null;
       currentUser = user;
       setNavAuthUI(user);
       return user;
     }catch(e){
       console.warn("refreshSession:", e.message);
-      currentUser = null;
-      setNavAuthUI(null);
-      return null;
+      // No forzamos logout visual por un fallo/transitorio de red
+      return currentUser;
     }
   }
 

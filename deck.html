@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Deck � Barateam Hub</title>
+  <title>Deck ï¿½ Barateam Hub</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
@@ -132,7 +132,7 @@
       margin-bottom:6px;
       letter-spacing:.4px;
     }
-    .editGrid input, .editGrid textarea{
+    .editGrid input, .editGrid textarea, .editGrid select{
       width:100%;
       border-radius:12px;
       border:1px solid rgba(15,23,42,.18);
@@ -328,15 +328,17 @@
           </div>
           <div>
             <label for="editLeader">Lider</label>
-            <input id="editLeader" type="text" />
-          </div>
-          <div>
-            <label for="editLeaderImageUrl">Leader image URL</label>
-            <input id="editLeaderImageUrl" type="text" />
+            <select id="editLeader">
+              <option value="">(Selecciona lider)</option>
+            </select>
           </div>
           <div>
             <label for="editImageUrl">Deck image URL</label>
             <input id="editImageUrl" type="text" />
+          </div>
+          <div>
+            <label for="editImageFile">Subir imagen de deck</label>
+            <input id="editImageFile" type="file" accept="image/*" />
           </div>
           <div>
             <label for="editDescription">Descripcion</label>
@@ -383,6 +385,8 @@
     let isDeckOwner = false;
     let profileCache = new Map();
     let socialState = { comments: [], likes: [], likedByMe: false };
+    let editLeaders = [];
+    let editLeaderByLabel = new Map();
 
     const escapeHtml = window.BarateamApp.escapeHtml;
     const escapeAttr = window.BarateamApp.escapeAttr;
@@ -404,6 +408,93 @@
       if (!userId) return "Usuario";
       if (profileCache.has(userId)) return profileCache.get(userId);
       return "user-" + String(userId).slice(0,8);
+    }
+
+    function norm(value){
+      return String(value || "").trim();
+    }
+
+    function leaderLabelFromRow(row){
+      const name = norm(row?.name);
+      const code = norm(row?.code);
+      return [name, code].filter(Boolean).join(" ").trim();
+    }
+
+    function leaderImageFromRow(row){
+      return norm(row?.image_url || row?.leader_image_url || row?.image || row?.img || row?.card_image);
+    }
+
+    function fillEditLeaderSelect(){
+      const sel = $("editLeader");
+      sel.innerHTML = '<option value="">(Selecciona lider)</option>';
+      for (const l of editLeaders){
+        const opt = document.createElement("option");
+        opt.value = l.label;
+        opt.textContent = l.label;
+        sel.appendChild(opt);
+      }
+    }
+
+    function ensureEditLeaderOption(label){
+      const normalized = norm(label);
+      if (!normalized) return;
+      if (editLeaderByLabel.has(normalized)) return;
+      const sel = $("editLeader");
+      const opt = document.createElement("option");
+      opt.value = normalized;
+      opt.textContent = normalized;
+      sel.appendChild(opt);
+    }
+
+    async function initEditLeaders(){
+      const { data, error } = await sb
+        .from("leaders")
+        .select("*")
+        .order("name", { ascending: true })
+        .limit(500);
+
+      if (error){
+        console.warn("leaders:", error.message);
+        editLeaders = [];
+        editLeaderByLabel = new Map();
+        fillEditLeaderSelect();
+        return;
+      }
+
+      const mapped = (data || [])
+        .map((row) => {
+          const label = leaderLabelFromRow(row);
+          if (!label) return null;
+          return { label, image: leaderImageFromRow(row) || null };
+        })
+        .filter(Boolean);
+
+      const uniq = new Map();
+      for (const l of mapped){
+        if (!uniq.has(l.label)) uniq.set(l.label, l);
+      }
+
+      editLeaders = Array.from(uniq.values());
+      editLeaderByLabel = new Map(editLeaders.map((l) => [l.label, l]));
+      fillEditLeaderSelect();
+    }
+
+    async function uploadDeckImage(file, userId){
+      if (!file) return null;
+
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const safeExt = ext.replace(/[^a-z0-9]/g, "") || "jpg";
+      const fileName = `${Date.now()}-${Math.random().toString(16).slice(2)}.${safeExt}`;
+      const path = `${userId}/${fileName}`;
+
+      const { error: upErr } = await sb
+        .storage
+        .from("deck-images")
+        .upload(path, file, { upsert: false, contentType: file.type });
+
+      if (upErr) throw upErr;
+      const { data } = sb.storage.from("deck-images").getPublicUrl(path);
+      return data?.publicUrl || null;
     }
 
     function profileHref(userId){
@@ -482,9 +573,10 @@
 
     function fillEditForm(deck){
       $("editName").value = deck?.name || "";
+      ensureEditLeaderOption(deck?.leader || "");
       $("editLeader").value = deck?.leader || "";
-      $("editLeaderImageUrl").value = deck?.leader_image_url || "";
       $("editImageUrl").value = deck?.image_url || "";
+      $("editImageFile").value = "";
       $("editDescription").value = deck?.description || "";
       $("editSimPaste").value = deck?.sim_paste || "";
     }
@@ -505,39 +597,50 @@
         return;
       }
 
-      const payload = {
-        name: $("editName").value.trim() || null,
-        leader: $("editLeader").value.trim() || null,
-        leader_image_url: $("editLeaderImageUrl").value.trim() || null,
-        image_url: $("editImageUrl").value.trim() || null,
-        description: $("editDescription").value.trim() || null,
-        sim_paste: $("editSimPaste").value.trim() || null
-      };
+      try{
+        const selectedLeader = norm($("editLeader").value);
+        const leaderData = editLeaderByLabel.get(selectedLeader) || null;
+        let nextImageUrl = norm($("editImageUrl").value) || null;
+        const editFile = $("editImageFile").files?.[0] || null;
+        if (editFile){
+          nextImageUrl = await uploadDeckImage(editFile, currentUser.id);
+        }
 
-      const { data, error } = await sb
-        .from("decks")
-        .update(payload)
-        .eq("id", deckId)
-        .eq("autor", currentUser.id)
-        .select("id, name, created_at, autor, leader, leader_image_url, image_url, description, sim_paste")
-        .maybeSingle();
+        const payload = {
+          name: $("editName").value.trim() || null,
+          leader: selectedLeader || null,
+          leader_image_url: leaderData?.image || null,
+          image_url: nextImageUrl,
+          description: $("editDescription").value.trim() || null,
+          sim_paste: $("editSimPaste").value.trim() || null
+        };
 
-      if (error){
-        showError("No pude guardar los cambios: " + error.message);
-        return;
+        const { data, error } = await sb
+          .from("decks")
+          .update(payload)
+          .eq("id", deckId)
+          .eq("autor", currentUser.id)
+          .select("id, name, created_at, autor, leader, leader_image_url, image_url, description, sim_paste")
+          .maybeSingle();
+
+        if (error){
+          showError("No pude guardar los cambios: " + error.message);
+          return;
+        }
+        if (!data){
+          showError("No se pudo actualizar el deck (permisos o registro).");
+          return;
+        }
+
+        currentDeck = data;
+        renderDeck(currentDeck);
+        closeEditPanel();
+        window.BarateamApp.showMessage("msg", "Deck actualizado", { baseClass: "msg", type: "ok" });
+      }catch(e){
+        showError("No pude guardar los cambios: " + (e.message || "unknown"));
       }
-      if (!data){
-        showError("No se pudo actualizar el deck (permisos o registro).");
-        return;
-      }
-
-      currentDeck = data;
-      renderDeck(currentDeck);
-      closeEditPanel();
-      window.BarateamApp.showMessage("msg", "Deck actualizado ✅", { baseClass: "msg", type: "ok" });
     }
-
-    async function loadDeck(){
+async function loadDeck(){
       const params = new URLSearchParams(window.location.search);
       deckId = params.get("id");
 
@@ -724,6 +827,7 @@
 
     (async function init(){
       await refreshSession();
+      await initEditLeaders();
       const ok = await loadDeck();
       if (!ok) return;
       await loadDeckSocial();
@@ -738,3 +842,4 @@
   </script>
 </body>
 </html>
+

@@ -107,7 +107,12 @@
   }
 
   async function getSessionUser(sb){
-    const { data } = await sb.auth.getSession();
+    const timeoutMs = 2500;
+    const authPromise = sb.auth.getSession();
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Auth timeout")), timeoutMs);
+    });
+    const { data } = await Promise.race([authPromise, timeoutPromise]);
     return data?.session?.user || null;
   }
 
@@ -130,7 +135,8 @@
       }
       window.location.href = href;
     }catch(_err){
-      window.alert(message);
+      // Si falla el check, navegamos: la página destino ya valida sesión si toca.
+      window.location.href = href;
     }
   }
 

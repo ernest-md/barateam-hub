@@ -219,6 +219,20 @@
     const eventTitle = window.BarateamApp.eventTitle;
     const eventDate = window.BarateamApp.eventDate;
     const leaderLabel = window.BarateamApp.leaderLabel;
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    function isUuid(v){
+      return uuidRe.test(String(v || "").trim());
+    }
+
+    function pickUuid(row, fallbackFields){
+      const fields = (fallbackFields || []).concat(["id", "uuid"]);
+      for (const key of fields){
+        const value = row?.[key];
+        if (isUuid(value)) return String(value);
+      }
+      return "";
+    }
 
     async function loadCurrentUsername(){
       if (!currentUser?.id) return;
@@ -260,12 +274,18 @@
         events = data || [];
       }
 
-      eventsById = new Map(events.map(e => [e.id, e]));
+      eventsById = new Map(
+        events
+          .map((e) => [pickUuid(e, ["event_uuid"]), e])
+          .filter((pair) => !!pair[0])
+      );
       const sel = $("event");
       sel.innerHTML = '<option value="">(Selecciona evento)</option>';
       for (const e of events){
+        const evId = pickUuid(e, ["event_uuid"]);
+        if (!evId) continue;
         const opt = document.createElement("option");
-        opt.value = e.id;
+        opt.value = evId;
         opt.textContent = `${eventTitle(e)} · ${eventDate(e)}`;
         sel.appendChild(opt);
       }
@@ -285,12 +305,18 @@
         leaders = data || [];
       }
 
-      leadersById = new Map(leaders.map(l => [l.id, l]));
+      leadersById = new Map(
+        leaders
+          .map((l) => [pickUuid(l, ["leader_uuid"]), l])
+          .filter((pair) => !!pair[0])
+      );
       const sel = $("leader");
       sel.innerHTML = '<option value="">(Selecciona líder)</option>';
       for (const l of leaders){
+        const leaderId = pickUuid(l, ["leader_uuid"]);
+        if (!leaderId) continue;
         const opt = document.createElement("option");
-        opt.value = l.id;
+        opt.value = leaderId;
         opt.textContent = leaderLabel(l);
         sel.appendChild(opt);
       }
@@ -432,6 +458,8 @@
 
       if (!event) return show("Selecciona un evento.", "err");
       if (!leader) return show("Selecciona un líder.", "err");
+      if (!isUuid(event)) return show("El evento seleccionado no tiene UUID válido.", "err");
+      if (!isUuid(leader)) return show("El líder seleccionado no tiene UUID válido.", "err");
       if (!isNonNegativeNumber(wins)) return show("Wins inválido.", "err");
       if (!isNonNegativeNumber(loses)) return show("Loses inválido.", "err");
 
