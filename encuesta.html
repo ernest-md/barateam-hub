@@ -637,7 +637,7 @@
         },
         plugins: [{
           id: "imageArcFill",
-          beforeDatasetDraw(chart, args, pluginOptions){
+          afterDatasetDraw(chart, args, pluginOptions){
             if (args.index !== 0) return;
             const images = pluginOptions?.images || [];
             const meta = chart.getDatasetMeta(0);
@@ -665,6 +665,17 @@
               ctx.drawImage(img, sx, sy, s, s, p.x - p.outerRadius, p.y - p.outerRadius, side, side);
               ctx.fillStyle = "rgba(0,0,0,.10)";
               ctx.fillRect(p.x - p.outerRadius, p.y - p.outerRadius, side, side);
+
+              // Redibujamos un borde fino para separar quesitos tras pintar la imagen
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.outerRadius, p.startAngle, p.endAngle);
+              if (p.innerRadius > 0){
+                ctx.arc(p.x, p.y, p.innerRadius, p.endAngle, p.startAngle, true);
+              }
+              ctx.closePath();
+              ctx.lineWidth = 2;
+              ctx.strokeStyle = "rgba(247,243,246,.95)";
+              ctx.stroke();
               ctx.restore();
             });
           }
