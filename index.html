@@ -633,9 +633,11 @@
 
       <div class="nav">
         <a class="btn primary active" href="index.html">🏠 Home</a>
-        <a class="btn" href="sim-stats.html">📊 SIM Stats</a>
+        <a class="btn" href="sim-stats.html" data-requires-auth="1">📊 SIM Stats</a>
         <a class="btn" href="op-wrapped.html">🎴 OP Wrapped</a>
         <a class="btn" href="decks.html">🃏 DeckLists</a>
+        <a class="btn" href="results.html" data-requires-auth="1">🏆 Results</a>
+        <a class="btn" href="encuestas.html">🗳️ Encuestas</a>
         <a class="btn" href="#" onclick="alert('Próximamente')">➕ Más</a>
       </div>
 
@@ -757,6 +759,27 @@
   const USE_MOCK = false;
 
   const $ = (id) => document.getElementById(id);
+
+  async function onProtectedNavClick(e){
+    e.preventDefault();
+    const href = e.currentTarget.getAttribute("href");
+    try{
+      const { data } = await sb.auth.getSession();
+      if (!data?.session?.user){
+        alert("Para acceder a este apartado tienes que registrarte.");
+        return;
+      }
+      location.href = href;
+    }catch(_err){
+      alert("Para acceder a este apartado tienes que registrarte.");
+    }
+  }
+  function bindProtectedNavLinks(){
+    document.querySelectorAll('a[data-requires-auth="1"]').forEach((a) => {
+      a.addEventListener("click", onProtectedNavClick);
+    });
+  }
+  bindProtectedNavLinks();
 
   function withTimeout(promise, ms = 8000) {
     return Promise.race([

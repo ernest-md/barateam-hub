@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Encuestas · Barateam Hub</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root{ --bg:#0b1220; --card: rgba(255,255,255,.92); --shadow: 0 18px 50px rgba(0,0,0,.35); }
     body{ margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:#0f172a; }
@@ -36,7 +37,9 @@
       <div class="brand">BARATEAM HUB · encuestas</div>
       <div class="nav">
         <a class="btn" href="index.html">Home</a>
+        <a class="btn" href="sim-stats.html" data-requires-auth="1">SIM Stats</a>
         <a class="btn" href="decks.html">Decks</a>
+        <a class="btn" href="results.html" data-requires-auth="1">Resultados</a>
         <a class="btn primary" href="encuestas.html">Encuestas</a>
       </div>
     </div>
@@ -72,6 +75,31 @@
   </div>
 
   <script>
+    const SUPABASE_URL = "https://ceunhkqhskwnsoqyunze.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNldW5oa3Foc2t3bnNvcXl1bnplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NDQ0ODcsImV4cCI6MjA4ODAyMDQ4N30.qBGXYYQXlyQwFGeyaeMOtLPHrjBy-eU05AO37yLvi5o";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function onProtectedNavClick(e){
+      e.preventDefault();
+      const href = e.currentTarget.getAttribute("href");
+      try{
+        const { data } = await sb.auth.getSession();
+        if (!data?.session?.user){
+          alert("Para acceder a este apartado tienes que registrarte.");
+          return;
+        }
+        location.href = href;
+      }catch(_err){
+        alert("Para acceder a este apartado tienes que registrarte.");
+      }
+    }
+    function bindProtectedNavLinks(){
+      document.querySelectorAll('a[data-requires-auth="1"]').forEach((a) => {
+        a.addEventListener("click", onProtectedNavClick);
+      });
+    }
+    bindProtectedNavLinks();
+
     document.querySelectorAll("#tbody tr[data-href]").forEach((tr) => {
       tr.addEventListener("click", () => {
         const href = tr.getAttribute("data-href");
