@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>OP Wrapped Â· Barateam Hub</title>
+  <title>OP Wrapped - Barateam Hub</title>
 
   <link rel="stylesheet" href="app.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -56,7 +56,7 @@
       z-index:-1;
     }
 
-    /* ===== Topbar / NavegaciÃ³n ===== */
+    /* ===== Topbar / Navegacion ===== */
 
     .brand{
       display:flex;
@@ -383,40 +383,40 @@
       <div class="spacer"></div>
 
       <div class="hint">
-        <span class="pill" id="apiStatus">Cargando cartasâ€¦</span>
+        <span class="pill" id="apiStatus">Cargando cartas...</span>
         <span class="pill" id="countPill">0 cartas</span>      </div>
 
-      <!-- âœ… Derecha del todo: Login O Usuario -->
-      <a class="btn" id="navLogin" href="login.html">ðŸ” Login</a>
+      <!-- Derecha del todo: Login o Usuario -->
+      <a class="btn" id="navLogin" href="login.html">Login</a>
 
       <div class="userwrap" id="navUser" style="display:none;">
         <button class="btn userbtn" id="userBtn" type="button">
           <span class="avatar"></span>
           <span id="userLabel">Usuario</span>
-          <span class="chev">â–¾</span>
+          <span class="chev">v</span>
         </button>
 
         <div class="menu" id="userMenu">
           <div class="head">
-            <strong id="userEmail">â€”</strong>
-            <span>SesiÃ³n iniciada</span>
+            <strong id="userEmail">-</strong>
+            <span>Sesion iniciada</span>
           </div>
-          <a href="profile.html" id="goProfile">ðŸ‘¤ Ver perfil</a>
+          <a href="profile.html" id="goProfile">Ver perfil</a>
           <div class="sep"></div>
-          <button class="danger" id="menuLogout" type="button">ðŸšª Cerrar sesiÃ³n</button>
+          <button class="danger" id="menuLogout" type="button">Cerrar sesion</button>
         </div>
       </div>
     </div>
   </div>
 
   <div class="wrap">
-    <h1>Tu â€œWrappedâ€ del mazo</h1>
-    <p>Rellena y mira la vista previa. Luego lo convertimos a modo â€œcaptura para compartirâ€.</p>
+    <h1>Tu Wrapped del mazo</h1>
+    <p>Rellena y mira la vista previa. Luego lo convertimos a modo captura para compartir.</p>
 
     <div class="sectionTitle">Datos del jugador</div>
     <div class="grid" id="playerQuestions"></div>
 
-    <div class="sectionTitle">LÃ­deres</div>
+    <div class="sectionTitle">Lideres</div>
     <div class="grid" id="leaderQuestions"></div>
 
     <div class="sectionTitle">Cartas individuales</div>
@@ -479,29 +479,29 @@
 
     const PLAYER_QUESTIONS = [
       { id: "player_name", title: "Nombre de jugador", hint: "Tu nick.", type: "text", placeholder: "Ernest" },
-      { id: "start_expansion", title: "ExpansiÃ³n en la que empecÃ© a jugar", hint: "Ej: OP01 / OP05 / STxx / EB01â€¦", type: "text", placeholder: "OP01" },
+      { id: "start_expansion", title: "Expansion en la que empece a jugar", hint: "Ej: OP01 / OP05 / STxx / EB01...", type: "text", placeholder: "OP01" },
       { id: "fav_color", title: "Color favorito", hint: "Elige un color.", type: "select",
         options: ["Rojo","Verde","Azul","Lila","Negro","Amarillo"]
       }
     ];
 
     const LEADER_QUESTIONS = [
-      { id: "fav_leader", title: "Tu lÃ­der favorito", hint: "El lÃ­der que mÃ¡s te representa." },
-      { id: "first_leader", title: "Primer lÃ­der jugado", hint: "Tu primer main." },
-      { id: "last_leader", title: "Ãšltimo lÃ­der jugado", hint: "El mÃ¡s reciente." },
-      { id: "best_results_leader", title: "LÃ­der con mejores resultados", hint: "El que mejor te ha ido." },
-      { id: "meme_leader", title: "LÃ­der mÃ¡s meme", hint: "Por las risas, no por winrate." },
-      { id: "hate_against_leader", title: "LÃ­der que odias jugar en contra", hint: "Ese matchup que da pereza." }
+      { id: "fav_leader", title: "Tu lider favorito", hint: "El lider que mas te representa." },
+      { id: "first_leader", title: "Primer lider jugado", hint: "Tu primer main." },
+      { id: "last_leader", title: "Ultimo lider jugado", hint: "El mas reciente." },
+      { id: "best_results_leader", title: "Lider con mejores resultados", hint: "El que mejor te ha ido." },
+      { id: "meme_leader", title: "Lider mas meme", hint: "Por las risas, no por winrate." },
+      { id: "hate_against_leader", title: "Lider que odias jugar en contra", hint: "Ese matchup que da pereza." }
     ];
 
     const CARD_QUESTIONS = [
-      { id: "most_played", title: "La carta mÃ¡s jugada", hint: "La que no sale nunca del deck." },
+      { id: "most_played", title: "La carta mas jugada", hint: "La que no sale nunca del deck." },
       { id: "mvp", title: "MVP del mazo", hint: "La que te gana partidas." },
-      { id: "guilty_pleasure", title: "Guilty pleasure", hint: "Esa carta que metes aunque no sea Ã³ptima." },
-      { id: "nemesis", title: "Tu nÃ©mesis", hint: "La carta que mÃ¡s odias ver enfrente." },
+      { id: "guilty_pleasure", title: "Guilty pleasure", hint: "Esa carta que metes aunque no sea optima." },
+      { id: "nemesis", title: "Tu nemesis", hint: "La carta que mas odias ver enfrente." },
       { id: "best_art", title: "Mejor artwork", hint: "Elegida por puro arte." },
-      { id: "clutch", title: "La mÃ¡s clutch", hint: "La que salva a Ãºltima hora." },
-      { id: "tech", title: "Tech del meta", hint: "La carta â€œrespuestaâ€ para el entorno." }
+      { id: "clutch", title: "La mas clutch", hint: "La que salva a ultima hora." },
+      { id: "tech", title: "Tech del meta", hint: "La carta respuesta para el entorno." }
     ];
 
     let cards = [];
@@ -531,7 +531,7 @@
           div.innerHTML = `
             <label for="${q.id}">${q.title}</label>
             <select id="${q.id}" onchange="onPickChanged()">
-              <option value="">Seleccionaâ€¦</option>
+              <option value="">Selecciona...</option>
               ${opts}
             </select>
             <small>${q.hint}</small>
@@ -563,7 +563,7 @@
           <input type="text"
                  id="${q.id}"
                  list="${listId}"
-                 placeholder="Escribe para buscarâ€¦"
+                 placeholder="Escribe para buscar..."
                  oninput="onPickChanged()"
                  autocomplete="off" />
           <small>${q.hint}</small>
@@ -610,7 +610,7 @@
 
     async function loadCards(){
       try{
-        setStatus("Cargando cartasâ€¦");
+        setStatus("Cargando cartas...");
 
         const all = [];
         for (const url of API_URLS){
@@ -672,12 +672,12 @@
       $("previewHero").innerHTML = `
         <div class="heroRow">
           <div class="heroLeft">
-            <div class="heroTitle">${escapeHtml(playerName)} Â· OP Wrapped</div>
-            <div class="heroSub">EmpecÃ© en <strong>${escapeHtml(startExp)}</strong> Â· Color favorito <strong>${escapeHtml(favColor)}</strong></div>
+            <div class="heroTitle">${escapeHtml(playerName)} - OP Wrapped</div>
+            <div class="heroSub">Empece en <strong>${escapeHtml(startExp)}</strong> - Color favorito <strong>${escapeHtml(favColor)}</strong></div>
             <div class="heroBadges">
               <span class="badge"><span class="swatch" style="background:${sw}"></span>${escapeHtml(favColor)}</span>
-              <span class="badge">ðŸ“¦ ${escapeHtml(startExp)}</span>
-              <span class="badge">ðŸ‘¤ ${escapeHtml(playerName)}</span>
+              <span class="badge">Inicio ${escapeHtml(startExp)}</span>
+              <span class="badge">Jugador ${escapeHtml(playerName)}</span>
             </div>
           </div>
         </div>
