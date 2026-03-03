@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Home Â· Barateam Hub</title>
+  <title>Home · Barateam Hub</title>
 
   <link rel="stylesheet" href="app.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -551,16 +551,16 @@
     <div class="bar">
       <div class="brand">
         BARATEAM HUB
-        <small>home Â· tools Â· novedades</small>
+        <small>home · tools · novedades</small>
       </div>
 
       <div class="nav">
-        <a class="btn primary active" href="index.html">ðŸ  Home</a>
-        <a class="btn" href="sim-stats.html" data-requires-auth="1">ðŸ“Š SIM Stats</a>
-        <a class="btn" href="op-wrapped.html">ðŸŽ´ OP Wrapped</a>
-        <a class="btn" href="decks.html">ðŸƒ DeckLists</a>
-        <a class="btn" href="results.html" data-requires-auth="1">ðŸ† Results</a>
-        <a class="btn" href="encuestas.html">ðŸ—³ï¸ Encuestas</a>
+        <a class="btn primary active" href="index.html">🏠 Home</a>
+        <a class="btn" href="sim-stats.html" data-requires-auth="1">📊 SIM Stats</a>
+        <a class="btn" href="op-wrapped.html">🎴 OP Wrapped</a>
+        <a class="btn" href="decks.html">🃏 DeckLists</a>
+        <a class="btn" href="results.html" data-requires-auth="1">🏆 Results</a>
+        <a class="btn" href="encuestas.html">🗳️ Encuestas</a>
       </div>
     </div>
   </div>
@@ -595,12 +595,12 @@
       <div class="card">
         <div class="sectionTitle">Posts</div>
 
-        <!-- âœ… CHAPUZA TEMPORAL: editor oculto por CSS inline -->
+        <!-- CHAPUZA TEMPORAL: editor oculto por CSS inline -->
         <div class="editor" id="postEditor" style="display:none;">
           <div class="row two">
             <div>
-              <label for="post_title">TÃ­tulo</label>
-              <input id="post_title" placeholder="Ej: Nueva secciÃ³n de decks" />
+              <label for="post_title">Titulo</label>
+              <input id="post_title" placeholder="Ej: Nueva seccion de decks" />
             </div>
             <div>
               <label for="post_tag">Tag</label>
@@ -613,7 +613,7 @@
               <label for="post_image_file">Imagen</label>
               <input id="post_image_file" type="file" accept="image/*" />
               <div class="muted" style="margin-top:6px;">
-                Se subirÃ¡ a Supabase Storage (bucket: <strong>post-images</strong>).
+                Se subira a Supabase Storage (bucket: <strong>post-images</strong>).
               </div>
             </div>
           </div>
@@ -621,7 +621,7 @@
           <div class="row">
             <div>
               <label for="post_body">Contenido</label>
-              <textarea id="post_body" placeholder="Escribe el postâ€¦"></textarea>
+              <textarea id="post_body" placeholder="Escribe el post..."></textarea>
             </div>
           </div>
 
@@ -641,18 +641,18 @@
 
         <div class="calendarHead">
           <div class="calNav">
-            <button class="btn btnDark" id="btnPrev" type="button">â†</button>
+            <button class="btn btnDark" id="btnPrev" type="button">&#8592;</button>
             <button class="btn btnDark" id="btnToday" type="button">Hoy</button>
-            <button class="btn btnDark" id="btnNext" type="button">â†’</button>
+            <button class="btn btnDark" id="btnNext" type="button">&#8594;</button>
           </div>
-          <div class="calTitle" id="calTitle">â€”</div>
+          <div class="calTitle" id="calTitle">—</div>
         </div>
 
         <div class="calGrid" id="calDow"></div>
         <div class="calGrid" id="calGrid"></div>
 
         <div style="height:12px;"></div>
-        <div class="sectionTitle">PrÃ³ximos eventos</div>
+        <div class="sectionTitle">Proximos eventos</div>
         <div id="upcomingList"></div>
         <div class="editor" id="eventEditor" style="display:none; margin-top:12px;">
           <div class="row">
@@ -686,7 +686,7 @@
       </div>
     </div>
 
-    <div class="foot">Hecho con â¤ï¸ para el team Â· GitHub Pages</div>
+    <div class="foot">Hecho con ❤️ para el team · GitHub Pages</div>
   </div>
 
   <script>
@@ -738,7 +738,7 @@
       await withTimeout(sb.auth.signOut(), 8000);
     }catch(e){
       console.warn("signOut:", e.message);
-      // aunque falle, redirigimos para â€œsalirâ€ visualmente
+      // aunque falle, redirigimos para "salir" visualmente
     }finally{
       setNavAuthUI(null);
       navController.closeMenu();
@@ -1188,7 +1188,7 @@
     await createEvent();
   });
 
-  // ===== EVENTS (lo dejamos como lo tenÃ­as, mock/real) =====
+  // ===== EVENTS (lo dejamos como lo tenias, mock/real) =====
   function ymd(d){
     const y = d.getFullYear();
     const m = String(d.getMonth()+1).padStart(2,"0");
@@ -1319,8 +1319,8 @@
               if (!dt) return "";
               const hh = String(dt.getHours()).padStart(2,"0");
               const mm = String(dt.getMinutes()).padStart(2,"0");
-              const loc = ev.location ? ` Â· ${escapeHtml(ev.location)}` : "";
-              return `<div class="tipItem">ðŸ•’ ${hh}:${mm} Â· <strong>${escapeHtml(ev.title)}</strong>${loc}</div>`;
+              const loc = ev.location ? ` · ${escapeHtml(ev.location)}` : "";
+              return `<div class="tipItem">🕒 ${hh}:${mm} · <strong>${escapeHtml(ev.title)}</strong>${loc}</div>`;
             }).join("")}
           </div>
         ` : ""}
@@ -1349,7 +1349,7 @@
       .slice(0, 6);
 
     if (!upcoming.length){
-      root.innerHTML = `<div class="muted">No hay eventos prÃ³ximos.</div>`;
+      root.innerHTML = `<div class="muted">No hay eventos proximos.</div>`;
       return;
     }
 
@@ -1365,9 +1365,9 @@
       div.innerHTML = `
         <p class="t">${escapeHtml(e.title || "Evento")}</p>
         <p class="s">
-          <span>ðŸ“… ${escapeHtml(d)}</span>
-          <span>ðŸ•’ ${hh}:${mm}</span>
-          ${e.location ? `<span>ðŸ“ ${escapeHtml(e.location)}</span>` : ``}
+          <span>📅 ${escapeHtml(d)}</span>
+          <span>🕒 ${hh}:${mm}</span>
+          ${e.location ? `<span>📍 ${escapeHtml(e.location)}</span>` : ``}
         </p>
       `;
       root.appendChild(div);
@@ -1436,7 +1436,7 @@
       setNavAuthUI(currentUser);
 
       if (first) return;           // evita el doble disparo inicial
-      await refreshPostsSection();  // o refresca solo lo mÃ­nimo
+      await refreshPostsSection();  // o refresca solo lo minimo
     });
     await refreshHome();
     first = false;
