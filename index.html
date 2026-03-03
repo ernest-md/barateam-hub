@@ -983,28 +983,6 @@
     return data?.publicUrl || null;
   }
 
-  async function getSafeSession(){
-    try{
-      const { data } = await withTimeout(sb.auth.getSession(), 8000);
-      if (data?.session) return data.session;
-    }catch(e){
-      console.warn("getSession timeout:", e.message);
-    }
-
-    try{
-      const { data: udata, error: uerr } = await withTimeout(sb.auth.getUser(), 8000);
-      if (uerr) console.warn("getUser:", uerr.message);
-      if (udata?.user){
-        const { data } = await withTimeout(sb.auth.getSession(), 8000);
-        if (data?.session) return data.session;
-      }
-    }catch(e){
-      console.warn("getUser timeout:", e.message);
-    }
-
-    return null;
-  }
-
   async function publishPost(){
     const title = $("post_title").value.trim();
     const tag = $("post_tag").value.trim();
@@ -1019,15 +997,21 @@
         return;
       }
 
-      const session = await getSafeSession();
-      if (!session){
+      let authorId = currentUser?.id || null;
+      if (!authorId){
+        const { data: uData, error: uErr } = await sb.auth.getUser();
+        if (uErr) console.warn("publishPost getUser:", uErr.message);
+        authorId = uData?.user?.id || null;
+      }
+
+      if (!authorId){
         showPostMsg("No hay sesion (reloguea en login.html).", "err");
         return;
       }
 
       let image_url = null;
       if (file){
-        image_url = await uploadPostImage(file, session.user.id);
+        image_url = await uploadPostImage(file, authorId);
       }
 
       const payload = {
@@ -1216,15 +1200,7 @@
   let viewDate = new Date();
   let monthEvents = [];
 
-  async function refreshHome(){
-    await refreshSession();
-
-    try{
-      await refreshPostsSection();
-    }catch(e){
-      console.warn("refreshPostsSection:", e.message || e);
-    }
-
+  async function refreshCalendarOnly(){
     try{
       monthEvents = await fetchEventsForMonth(viewDate);
       const map = groupEventsByDay(monthEvents);
@@ -1241,18 +1217,30 @@
     }
   }
 
+  async function refreshHome(){
+    await refreshSession();
+
+    try{
+      await refreshPostsSection();
+    }catch(e){
+      console.warn("refreshPostsSection:", e.message || e);
+    }
+
+    await refreshCalendarOnly();
+  }
+
   $("btnPrev")?.addEventListener("click", async () => {
     viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()-1, 1);
-    await refreshHome();
+    await refreshCalendarOnly();
   });
   $("btnNext")?.addEventListener("click", async () => {
     viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 1);
-    await refreshHome();
+    await refreshCalendarOnly();
   });
   $("btnToday")?.addEventListener("click", async () => {
     const d = new Date();
     viewDate = new Date(d.getFullYear(), d.getMonth(), 1);
-    await refreshHome();
+    await refreshCalendarOnly();
   });
 
   (async function(){
