@@ -391,6 +391,20 @@
       font-size: 12px;
       color:#475569;
     }
+    .leaderCell{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .leaderThumb{
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid rgba(15,23,42,.10);
+      object-fit: cover;
+      background: rgba(255,255,255,.75);
+      flex: 0 0 auto;
+    }
   </style>
 </head>
 
@@ -535,7 +549,7 @@
   <script>
     // ===== CONFIG =====
     const SUPABASE_URL = "https://ceunhkqhskwnsoqyunze.supabase.co";
-    const SUPABASE_ANON_KEY = "TU_ANON_KEY_AQUI"; // <-- pon tu key
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNldW5oa3Foc2t3bnNvcXl1bnplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NDQ0ODcsImV4cCI6MjA4ODAyMDQ4N30.qBGXYYQXlyQwFGeyaeMOtLPHrjBy-eU05AO37yLvi5o"; // <-- pon tu key
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const $ = (id) => document.getElementById(id);
@@ -632,32 +646,71 @@
         .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
         .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
     }
+    function escapeAttr(s){
+      return String(s ?? "").replace(/"/g, "&quot;");
+    }
 
-    // ===== Leaders (como wrapped) =====
-    // ✅ Ajusta esta lista para que coincida con tu OP Wrapped.
-    // value = lo que guardarás en decks.leader
-    const LEADERS = [
-      { value: "Roronoa Zoro (OP01-001)", label: "Roronoa Zoro (OP01-001)" },
-      { value: "Monkey D. Luffy (ST01-001)", label: "Monkey D. Luffy (ST01-001)" },
-      { value: "Trafalgar Law (OP01-002)", label: "Trafalgar Law (OP01-002)" },
-      { value: "Eustass Kid (OP01-003)", label: "Eustass Kid (OP01-003)" },
-    ];
+    // ===== Leaders (desde Supabase table: leaders) =====
+    // Etiqueta visible/guardada: "<name> <expansion>" (ej: "Zoro OP01")
 
-    function initLeaders(){
+    let leaders = [];
+    let leaderByLabel = new Map();
+
+    function normalize(s){
+      return String(s || "").trim();
+    }
+    function leaderLabelFromRow(row){
+      const name = normalize(row?.name);
+      const expansion = normalize(row?.code);
+      return [name, expansion].filter(Boolean).join(" ").trim();
+    }
+    function leaderImageFromRow(row){
+      return normalize(row?.image_url || row?.leader_image_url || row?.image || row?.img || row?.card_image);
+    }
+    function fillLeaderSelects(){
       const leaderSel = $("leader");
       const filterSel = $("filter_leader");
 
-      for (const l of LEADERS){
+      leaderSel.innerHTML = '<option value="">(Selecciona lider)</option>';
+      filterSel.innerHTML = '<option value="">(Todos)</option>';
+
+      for (const l of leaders){
         const o1 = document.createElement("option");
-        o1.value = l.value;
+        o1.value = l.label;
         o1.textContent = l.label;
         leaderSel.appendChild(o1);
 
         const o2 = document.createElement("option");
-        o2.value = l.value;
+        o2.value = l.label;
         o2.textContent = l.label;
         filterSel.appendChild(o2);
       }
+    }
+    async function initLeaders(){
+      const { data, error } = await sb
+        .from("leaders")
+        .select("*")
+        .order("name", { ascending: true })
+        .limit(500);
+
+      if (error) throw error;
+
+      const mapped = (data || [])
+        .map(row => {
+          const label = leaderLabelFromRow(row);
+          if (!label) return null;
+          return { label, image: leaderImageFromRow(row) || null };
+        })
+        .filter(Boolean);
+
+      const uniq = new Map();
+      for (const l of mapped){
+        if (!uniq.has(l.label)) uniq.set(l.label, l);
+      }
+
+      leaders = Array.from(uniq.values());
+      leaderByLabel = new Map(leaders.map(l => [l.label, l]));
+      fillLeaderSelects();
     }
 
     // ===== Storage (deck images) =====
@@ -686,7 +739,7 @@
     async function fetchDecks(){
       const { data, error } = await sb
         .from("decks")
-        .select("id, created_at, autor, leader")
+        .select("id, created_at, autor, leader, leader_image_url")
         .order("created_at", { ascending: false })
         .limit(200);
 
@@ -710,17 +763,19 @@
         const date = (d.created_at || "").slice(0,10) || "—";
         const leader = d.leader || "—";
         const autor = d.autor || "—";
+        const leaderImg = d.leader_image_url || "";
+        const imgHtml = leaderImg
+          ? `<img class="leaderThumb" src="${escapeAttr(leaderImg)}" alt="${escapeAttr(leader)}">`
+          : `<div class="leaderThumb" aria-hidden="true"></div>`;
 
         tr.innerHTML = `
-          <td><span class="pillMini">👑 ${escapeHtml(leader)}</span></td>
+          <td><div class="leaderCell">${imgHtml}<span class="pillMini">${escapeHtml(leader)}</span></div></td>
           <td><span class="mono">${escapeHtml(autor)}</span></td>
           <td>${escapeHtml(date)}</td>
         `;
 
         tr.addEventListener("click", () => {
-          // Próximo paso:
-          // location.href = `deck.html?id=${encodeURIComponent(d.id)}`;
-          alert("Próximo paso: detalle del deck (id: " + d.id + ")");
+          location.href = `deck.html?id=${encodeURIComponent(d.id)}`;
         });
 
         body.appendChild(tr);
@@ -739,6 +794,8 @@
       const description = $("description").value.trim();
       const sim_paste = $("sim_paste").value.trim();
       const file = $("image_file").files?.[0] || null;
+      const leaderData = leaderByLabel.get(leader) || null;
+      const leader_image_url = leaderData?.image || null;
 
       if (!name) return show("Pon el nombre del deck.", "err");
       if (!leader) return show("Selecciona un líder.", "err");
@@ -754,6 +811,7 @@
           name: name || null,
           autor: user.id,              // uuid del user
           leader: leader || null,
+          leader_image_url: leader_image_url || null,
           description: description || null,
           image_url: image_url || null,
           sim_paste: sim_paste || null
@@ -793,7 +851,11 @@
 
     // ===== Init =====
     (async function(){
-      initLeaders();
+      try{
+        await initLeaders();
+      }catch(e){
+        console.warn("initLeaders:", e.message || e);
+      }
 
       await refreshSession();
 
@@ -809,3 +871,5 @@
   </script>
 </body>
 </html>
+
+

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Deck � Barateam Hub</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card: rgba(255,255,255,.94);
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color:#0f172a;
+    }
+    body::before{
+      content:"";
+      position: fixed;
+      inset:0;
+      background:
+        radial-gradient(1200px 800px at 10% 10%, rgba(124,58,237,.35), transparent 60%),
+        radial-gradient(900px 650px at 90% 20%, rgba(6,182,212,.28), transparent 60%),
+        linear-gradient(180deg, rgba(11,18,32,.78), rgba(11,18,32,.78)),
+        url("bg.png");
+      background-size: cover;
+      background-position: center;
+      z-index:-1;
+    }
+    .topbar{
+      position: sticky;
+      top:0;
+      z-index:10;
+      backdrop-filter: blur(14px);
+      background: rgba(15, 23, 42, .55);
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      padding: 12px 14px;
+    }
+    .bar{ max-width:1100px; margin:0 auto; display:flex; align-items:center; gap:10px; }
+    .btn{
+      border:1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.12);
+      color:#fff;
+      padding:9px 12px;
+      border-radius:12px;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .wrap{ max-width:1100px; margin:16px auto 28px; padding:0 14px; }
+    .card{
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,.20);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    .title{ margin:0 0 10px; font-size:26px; font-weight:1000; }
+    .meta{ color:#475569; font-size:13px; display:flex; gap:12px; flex-wrap:wrap; }
+    .grid{ display:grid; grid-template-columns:1fr; gap:14px; margin-top:14px; }
+    @media (min-width: 980px){ .grid{ grid-template-columns: 1fr 1fr; } }
+    .panel{
+      border: 1px solid rgba(15,23,42,.10);
+      border-radius: 16px;
+      background: rgba(255,255,255,.72);
+      padding: 12px;
+    }
+    .panel h3{ margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:.8px; color:#334155; }
+    .leaderRow{ display:flex; align-items:center; gap:12px; }
+    .leaderImg{ width:72px; height:72px; border-radius:14px; object-fit:cover; border:1px solid rgba(15,23,42,.12); background:#fff; }
+    .leaderName{ font-weight:900; font-size:16px; }
+    .deckImg{
+      width:100%;
+      max-height:520px;
+      object-fit:contain;
+      border:1px solid rgba(15,23,42,.10);
+      border-radius: 14px;
+      background:#fff;
+    }
+    pre{
+      margin:0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size:13px;
+      line-height:1.45;
+      color:#0f172a;
+    }
+    .muted{ color:#64748b; font-size:13px; }
+    .msg{
+      margin-top:12px;
+      border-radius:12px;
+      padding:10px 12px;
+      border:1px solid rgba(239,68,68,.35);
+      background: rgba(239,68,68,.10);
+      color:#991b1b;
+      display:none;
+      white-space: pre-line;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="bar">
+      <a class="btn" href="decks.html">Volver a decks</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <h1 class="title" id="deckName">Deck</h1>
+      <div class="meta">
+        <span id="deckAuthor">Autor: -</span>
+        <span id="deckCreated">Creado: -</span>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h3>Lider</h3>
+          <div class="leaderRow">
+            <img id="leaderImage" class="leaderImg" alt="Lider" />
+            <div>
+              <div class="leaderName" id="leaderName">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="deckImagePanel">
+          <h3>Imagen del deck</h3>
+          <img id="deckImage" class="deckImg" alt="Imagen del deck" />
+          <div class="muted" id="deckImageEmpty" style="display:none; margin-top:8px;">Este deck no tiene imagen.</div>
+        </div>
+
+        <div class="panel">
+          <h3>Descripcion</h3>
+          <pre id="description">-</pre>
+        </div>
+
+        <div class="panel">
+          <h3>Sim paste</h3>
+          <pre id="simPaste">-</pre>
+        </div>
+      </div>
+
+      <div class="msg" id="msg"></div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://ceunhkqhskwnsoqyunze.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNldW5oa3Foc2t3bnNvcXl1bnplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NDQ0ODcsImV4cCI6MjA4ODAyMDQ4N30.qBGXYYQXlyQwFGeyaeMOtLPHrjBy-eU05AO37yLvi5o";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const $ = (id) => document.getElementById(id);
+
+    function showError(text){
+      const m = $("msg");
+      m.style.display = "block";
+      m.textContent = text;
+    }
+
+    function formatDate(value){
+      if (!value) return "-";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return String(value).slice(0,10);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const da = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${da}`;
+    }
+
+    function setImage(el, url){
+      if (url){
+        el.src = url;
+        el.style.display = "block";
+      } else {
+        el.removeAttribute("src");
+        el.style.display = "none";
+      }
+    }
+
+    function renderDeck(deck){
+      $("deckName").textContent = deck.name || "Deck";
+      $("deckAuthor").textContent = `Autor: ${deck.autor || "-"}`;
+      $("deckCreated").textContent = `Creado: ${formatDate(deck.created_at)}`;
+
+      $("leaderName").textContent = deck.leader || "-";
+      setImage($("leaderImage"), deck.leader_image_url || "");
+
+      const deckImage = deck.image_url || "";
+      if (deckImage){
+        setImage($("deckImage"), deckImage);
+        $("deckImageEmpty").style.display = "none";
+      } else {
+        $("deckImage").style.display = "none";
+        $("deckImageEmpty").style.display = "block";
+      }
+
+      $("description").textContent = deck.description || "-";
+      $("simPaste").textContent = deck.sim_paste || "-";
+    }
+
+    async function loadDeck(){
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("id");
+
+      if (!id){
+        showError("Falta el id del deck en la URL.");
+        return;
+      }
+
+      try{
+        const { data, error } = await sb
+          .from("decks")
+          .select("id, name, created_at, autor, leader, leader_image_url, image_url, description, sim_paste")
+          .eq("id", id)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data){
+          showError("No se encontro el deck solicitado.");
+          return;
+        }
+
+        renderDeck(data);
+      }catch(e){
+        console.error(e);
+        showError("Error cargando deck: " + (e.message || "unknown"));
+      }
+    }
+
+    loadDeck();
+  </script>
+</body>
+</html>
