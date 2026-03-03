@@ -618,14 +618,8 @@
 
   <script>
   // ===== CONFIG =====
-  const sb = window.BarateamApp.createClient({
-    auth: {
-      persistSession: true,
-      storage: window.localStorage,
-      autoRefreshToken: true,
-      detectSessionInUrl: true
-    }
-  });
+  const sb = window.BarateamApp.createClient();
+
 
   const USE_MOCK = false;
 
@@ -983,56 +977,26 @@
     return data?.publicUrl || null;
   }
 
-async function getSafeSession(){
-  // 1) intenta sesión (local)
-  try{
-    const { data } = await withTimeout(sb.auth.getSession(), 8000);
-    if (data?.session) return data.session;
-  }catch(e){
-    console.warn("getSession timeout:", e.message);
-  }
-
-  // 2) intenta getUser (puede forzar refresh interno)
-  try{
-    const { data: udata, error: uerr } = await withTimeout(sb.auth.getUser(), 8000);
-    if (uerr) console.warn("getUser:", uerr.message);
-    if (udata?.user){
-      const { data } = await withTimeout(sb.auth.getSession(), 8000);
-      if (data?.session) return data.session;
-    }
-  }catch(e){
-    console.warn("getUser timeout:", e.message);
-  }
-
-  return null;
-}
-
-async function publishPost(){
+  async function publishPost(){
     const title = $("post_title").value.trim();
     const tag = $("post_tag").value.trim();
     const body = $("post_body").value.trim();
     const file = $("post_image_file").files?.[0] || null;
+    const btn = $("btnPublish");
 
-    if (!title || !body) return showPostMsg("Pon título y contenido.", "err");
+    if (!title || !body) return showPostMsg("Pon titulo y contenido.", "err");
 
     try{
-      if (USE_MOCK){
-        showPostMsg("Mock: post publicado ✅", "ok");
-        return;
-      }
-
-      const session = await getSafeSession();
-      if (!session){
-        showPostMsg("No hay sesión (reloguea en login.html).", "err");
-        return;
-      }
+      if (btn) btn.disabled = true;
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) return;
+      const authorId = session.user.id;
 
       let image_url = null;
       if (file){
-        image_url = await uploadPostImage(file, session.user.id);
+        image_url = await uploadPostImage(file, authorId);
       }
 
-      // ✅ SOLO 4 CAMPOS
       const payload = {
         title,
         tag: tag || null,
@@ -1040,20 +1004,32 @@ async function publishPost(){
         image_url: image_url || null
       };
 
-      const { error } = await sb.from("posts").insert(payload);
+      let { error } = await sb.from("posts").insert(payload);
+      if (error){
+        const msg = String(error.message || "").toLowerCase();
+        if (msg.includes("author_id")){
+          const retry = await sb.from("posts").insert({ ...payload, author_id: authorId });
+          error = retry.error || null;
+        } else if (msg.includes("autor")){
+          const retry = await sb.from("posts").insert({ ...payload, autor: authorId });
+          error = retry.error || null;
+        }
+      }
       if (error) throw error;
 
-      showPostMsg("Post publicado ✅", "ok");
+      showPostMsg("Post publicado", "ok");
 
       $("post_title").value = "";
       $("post_tag").value = "";
       $("post_body").value = "";
       $("post_image_file").value = "";
 
-      renderPosts(await fetchPosts());
+      await refreshPostsSection();
     }catch(e){
       console.error(e);
       showPostMsg("Error publicando: " + (e.message || "unknown"), "err");
+    }finally{
+      if (btn) btn.disabled = false;
     }
   }
 
