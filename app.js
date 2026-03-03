@@ -61,6 +61,32 @@
     return raw.slice(0, 16) || emptyFallback;
   }
 
+  function formatRelativeTime(value, fallback){
+    const emptyFallback = fallback === undefined ? "-" : fallback;
+    if (!value) return emptyFallback;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return emptyFallback;
+
+    const now = Date.now();
+    const diffMs = now - d.getTime();
+    const absMs = Math.abs(diffMs);
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    if (absMs < minute) return "justo ahora";
+    if (absMs < hour){
+      const m = Math.floor(absMs / minute);
+      return diffMs >= 0 ? `hace ${m}m` : `en ${m}m`;
+    }
+    if (absMs < day){
+      const h = Math.floor(absMs / hour);
+      return diffMs >= 0 ? `hace ${h}h` : `en ${h}h`;
+    }
+    const dd = Math.floor(absMs / day);
+    return diffMs >= 0 ? `hace ${dd}d` : `en ${dd}d`;
+  }
+
   function isNonNegativeNumber(value){
     return Number.isFinite(value) && value >= 0;
   }
@@ -243,6 +269,7 @@
     showMessage,
     formatDate,
     formatDateTime,
+    formatRelativeTime,
     isNonNegativeNumber,
     eventTitle,
     eventDate,

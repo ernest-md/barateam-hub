@@ -40,6 +40,32 @@
     .win{ color:#166534; font-weight:900; }
     .lose{ color:#991b1b; font-weight:900; }
     .emptyHint{ display:none; margin-top:10px; }
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:8px;
+      margin-bottom:10px;
+    }
+    .kpi{
+      border:1px solid rgba(15,23,42,.10);
+      background: rgba(255,255,255,.72);
+      border-radius:12px;
+      padding:10px;
+    }
+    .kpi .k{ font-size:11px; text-transform:uppercase; letter-spacing:.7px; color:#64748b; font-weight:900; }
+    .kpi .v{ font-size:18px; font-weight:1000; color:#0f172a; margin-top:2px; }
+    .pager{
+      margin-top: 10px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .pagerInfo{
+      font-size: 12px;
+      color:#475569;
+    }
     @media (max-width:760px){
       .brand{ width:100%; }
       .spacer{ display:none; }
@@ -67,7 +93,7 @@
   <div class="wrap">
     <div class="hero">
       <h1>Resultados de torneo</h1>
-      <p>Solo verás y editarás tus resultados.</p>
+      <p>Solo verás y editarás tus resultados. <span id="currentUsernameHint"></span></p>
     </div>
 
     <div class="card">
@@ -103,6 +129,20 @@
 
     <div class="card">
       <div class="sectionTitle">Listado</div>
+      <div class="kpis">
+        <div class="kpi">
+          <div class="k">Torneos</div>
+          <div class="v" id="kpiTotal">0</div>
+        </div>
+        <div class="kpi">
+          <div class="k">W-L</div>
+          <div class="v" id="kpiWl">0-0</div>
+        </div>
+        <div class="kpi">
+          <div class="k">Winrate</div>
+          <div class="v" id="kpiWinrate">0%</div>
+        </div>
+      </div>
       <div class="formGrid" style="margin-bottom:10px;">
         <div>
           <label for="filter_from">Fecha desde</label>
@@ -112,10 +152,22 @@
           <label for="filter_to">Fecha hasta</label>
           <input id="filter_to" type="date" />
         </div>
+        <div class="span2">
+          <label for="filter_sort_results">Orden</label>
+          <select id="filter_sort_results">
+            <option value="newest">Mas nuevo</option>
+            <option value="oldest">Mas antiguo</option>
+            <option value="wins_desc">Mas wins</option>
+            <option value="wins_asc">Menos wins</option>
+            <option value="loses_desc">Mas loses</option>
+            <option value="loses_asc">Menos loses</option>
+          </select>
+        </div>
       </div>
       <div style="margin-bottom:10px;">
         <button class="btn btnDark" id="btnClearResultFilters" type="button">Limpiar filtros</button>
       </div>
+      <div class="muted" id="resultsLoading" style="display:none; margin-bottom:8px;">Cargando resultados...</div>
       <div class="tableWrap">
         <table>
           <thead>
@@ -129,7 +181,15 @@
           <tbody id="tbody"></tbody>
         </table>
       </div>
-      <div class="muted emptyHint" id="emptyHint">No tienes resultados todavía.</div>
+      <div class="pager">
+        <div class="pagerInfo" id="resultsPagerInfo">Mostrando 0 de 0</div>
+        <div>
+          <button class="btn btnDark" id="resultsPrevPage" type="button">Anterior</button>
+          <span class="pagerInfo" id="resultsPageLabel">Pagina 1/1</span>
+          <button class="btn btnDark" id="resultsNextPage" type="button">Siguiente</button>
+        </div>
+      </div>
+      <div class="muted emptyHint" id="emptyHint">No hay resultados con estos filtros. Ajusta filtros o crea uno nuevo.</div>
     </div>
   </div>
 
@@ -145,15 +205,35 @@
     let leaders = [];
     let leadersById = new Map();
     let allResults = [];
+    let creatingResult = false;
+    const RESULTS_PAGE_SIZE = 50;
+    let resultsPage = 1;
+    let filteredResults = [];
 
     const isNonNegativeNumber = window.BarateamApp.isNonNegativeNumber;
     function esc(s){ return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#039;"); }
     const show = (text, type) => window.BarateamApp.showMessage("msg", text, { baseClass: "msg", type });
     function clearMsg(){ const m=$("msg"); m.className="msg"; m.textContent=""; m.style.display="none"; }
+    function setResultsLoading(loading){ $("resultsLoading").style.display = loading ? "block" : "none"; }
 
     const eventTitle = window.BarateamApp.eventTitle;
     const eventDate = window.BarateamApp.eventDate;
     const leaderLabel = window.BarateamApp.leaderLabel;
+
+    async function loadCurrentUsername(){
+      if (!currentUser?.id) return;
+      const { data, error } = await sb
+        .from("profiles")
+        .select("username")
+        .eq("id", currentUser.id)
+        .maybeSingle();
+      if (error){
+        console.warn("profile username:", error.message);
+        return;
+      }
+      const username = data?.username || ("user-" + String(currentUser.id).slice(0,8));
+      $("currentUsernameHint").textContent = `Usuario: @${username}`;
+    }
 
     async function requireSession(){
       const { data } = await sb.auth.getSession();
@@ -239,11 +319,47 @@
       return /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : "";
     }
 
-    function applyResultsFilters(){
+    function renderResultsPager(total){
+      const totalItems = Number(total || 0);
+      const totalPages = Math.max(1, Math.ceil(totalItems / RESULTS_PAGE_SIZE));
+      if (resultsPage > totalPages) resultsPage = totalPages;
+      if (resultsPage < 1) resultsPage = 1;
+
+      const start = totalItems ? ((resultsPage - 1) * RESULTS_PAGE_SIZE + 1) : 0;
+      const end = totalItems ? Math.min(resultsPage * RESULTS_PAGE_SIZE, totalItems) : 0;
+      $("resultsPagerInfo").textContent = `Mostrando ${start}-${end} de ${totalItems}`;
+      $("resultsPageLabel").textContent = `Pagina ${resultsPage}/${totalPages}`;
+      $("resultsPrevPage").disabled = resultsPage <= 1;
+      $("resultsNextPage").disabled = resultsPage >= totalPages;
+    }
+
+    function renderResultsCurrentPage(){
+      const total = filteredResults.length;
+      const start = (resultsPage - 1) * RESULTS_PAGE_SIZE;
+      const pageRows = filteredResults.slice(start, start + RESULTS_PAGE_SIZE);
+      renderResults(pageRows);
+      renderResultsPager(total);
+    }
+
+    function renderKpis(rows){
+      const list = rows || [];
+      const total = list.length;
+      const wins = list.reduce((acc, r) => acc + Number(r.wins || 0), 0);
+      const loses = list.reduce((acc, r) => acc + Number(r.loses || 0), 0);
+      const totalGames = wins + loses;
+      const wr = totalGames > 0 ? ((wins / totalGames) * 100) : 0;
+      $("kpiTotal").textContent = String(total);
+      $("kpiWl").textContent = `${wins}-${loses}`;
+      $("kpiWinrate").textContent = `${wr.toFixed(1)}%`;
+    }
+
+    function applyResultsFilters(resetPage){
+      const shouldReset = resetPage !== false;
       const from = $("filter_from").value || "";
       const to = $("filter_to").value || "";
+      const sort = $("filter_sort_results").value || "newest";
 
-      const filtered = allResults.filter((r) => {
+      filteredResults = allResults.filter((r) => {
         const ev = eventsById.get(r.event) || null;
         const d = eventDateForFilter(ev);
         if (!d) return !from && !to;
@@ -252,7 +368,29 @@
         return true;
       });
 
-      renderResults(filtered);
+      filteredResults.sort((a, b) => {
+        const byNewest = () => String(b.created_at || "").localeCompare(String(a.created_at || ""));
+        if (sort === "oldest"){
+          return String(a.created_at || "").localeCompare(String(b.created_at || "")) || String(a.id || "").localeCompare(String(b.id || ""));
+        }
+        if (sort === "wins_desc"){
+          return (Number(b.wins || 0) - Number(a.wins || 0)) || byNewest();
+        }
+        if (sort === "wins_asc"){
+          return (Number(a.wins || 0) - Number(b.wins || 0)) || byNewest();
+        }
+        if (sort === "loses_desc"){
+          return (Number(b.loses || 0) - Number(a.loses || 0)) || byNewest();
+        }
+        if (sort === "loses_asc"){
+          return (Number(a.loses || 0) - Number(b.loses || 0)) || byNewest();
+        }
+        return byNewest() || String(b.id || "").localeCompare(String(a.id || ""));
+      });
+
+      renderKpis(filteredResults);
+      if (shouldReset) resultsPage = 1;
+      renderResultsCurrentPage();
     }
 
     function renderResults(rows){
@@ -266,10 +404,12 @@
       for (const r of rows){
         const ev = eventsById.get(r.event) || null;
         const ld = leadersById.get(r.leader) || null;
+        const evDateExact = eventDate(ev);
+        const evDateRel = window.BarateamApp.formatRelativeTime(ev?.start_at || ev?.date || ev?.event_date, evDateExact);
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${esc(eventTitle(ev))}</td>
-          <td>${esc(eventDate(ev))}</td>
+          <td title="${esc(evDateExact)}">${esc(evDateRel)}</td>
           <td>${esc(leaderLabel(ld))}</td>
           <td><span class="win">${Number(r.wins || 0)}</span> - <span class="lose">${Number(r.loses || 0)}</span></td>
         `;
@@ -282,6 +422,7 @@
 
     async function createResult(){
       clearMsg();
+      if (creatingResult) return;
 
       const event = $("event").value;
       const leader = $("leader").value;
@@ -303,8 +444,16 @@
         description: description || null
       };
 
+      creatingResult = true;
+      $("btnCreate").disabled = true;
+      setResultsLoading(true);
       const { error } = await sb.from("results").insert(payload);
-      if (error) return show("Error guardando: " + error.message, "err");
+      if (error){
+        creatingResult = false;
+        $("btnCreate").disabled = false;
+        setResultsLoading(false);
+        return show("Error guardando: " + error.message, "err");
+      }
 
       $("event").value = "";
       $("leader").value = "";
@@ -314,16 +463,32 @@
       show("Resultado guardado ✅", "ok");
 
       allResults = await fetchResults();
-      applyResultsFilters();
+      applyResultsFilters(true);
+      creatingResult = false;
+      $("btnCreate").disabled = false;
+      setResultsLoading(false);
     }
 
     $("btnCreate").addEventListener("click", createResult);
-    $("filter_from").addEventListener("change", applyResultsFilters);
-    $("filter_to").addEventListener("change", applyResultsFilters);
+    $("filter_from").addEventListener("change", () => applyResultsFilters(true));
+    $("filter_to").addEventListener("change", () => applyResultsFilters(true));
+    $("filter_sort_results").addEventListener("change", () => applyResultsFilters(true));
     $("btnClearResultFilters").addEventListener("click", () => {
       $("filter_from").value = "";
       $("filter_to").value = "";
-      applyResultsFilters();
+      $("filter_sort_results").value = "newest";
+      applyResultsFilters(true);
+    });
+    $("resultsPrevPage").addEventListener("click", () => {
+      if (resultsPage <= 1) return;
+      resultsPage -= 1;
+      renderResultsCurrentPage();
+    });
+    $("resultsNextPage").addEventListener("click", () => {
+      const totalPages = Math.max(1, Math.ceil(filteredResults.length / RESULTS_PAGE_SIZE));
+      if (resultsPage >= totalPages) return;
+      resultsPage += 1;
+      renderResultsCurrentPage();
     });
     $("btnLogout").addEventListener("click", async () => {
       await sb.auth.signOut();
@@ -335,10 +500,13 @@
     (async function init(){
       const user = await requireSession();
       if (!user) return;
+      setResultsLoading(true);
+      await loadCurrentUsername();
       await loadEvents();
       await loadLeaders();
       allResults = await fetchResults();
-      applyResultsFilters();
+      applyResultsFilters(true);
+      setResultsLoading(false);
       sb.auth.onAuthStateChange((_e, s) => { if (!s?.user) location.href = "login.html"; });
     })();
   </script>

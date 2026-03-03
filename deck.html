@@ -289,6 +289,7 @@
       </div>
       <div class="actionsRow">
         <button class="btn btnLight" id="btnEditDeck" type="button" style="display:none;">Editar deck</button>
+        <button class="btn btnLight" id="btnCopyDeckLink" type="button">Copiar enlace</button>
       </div>
 
       <div class="grid">
@@ -703,11 +704,21 @@
       await loadDeckSocial();
     }
 
+    async function copyDeckLink(){
+      try{
+        await navigator.clipboard.writeText(window.location.href);
+        window.BarateamApp.showMessage("msg", "Enlace copiado", { baseClass: "msg", type: "ok" });
+      }catch(_e){
+        showError("No pude copiar el enlace.");
+      }
+    }
+
     $("btnLike").addEventListener("click", toggleDeckLike);
     $("btnToggleComments").addEventListener("click", () => {
       $("commentsPanel").classList.toggle("open");
     });
     $("btnEditDeck").addEventListener("click", openEditPanel);
+    $("btnCopyDeckLink").addEventListener("click", copyDeckLink);
     $("btnCancelEditDeck").addEventListener("click", closeEditPanel);
     $("btnSaveEditDeck").addEventListener("click", saveDeckEdits);
 

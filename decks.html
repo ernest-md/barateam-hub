@@ -295,6 +295,18 @@
       background: rgba(255,255,255,.75);
       flex: 0 0 auto;
     }
+    .pager{
+      margin-top: 10px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .pagerInfo{
+      font-size: 12px;
+      color:#475569;
+    }
 
     @media (max-width: 760px){
       .brand{ width:100%; margin-right:0; }
@@ -361,12 +373,31 @@
       <div class="sectionTitle">Filtros</div>
 
       <div class="toolbar">
+        <div id="mineFilterWrap" style="display:none;">
+          <label for="filter_my_decks">Visibilidad</label>
+          <select id="filter_my_decks">
+            <option value="0">Todos</option>
+            <option value="1">Solo mios</option>
+          </select>
+        </div>
         <div class="grow">
           <label for="filter_leader">Filtrar por lÃ­der</label>
           <select id="filter_leader">
             <option value="">(Todos)</option>
           </select>
-          <div class="muted" style="margin-top:6px;">Filtra el listado por lider seleccionado.</div>
+        </div>
+        <div class="grow">
+          <label for="filter_text">Buscar (nombre / descripcion)</label>
+          <input id="filter_text" placeholder="Ej: zoro, control, matchup..." />
+        </div>
+        <div>
+          <label for="filter_sort">Orden</label>
+          <select id="filter_sort">
+            <option value="newest">Mas nuevo</option>
+            <option value="oldest">Mas antiguo</option>
+            <option value="leader_asc">Lider A-Z</option>
+            <option value="leader_desc">Lider Z-A</option>
+          </select>
         </div>
         <div>
           <button class="btn btnDark" id="btnClearDeckFilters" type="button">Limpiar filtros</button>
@@ -432,11 +463,13 @@
     <!-- ===== List ===== -->
     <div class="card">
       <div class="sectionTitle">Listado</div>
+      <div class="muted" id="listLoading" style="display:none; margin-bottom:8px;">Cargando decks...</div>
 
       <div class="tableWrap">
         <table>
           <thead>
             <tr>
+              <th>Nombre</th>
               <th>LÃ­der</th>
               <th>Autor</th>
               <th>Creado</th>
@@ -445,8 +478,16 @@
           <tbody id="decksTbody"></tbody>
         </table>
       </div>
+      <div class="pager">
+        <div class="pagerInfo" id="decksPagerInfo">Mostrando 0 de 0</div>
+        <div>
+          <button class="btn btnDark" id="decksPrevPage" type="button">Anterior</button>
+          <span class="pagerInfo" id="decksPageLabel">Pagina 1/1</span>
+          <button class="btn btnDark" id="decksNextPage" type="button">Siguiente</button>
+        </div>
+      </div>
 
-      <div class="muted" id="emptyHint" style="display:none; margin-top:10px;">No hay decks todavÃ­a.</div>
+      <div class="muted" id="emptyHint" style="display:none; margin-top:10px;">No hay decks con estos filtros. Ajusta filtros o crea uno nuevo.</div>
     </div>
   </div>
 
@@ -475,11 +516,16 @@
     async function refreshSession(){
       const { data } = await sb.auth.getSession();
       const user = data?.session?.user || null;
+      currentUser = user;
       setNavAuthUI(user);
 
       // âœ… mostrar/ocultar crear deck
       $("createArea").style.display = user ? "block" : "none";
       $("loginHint").style.display = user ? "none" : "block";
+      $("mineFilterWrap").style.display = user ? "block" : "none";
+      if (!user){
+        $("filter_my_decks").value = "0";
+      }
 
       return user;
     }
@@ -508,6 +554,9 @@
       m.textContent = "";
       m.className = "msg";
     }
+    function setListLoading(loading){
+      $("listLoading").style.display = loading ? "block" : "none";
+    }
 
     const escapeHtml = window.BarateamApp.escapeHtml;
     const escapeAttr = window.BarateamApp.escapeAttr;
@@ -518,6 +567,13 @@
     let leaders = [];
     let leaderByLabel = new Map();
     let allDecks = [];
+    let usernameByUserId = new Map();
+    let currentUser = null;
+    const DECKS_PAGE_SIZE = 50;
+    let deckPage = 1;
+    let filteredDecks = [];
+    let creatingDeck = false;
+    let deckSearchDebounce = null;
 
     function normalize(s){
       return String(s || "").trim();
@@ -602,7 +658,7 @@
     async function fetchDecks(){
       const { data, error } = await sb
         .from("decks")
-        .select("id, created_at, autor, leader, leader_image_url")
+        .select("id, created_at, autor, leader, leader_image_url, name, description")
         .order("created_at", { ascending: false })
         .limit(200);
 
@@ -611,6 +667,31 @@
         return [];
       }
       return data || [];
+    }
+
+    async function loadUsernames(userIds){
+      const ids = Array.from(new Set((userIds || []).filter(Boolean)));
+      const missing = ids.filter((id) => !usernameByUserId.has(id));
+      if (!missing.length) return;
+
+      const { data, error } = await sb
+        .from("profiles")
+        .select("id,username")
+        .in("id", missing);
+
+      if (error){
+        console.warn("profiles:", error.message);
+        return;
+      }
+
+      for (const p of (data || [])){
+        usernameByUserId.set(p.id, p.username || ("user-" + String(p.id).slice(0, 8)));
+      }
+      for (const id of missing){
+        if (!usernameByUserId.has(id)){
+          usernameByUserId.set(id, "user-" + String(id).slice(0, 8));
+        }
+      }
     }
 
     function renderDecksAsTable(decks){
@@ -623,18 +704,22 @@
 
       for (const d of decks){
         const tr = document.createElement("tr");
-        const date = window.BarateamApp.formatDate(d.created_at, "â€”");
+        const dateExact = window.BarateamApp.formatDate(d.created_at, "â€”");
+        const dateRel = window.BarateamApp.formatRelativeTime(d.created_at, "â€”");
+        const date = dateRel || dateExact;
         const leader = d.leader || "â€”";
-        const autor = d.autor || "â€”";
+        const autor = usernameByUserId.get(d.autor) || d.autor || "â€”";
+        const name = d.name || "Sin nombre";
         const leaderImg = d.leader_image_url || "";
         const imgHtml = leaderImg
           ? `<img class="leaderThumb" src="${escapeAttr(leaderImg)}" alt="${escapeAttr(leader)}">`
           : `<div class="leaderThumb" aria-hidden="true"></div>`;
 
         tr.innerHTML = `
+          <td><span class="pillMini">${escapeHtml(name)}</span></td>
           <td><div class="leaderCell">${imgHtml}<span class="pillMini">${escapeHtml(leader)}</span></div></td>
           <td><span class="mono">${escapeHtml(autor)}</span></td>
-          <td>${escapeHtml(date)}</td>
+          <td title="${escapeAttr(dateExact)}">${escapeHtml(date)}</td>
         `;
 
         tr.addEventListener("click", () => {
@@ -645,16 +730,68 @@
       }
     }
 
-    function applyDeckFilters(){
+    function renderDeckPager(total){
+      const totalItems = Number(total || 0);
+      const totalPages = Math.max(1, Math.ceil(totalItems / DECKS_PAGE_SIZE));
+      if (deckPage > totalPages) deckPage = totalPages;
+      if (deckPage < 1) deckPage = 1;
+
+      const start = totalItems ? ((deckPage - 1) * DECKS_PAGE_SIZE + 1) : 0;
+      const end = totalItems ? Math.min(deckPage * DECKS_PAGE_SIZE, totalItems) : 0;
+      $("decksPagerInfo").textContent = `Mostrando ${start}-${end} de ${totalItems}`;
+      $("decksPageLabel").textContent = `Pagina ${deckPage}/${totalPages}`;
+      $("decksPrevPage").disabled = deckPage <= 1;
+      $("decksNextPage").disabled = deckPage >= totalPages;
+    }
+
+    function renderDecksCurrentPage(){
+      const total = filteredDecks.length;
+      const start = (deckPage - 1) * DECKS_PAGE_SIZE;
+      const pageRows = filteredDecks.slice(start, start + DECKS_PAGE_SIZE);
+      renderDecksAsTable(pageRows);
+      renderDeckPager(total);
+    }
+
+    function applyDeckFilters(resetPage){
+      const shouldReset = resetPage !== false;
+      const onlyMine = $("filter_my_decks").value === "1";
       const leader = $("filter_leader").value;
-      const filtered = leader
-        ? allDecks.filter(d => (d.leader || "") === leader)
-        : allDecks.slice();
-      renderDecksAsTable(filtered);
+      const search = $("filter_text").value.trim().toLowerCase();
+      const sort = $("filter_sort").value || "newest";
+
+      filteredDecks = allDecks.filter((d) => {
+        if (onlyMine){
+          if (!currentUser?.id) return false;
+          if (d.autor !== currentUser.id) return false;
+        }
+        if (leader && (d.leader || "") !== leader) return false;
+        if (!search) return true;
+        const name = String(d.name || "").toLowerCase();
+        const description = String(d.description || "").toLowerCase();
+        return name.includes(search) || description.includes(search);
+      });
+
+      filteredDecks.sort((a, b) => {
+        const byNewest = () => String(b.created_at || "").localeCompare(String(a.created_at || "")) || String(b.id || "").localeCompare(String(a.id || ""));
+        if (sort === "oldest"){
+          return String(a.created_at || "").localeCompare(String(b.created_at || "")) || String(a.id || "").localeCompare(String(b.id || ""));
+        }
+        if (sort === "leader_asc"){
+          return String(a.leader || "").localeCompare(String(b.leader || "")) || byNewest();
+        }
+        if (sort === "leader_desc"){
+          return String(b.leader || "").localeCompare(String(a.leader || "")) || byNewest();
+        }
+        return byNewest();
+      });
+
+      if (shouldReset) deckPage = 1;
+      renderDecksCurrentPage();
     }
 
     async function createDeck(){
       clearMsg();
+      if (creatingDeck) return;
 
       const { data } = await sb.auth.getSession();
       const user = data?.session?.user || null;
@@ -672,6 +809,8 @@
       if (!leader) return show("Selecciona un lÃ­der.", "err");
 
       try{
+        creatingDeck = true;
+        $("btnCreate").disabled = true;
         let image_url = null;
         if (file){
           image_url = await uploadDeckImage(file, user.id);
@@ -701,11 +840,15 @@
         $("image_file").value = "";
 
         allDecks = await fetchDecks();
-        applyDeckFilters();
+        await loadUsernames(allDecks.map((d) => d.autor));
+        applyDeckFilters(true);
         setCreateOpen(false);
       }catch(e){
         console.error(e);
         show("Error guardando deck: " + (e.message || "unknown"), "err");
+      } finally {
+        creatingDeck = false;
+        $("btnCreate").disabled = false;
       }
     }
 
@@ -714,11 +857,37 @@
     // ===== Filter (ready, still simple) =====
     // Ahora mismo: recarga lista y filtra en frontend (no requiere index en DB)
     $("filter_leader").addEventListener("change", () => {
-      applyDeckFilters();
+      applyDeckFilters(true);
+    });
+    $("filter_my_decks").addEventListener("change", () => {
+      applyDeckFilters(true);
+    });
+    $("filter_text").addEventListener("input", () => {
+      if (deckSearchDebounce) clearTimeout(deckSearchDebounce);
+      deckSearchDebounce = setTimeout(() => {
+        applyDeckFilters(true);
+      }, 200);
+    });
+    $("filter_sort").addEventListener("change", () => {
+      applyDeckFilters(true);
     });
     $("btnClearDeckFilters").addEventListener("click", () => {
+      $("filter_my_decks").value = "0";
       $("filter_leader").value = "";
-      applyDeckFilters();
+      $("filter_text").value = "";
+      $("filter_sort").value = "newest";
+      applyDeckFilters(true);
+    });
+    $("decksPrevPage").addEventListener("click", () => {
+      if (deckPage <= 1) return;
+      deckPage -= 1;
+      renderDecksCurrentPage();
+    });
+    $("decksNextPage").addEventListener("click", () => {
+      const totalPages = Math.max(1, Math.ceil(filteredDecks.length / DECKS_PAGE_SIZE));
+      if (deckPage >= totalPages) return;
+      deckPage += 1;
+      renderDecksCurrentPage();
     });
 
     // ===== Init =====
@@ -732,13 +901,22 @@
       await refreshSession();
 
       sb.auth.onAuthStateChange(async (_event, session) => {
+        currentUser = session?.user || null;
         setNavAuthUI(session?.user || null);
         $("createArea").style.display = session?.user ? "block" : "none";
         $("loginHint").style.display = session?.user ? "none" : "block";
+        $("mineFilterWrap").style.display = session?.user ? "block" : "none";
+        if (!session?.user){
+          $("filter_my_decks").value = "0";
+        }
+        applyDeckFilters(true);
       });
 
+      setListLoading(true);
       allDecks = await fetchDecks();
-      applyDeckFilters();
+      await loadUsernames(allDecks.map((d) => d.autor));
+      applyDeckFilters(true);
+      setListLoading(false);
     })();
   </script>
 </body>

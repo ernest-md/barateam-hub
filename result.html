@@ -24,6 +24,7 @@
     .lose{ color:#991b1b; font-weight:900; }
     pre{ margin:0; white-space: pre-wrap; word-break: break-word; font-size:13px; line-height:1.45; color:#0f172a; }
     .msg{ margin-top:12px; border-radius:12px; padding:10px 12px; border:1px solid rgba(239,68,68,.35); background: rgba(239,68,68,.10); color:#991b1b; display:none; white-space: pre-line; }
+    .msg.ok{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.10); color:#166534; display:block; }
     @media (max-width:760px){ .title{ font-size:22px; } }
   </style>
 </head>
@@ -39,6 +40,9 @@
       <h1 class="title">Detalle de resultado</h1>
       <div class="meta">
         <span id="created">Creado: -</span>
+      </div>
+      <div style="margin-top:10px;">
+        <button class="btn" id="btnCopyResultLink" type="button">Copiar enlace</button>
       </div>
 
       <div class="grid">
@@ -120,9 +124,19 @@
       }
     }
 
+    async function copyResultLink(){
+      try{
+        await navigator.clipboard.writeText(window.location.href);
+        window.BarateamApp.showMessage("msg", "Enlace copiado", { baseClass: "msg", type: "ok" });
+      }catch(_e){
+        showError("No pude copiar el enlace.");
+      }
+    }
+
     (async function init(){
       const user = await requireSession();
       if (!user) return;
+      $("btnCopyResultLink").addEventListener("click", copyResultLink);
       await loadDetail(user);
       sb.auth.onAuthStateChange((_e, s) => { if (!s?.user) location.href = "login.html"; });
     })();
