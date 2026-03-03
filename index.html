@@ -659,6 +659,7 @@
       const { data } = await sb.auth.getSession();
       const user = data?.session?.user || null;
       currentUser = user;
+      window.__barateamCurrentUser = user;
       setNavAuthUI(user);
       return user;
     }catch(e){
@@ -1241,6 +1242,7 @@
   (async function(){
     sb.auth.onAuthStateChange(async (_event, session) => {
       currentUser = session?.user || null;
+      window.__barateamCurrentUser = currentUser;
       setNavAuthUI(session?.user || null);
       await refreshPostsSection();
     });

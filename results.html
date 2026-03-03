@@ -21,6 +21,30 @@
     .hero p{ margin:8px 0 0; color: rgba(255,255,255,.82); font-size:13px; }
     .sectionTitle{ margin:2px 0 12px; font-weight:1000; color:#0f172a; font-size:12px; text-transform:uppercase; letter-spacing:.9px; display:flex; align-items:center; gap:10px; }
     .sectionTitle::after{ content:""; height:1px; flex:1; background: linear-gradient(90deg, rgba(15,23,42,.25), transparent); }
+    .collHead{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      cursor:pointer;
+      user-select:none;
+      padding:10px 12px;
+      border-radius:16px;
+      border:1px solid rgba(15,23,42,.10);
+      background: rgba(255,255,255,.70);
+    }
+    .collHead:hover{
+      border-color: rgba(124,58,237,.22);
+      box-shadow: 0 10px 26px rgba(0,0,0,.08);
+    }
+    .collHead .t{
+      font-weight:1000;
+      color:#0f172a;
+      font-size:13px;
+    }
+    .chevSmall{ opacity:.7; font-size:12px; }
+    .collBody{ margin-top:12px; display:none; }
+    .collBody.open{ display:block; }
     .formGrid{ display:grid; grid-template-columns:1fr; gap:10px; }
     @media (min-width:820px){ .formGrid{ grid-template-columns:1fr 1fr; } .span2{ grid-column:1 / -1; } }
     label{ display:block; font-weight:900; font-size:12px; margin-bottom:6px; }
@@ -98,33 +122,39 @@
 
     <div class="card">
       <div class="sectionTitle">Nuevo resultado</div>
-      <div class="formGrid">
-        <div class="span2">
-          <label for="event">Evento/Torneo</label>
-          <select id="event"><option value="">(Selecciona evento)</option></select>
-        </div>
-        <div class="span2">
-          <label for="leader">Líder jugado</label>
-          <select id="leader"><option value="">(Selecciona líder)</option></select>
-        </div>
-        <div>
-          <label for="wins">Wins</label>
-          <input id="wins" type="number" min="0" step="1" placeholder="Ej: 4" />
-        </div>
-        <div>
-          <label for="loses">Loses</label>
-          <input id="loses" type="number" min="0" step="1" placeholder="Ej: 1" />
-        </div>
-        <div class="span2">
-          <label for="description">Notas / info</label>
-          <textarea id="description" placeholder="Matchups, techs, ronda final, etc."></textarea>
-        </div>
+      <div class="collHead" id="toggleCreateResult">
+        <div class="t">+ Nuevo resultado</div>
+        <div class="chevSmall" id="toggleCreateResultChev">v</div>
       </div>
-      <div class="actions">
-        <span class="muted">Se vincula automáticamente a tu usuario.</span>
-        <button class="btn btnDark" id="btnCreate" type="button">Guardar resultado</button>
+      <div class="collBody" id="createResultBody">
+        <div class="formGrid">
+          <div class="span2">
+            <label for="event">Evento/Torneo</label>
+            <select id="event"><option value="">(Selecciona evento)</option></select>
+          </div>
+          <div class="span2">
+            <label for="leader">Líder jugado</label>
+            <select id="leader"><option value="">(Selecciona líder)</option></select>
+          </div>
+          <div>
+            <label for="wins">Wins</label>
+            <input id="wins" type="number" min="0" step="1" placeholder="Ej: 4" />
+          </div>
+          <div>
+            <label for="loses">Loses</label>
+            <input id="loses" type="number" min="0" step="1" placeholder="Ej: 1" />
+          </div>
+          <div class="span2">
+            <label for="description">Notas / info</label>
+            <textarea id="description" placeholder="Matchups, techs, ronda final, etc."></textarea>
+          </div>
+        </div>
+        <div class="actions">
+          <span class="muted">Se vincula automáticamente a tu usuario.</span>
+          <button class="btn btnDark" id="btnCreate" type="button">Guardar resultado</button>
+        </div>
+        <div class="msg" id="msg"></div>
       </div>
-      <div class="msg" id="msg"></div>
     </div>
 
     <div class="card">
@@ -215,6 +245,10 @@
     const show = (text, type) => window.BarateamApp.showMessage("msg", text, { baseClass: "msg", type });
     function clearMsg(){ const m=$("msg"); m.className="msg"; m.textContent=""; m.style.display="none"; }
     function setResultsLoading(loading){ $("resultsLoading").style.display = loading ? "block" : "none"; }
+    function setCreateResultOpen(open){
+      $("createResultBody").classList.toggle("open", open);
+      $("toggleCreateResultChev").textContent = open ? "^" : "v";
+    }
 
     const eventTitle = window.BarateamApp.eventTitle;
     const eventDate = window.BarateamApp.eventDate;
@@ -518,6 +552,10 @@
       resultsPage += 1;
       renderResultsCurrentPage();
     });
+    $("toggleCreateResult").addEventListener("click", () => {
+      const isOpen = $("createResultBody").classList.contains("open");
+      setCreateResultOpen(!isOpen);
+    });
     $("btnLogout").addEventListener("click", async () => {
       await sb.auth.signOut();
       location.href = "login.html";
@@ -528,6 +566,7 @@
     (async function init(){
       const user = await requireSession();
       if (!user) return;
+      setCreateResultOpen(false);
       setResultsLoading(true);
       await loadCurrentUsername();
       await loadEvents();

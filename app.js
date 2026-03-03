@@ -127,6 +127,16 @@
     const message = options?.message || "Para acceder a este apartado tienes que registrarte.";
     if (!href) return;
 
+    const cachedUser = window.__barateamCurrentUser;
+    if (cachedUser && cachedUser.id){
+      window.location.href = href;
+      return;
+    }
+    if (cachedUser === null){
+      window.alert(message);
+      return;
+    }
+
     try{
       const user = await getSessionUser(sb);
       if (!user){
