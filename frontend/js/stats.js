@@ -430,68 +430,37 @@ async function syncMatchesForSelectedPlayer() {
 
   const playerId = playerSelect.value
 
-  console.log("Player ID seleccionado:", playerId)
+  try {
 
-  const { data: devices, error } = await supabase
-    .from("devices")
-    .select("*")
-    .eq("player_id", playerId)
-
-  console.log("Devices encontrados:", devices)
-  console.log("Error de supabase:", error)
-
-  if (!devices || devices.length === 0) {
-    alert("No hay device asociado")
-    return
-  }
-
-  const deviceData = devices[0]
-
-  console.log("Device que se usará:", deviceData)
-
-  const deviceId = deviceData.device_id
-  const lastMatchDate = deviceData.last_match_date
-
-  // 2️⃣ Fetch CardKaizoku
-  const response = await fetch(
-    `https://api.cardkaizoku.com/matches?deviceId=${deviceId}`
-  )
-
-  const matches = await response.json()
-
-  // 3️⃣ Filtrar nuevas
-  let newMatches = matches
-
-  if (lastMatchDate) {
-    newMatches = matches.filter(m =>
-      new Date(m.match_date) > new Date(lastMatchDate)
+    const response = await fetch(
+      "https://ceunhkqhskwnsoqyunze.supabase.co/functions/v1/sync-matches",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNldW5oa3Foc2t3bnNvcXl1bnplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NDQ0ODcsImV4cCI6MjA4ODAyMDQ4N30.qBGXYYQXlyQwFGeyaeMOtLPHrjBy-eU05AO37yLvi5o",
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNldW5oa3Foc2t3bnNvcXl1bnplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NDQ0ODcsImV4cCI6MjA4ODAyMDQ4N30.qBGXYYQXlyQwFGeyaeMOtLPHrjBy-eU05AO37yLvi5o"
+        },
+        body: JSON.stringify({ playerId })
+      }
     )
+
+    if (!response.ok) {
+      const text = await response.text()
+      console.error("Respuesta error:", text)
+      throw new Error("Error HTTP " + response.status)
+    }
+
+    const data = await response.json()
+
+    alert(`Se han añadido ${data.inserted} partidas nuevas`)
+
+    await loadPlayer(playerId)
+
+  } catch (err) {
+    console.error(err)
+    alert("Error al sincronizar partidas")
   }
-
-  if (newMatches.length === 0) {
-    alert("No hay partidas nuevas")
-    return
-  }
-
-  // 4️⃣ Insertar nuevas partidas
-  await supabase
-    .from("matches")
-    .insert(newMatches)
-
-  // 5️⃣ Actualizar última fecha
-  const newestDate = newMatches
-    .map(m => new Date(m.match_date))
-    .sort((a,b) => b - a)[0]
-
-  await supabase
-    .from("devices")
-    .update({ last_match_date: newestDate })
-    .eq("id", deviceData.id)
-
-  alert(`${newMatches.length} partidas nuevas importadas`)
-
-  // 6️⃣ Recargar stats
-  await loadPlayer(playerId)
 }
 
 init()
