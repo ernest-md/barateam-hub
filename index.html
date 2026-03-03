@@ -610,6 +610,35 @@
         <div style="height:12px;"></div>
         <div class="sectionTitle">Próximos eventos</div>
         <div id="upcomingList"></div>
+        <div class="editor" id="eventEditor" style="display:none; margin-top:12px;">
+          <div class="row">
+            <div>
+              <label for="event_title">Titulo</label>
+              <input id="event_title" placeholder="Ej: Liga local" />
+            </div>
+          </div>
+          <div class="row two">
+            <div>
+              <label for="event_start_at">Fecha y hora</label>
+              <input id="event_start_at" type="datetime-local" />
+            </div>
+            <div>
+              <label for="event_location">Location</label>
+              <input id="event_location" placeholder="Ej: Tienda X" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="event_description">Descripcion</label>
+              <textarea id="event_description" placeholder="Notas del evento"></textarea>
+            </div>
+          </div>
+          <div class="editorActions">
+            <span class="muted">Editor oculto por defecto.</span>
+            <button class="btn btnDark" id="btnCreateEvent" type="button">Guardar evento</button>
+          </div>
+          <div class="msg" id="eventMsg"></div>
+        </div>
       </div>
     </div>
 
@@ -679,6 +708,14 @@
 
   function showPostMsg(text, type){
     const el = $("postMsg");
+    el.className = "msg " + (type || "");
+    el.textContent = text;
+    el.style.display = "block";
+  }
+
+  function showEventMsg(text, type){
+    const el = $("eventMsg");
+    if (!el) return;
     el.className = "msg " + (type || "");
     el.textContent = text;
     el.style.display = "block";
@@ -984,17 +1021,13 @@
     const file = $("post_image_file").files?.[0] || null;
     const btn = $("btnPublish");
 
-    if (!title || !body) return showPostMsg("Pon titulo y contenido.", "err");
-
     try{
       if (btn) btn.disabled = true;
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) return;
-      const authorId = session.user.id;
 
       let image_url = null;
       if (file){
-        image_url = await uploadPostImage(file, authorId);
+        const { data: { session } } = await sb.auth.getSession();
+        image_url = await uploadPostImage(file, session?.user?.id || "anon");
       }
 
       const payload = {
@@ -1004,17 +1037,7 @@
         image_url: image_url || null
       };
 
-      let { error } = await sb.from("posts").insert(payload);
-      if (error){
-        const msg = String(error.message || "").toLowerCase();
-        if (msg.includes("author_id")){
-          const retry = await sb.from("posts").insert({ ...payload, author_id: authorId });
-          error = retry.error || null;
-        } else if (msg.includes("autor")){
-          const retry = await sb.from("posts").insert({ ...payload, autor: authorId });
-          error = retry.error || null;
-        }
-      }
+      const { error } = await sb.from("posts").insert(payload);
       if (error) throw error;
 
       showPostMsg("Post publicado", "ok");
@@ -1035,6 +1058,41 @@
 
   $("btnPublish")?.addEventListener("click", async () => {
     await publishPost();
+  });
+
+  async function createEvent(){
+    const title = $("event_title")?.value?.trim() || null;
+    const startLocal = $("event_start_at")?.value || "";
+    const location = $("event_location")?.value?.trim() || null;
+    const description = $("event_description")?.value?.trim() || null;
+    const start_at = startLocal ? new Date(startLocal).toISOString() : null;
+
+    try{
+      const { data: { session } } = await sb.auth.getSession();
+      const payload = {
+        title,
+        start_at,
+        location,
+        description,
+        author_id: session?.user?.id || null
+      };
+      const { error } = await sb.from("events").insert(payload);
+      if (error) throw error;
+
+      $("event_title").value = "";
+      $("event_start_at").value = "";
+      $("event_location").value = "";
+      $("event_description").value = "";
+      showEventMsg("Evento guardado", "ok");
+      await refreshCalendarOnly();
+    }catch(e){
+      console.error(e);
+      showEventMsg("Error guardando evento: " + (e.message || "unknown"), "err");
+    }
+  }
+
+  $("btnCreateEvent")?.addEventListener("click", async () => {
+    await createEvent();
   });
 
   // ===== EVENTS (lo dejamos como lo tenías, mock/real) =====
