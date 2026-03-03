@@ -1,83 +1,339 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Encuesta · Barateam Hub</title>
   <link rel="stylesheet" href="app.css" />
   <script src="app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <style>
-    :root{ --bg:#0b1220; --card: rgba(255,255,255,.92); --shadow: 0 18px 50px rgba(0,0,0,.35); }
-    body{ margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:#0f172a; }
-    body::before{ content:""; position:fixed; inset:0; background: radial-gradient(1200px 800px at 10% 10%, rgba(124,58,237,.35), transparent 60%), radial-gradient(900px 650px at 90% 20%, rgba(6,182,212,.28), transparent 60%), linear-gradient(180deg, rgba(11,18,32,.78), rgba(11,18,32,.78)), url("bg.png"); background-size:cover; background-position:center; z-index:-1; }
-    .bar{ max-width:1200px; }
-    .pill{ font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.08); color: rgba(255,255,255,.86); }
-    .wrap{ max-width:1200px; }
-    .hero{ border-radius:24px; padding:18px 16px; color:#fff; border:1px solid rgba(255,255,255,.14); background: radial-gradient(700px 250px at 10% 10%, rgba(124,58,237,.55), transparent 60%), radial-gradient(700px 250px at 90% 20%, rgba(6,182,212,.42), transparent 60%), linear-gradient(135deg, rgba(15,23,42,.92), rgba(15,23,42,.72)); box-shadow:0 18px 50px rgba(0,0,0,.28); }
-    .hero h1{ margin:0; font-size:24px; font-weight:1000; }
-    .hero p{ margin:8px 0 0; color: rgba(255,255,255,.82); font-size:13px; }
-    .stats{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px; margin-top:14px; }
-    .stat{ background: rgba(255,255,255,.92); border-radius:14px; border:1px solid rgba(255,255,255,.20); box-shadow: var(--shadow); padding:12px; }
-    .stat .k{ font-size:12px; color:#64748b; text-transform:uppercase; letter-spacing:.8px; }
-    .stat .v{ font-size:22px; font-weight:1000; color:#0f172a; margin-top:2px; }
-    .grid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; margin-top:14px; }
-    .card{ background:var(--card); border:1px solid rgba(255,255,255,.20); border-radius:22px; box-shadow:var(--shadow); padding:14px; }
-    .card h3{ margin:0 0 8px; font-size:14px; }
-    .muted{ color:#64748b; font-size:12px; }
-    .msg{ margin-top:10px; font-size:13px; padding:10px 12px; border-radius:12px; border:1px solid rgba(239,68,68,.35); background: rgba(239,68,68,.10); color:#991b1b; display:none; white-space: pre-line; }
-    .chartWrap{ height:320px; }
-    code{ background: rgba(15,23,42,.08); padding:2px 6px; border-radius:8px; }
-    @media (max-width:960px){ .grid{ grid-template-columns:1fr; } }
-    @media (max-width:760px){ .stats{ grid-template-columns:1fr; } .chartWrap{ height:280px; } }
+    :root{
+      --bg-a:#4f65ea;
+      --bg-b:#89b5f5;
+      --ink:#101935;
+      --muted:#5d6b93;
+      --panel:#f7f3f6;
+      --panel-line:#d7d8ec;
+      --shadow:0 18px 46px rgba(5, 18, 62, .26);
+      --accent:#7339d4;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      color:var(--ink);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background:
+        radial-gradient(1200px 800px at 15% -10%, rgba(162, 91, 255, .35), transparent 60%),
+        radial-gradient(1200px 800px at 85% -10%, rgba(80, 226, 255, .35), transparent 60%),
+        linear-gradient(180deg, var(--bg-a), var(--bg-b));
+      min-height:100vh;
+    }
+    .bar{
+      max-width:1280px;
+      margin:0 auto;
+    }
+    .topActions{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-left:auto;
+      flex-wrap:wrap;
+    }
+    .pill{
+      border:1px solid rgba(255,255,255,.34);
+      color:#f7fbff;
+      background:rgba(0,0,0,.12);
+      border-radius:999px;
+      padding:8px 12px;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:.3px;
+    }
+    .wrap{
+      max-width:1280px;
+      margin:14px auto 28px;
+      padding:0 14px;
+    }
+    .hero{
+      border-radius:28px;
+      border:1px solid rgba(255,255,255,.22);
+      box-shadow:var(--shadow);
+      color:#fff;
+      padding:22px 22px 16px;
+      background:
+        radial-gradient(900px 320px at 12% 0%, rgba(166, 105, 255, .44), transparent 60%),
+        radial-gradient(900px 320px at 88% 0%, rgba(73, 225, 255, .35), transparent 60%),
+        linear-gradient(135deg, rgba(14,21,46,.85), rgba(14,21,46,.62));
+    }
+    .hero h1{
+      margin:0;
+      font-size:34px;
+      line-height:1.05;
+      font-weight:1000;
+      letter-spacing:.2px;
+    }
+    .hero p{
+      margin:8px 0 0;
+      color:rgba(255,255,255,.88);
+      font-size:14px;
+      max-width:900px;
+    }
+    .stats{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:10px;
+    }
+    .stat{
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.26);
+      background:rgba(255,255,255,.92);
+      box-shadow:0 10px 22px rgba(0,0,0,.16);
+      padding:10px 12px;
+    }
+    .stat .k{
+      font-size:11px;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.9px;
+      color:#52608a;
+    }
+    .stat .v{
+      margin-top:2px;
+      font-size:24px;
+      font-weight:1000;
+      color:#131b3e;
+      line-height:1;
+    }
+    .layout{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns:1.45fr .95fr;
+      gap:12px;
+    }
+    .stack{
+      display:grid;
+      gap:12px;
+      grid-template-rows:auto auto;
+    }
+    .panel{
+      border-radius:26px;
+      border:1px solid var(--panel-line);
+      background:var(--panel);
+      box-shadow:var(--shadow);
+      padding:14px 14px 10px;
+    }
+    .sectionTitle{
+      margin:0;
+      font-size:12px;
+      color:#394775;
+      letter-spacing:1px;
+      text-transform:uppercase;
+      font-weight:1000;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .sectionTitle::after{
+      content:"";
+      height:1px;
+      flex:1;
+      background:linear-gradient(90deg, rgba(57,71,117,.34), transparent);
+    }
+    .question{
+      margin:10px 0 2px;
+      font-size:28px;
+      line-height:1.1;
+      font-weight:1000;
+      color:#141e48;
+    }
+    .sub{
+      margin:0 0 8px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .chartBig{ height:430px; }
+    .chartMid{ height:360px; }
+    .chartSmall{ height:260px; }
+    .legendList{
+      margin:8px 0 0;
+      padding:0;
+      list-style:none;
+      display:grid;
+      gap:8px;
+    }
+    .legendItem{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      border:1px solid rgba(57,71,117,.16);
+      border-radius:12px;
+      padding:8px 10px;
+      background:rgba(255,255,255,.65);
+    }
+    .legendLabel{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:900;
+      color:#17214b;
+      min-width:0;
+    }
+    .legendSwatch{
+      width:12px;
+      height:12px;
+      border-radius:2px;
+      flex:0 0 auto;
+    }
+    .legendText{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-size:15px;
+    }
+    .legendVal{
+      font-size:22px;
+      font-weight:1000;
+      line-height:1;
+      border-radius:12px;
+      padding:4px 10px;
+      color:#fff;
+      background:#101935;
+    }
+    .msg{
+      margin-top:12px;
+      border-radius:14px;
+      padding:10px 12px;
+      border:1px solid rgba(239,68,68,.35);
+      background:rgba(239,68,68,.10);
+      color:#991b1b;
+      font-size:13px;
+      display:none;
+      white-space:pre-line;
+    }
+    .tip{
+      margin-top:8px;
+      color:#54618b;
+      font-size:12px;
+      font-weight:700;
+    }
+    @media (max-width:1100px){
+      .layout{ grid-template-columns:1fr; }
+      .stats{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+      .hero h1{ font-size:30px; }
+      .question{ font-size:24px; }
+    }
+    @media (max-width:680px){
+      .stats{ grid-template-columns:1fr; }
+      .chartBig{ height:320px; }
+      .chartMid{ height:300px; }
+      .chartSmall{ height:230px; }
+      .hero h1{ font-size:24px; }
+      .question{ font-size:19px; }
+      .topActions{ width:100%; margin-left:0; }
+      .pill{ width:100%; text-align:center; }
+    }
   </style>
 </head>
 <body>
   <div class="topbar">
     <div class="bar">
-      <a class="btn" href="encuestas.html">Volver a encuestas</a>
+      <a class="btn" href="encuestas.html">&#8592; Volver a encuestas</a>
       <div class="spacer"></div>
-      <span class="pill" id="csvPill">CSV: -</span>
+      <div class="topActions">
+        <span class="pill" id="csvPill">CSV: -</span>
+        <span class="pill" id="qPill">Pregunta principal: auto</span>
+      </div>
     </div>
   </div>
 
   <div class="wrap">
-    <div class="hero">
-      <h1 id="title">Encuesta</h1>
-      <p>Gráficas dinámicas generadas desde CSV.</p>
-    </div>
-
-    <div class="stats">
-      <div class="stat"><div class="k">Respuestas</div><div class="v" id="responses">0</div></div>
-      <div class="stat"><div class="k">Columnas</div><div class="v" id="columns">0</div></div>
-      <div class="stat"><div class="k">Gráficas</div><div class="v" id="chartsCount">0</div></div>
-    </div>
+    <section class="hero">
+      <h1 id="title">Resultados de encuesta</h1>
+      <p>Visualizacion automatica desde CSV: ranking, barras y distribuciones para detectar tendencias de meta.</p>
+      <div class="stats">
+        <div class="stat"><div class="k">Respuestas</div><div class="v" id="responses">0</div></div>
+        <div class="stat"><div class="k">Columnas</div><div class="v" id="columns">0</div></div>
+        <div class="stat"><div class="k">Preguntas utiles</div><div class="v" id="usableQuestions">0</div></div>
+        <div class="stat"><div class="k">Categorias top</div><div class="v" id="topCats">0</div></div>
+      </div>
+    </section>
 
     <div id="msg" class="msg"></div>
-    <div id="charts" class="grid"></div>
+
+    <section class="layout">
+      <div class="stack">
+        <article class="panel">
+          <h2 class="sectionTitle">Votacion general</h2>
+          <h3 class="question" id="mainQuestion">Pregunta principal</h3>
+          <p class="sub" id="mainSub">Distribucion por cantidad de votos.</p>
+          <div class="chartBig"><canvas id="barMain"></canvas></div>
+        </article>
+
+        <article class="panel" id="secondaryPanel" style="display:none;">
+          <h2 class="sectionTitle">Pregunta secundaria</h2>
+          <h3 class="question" id="secondaryQuestion">Pregunta secundaria</h3>
+          <p class="sub" id="secondarySub">Vista comparativa.</p>
+          <div class="chartSmall"><canvas id="barSecondary"></canvas></div>
+        </article>
+      </div>
+
+      <div class="stack">
+        <article class="panel">
+          <h2 class="sectionTitle">Top metajuegos</h2>
+          <h3 class="question" id="pieQuestion">Distribucion principal</h3>
+          <p class="sub" id="pieSub">Con agrupacion de categorias menores en "Otros".</p>
+          <div class="chartMid"><canvas id="pieMain"></canvas></div>
+          <ul class="legendList" id="legendMain"></ul>
+          <p class="tip">Tip: puedes fijar columnas manualmente con <code>?csv=archivo.csv&amp;q=NombreColumna&amp;q2=OtraColumna</code>.</p>
+        </article>
+
+        <article class="panel" id="pieSecondaryPanel" style="display:none;">
+          <h2 class="sectionTitle">Mazo unico / alternativo</h2>
+          <h3 class="question" id="pieSecondaryQuestion">Distribucion secundaria</h3>
+          <div class="chartSmall"><canvas id="pieSecondary"></canvas></div>
+        </article>
+      </div>
+    </section>
   </div>
 
   <script>
     const qs = new URLSearchParams(location.search);
     const csvFile = (qs.get("csv") || "").trim();
     const customTitle = (qs.get("title") || "").trim();
+    const forcedQ = (qs.get("q") || "").trim();
+    const forcedQ2 = (qs.get("q2") || "").trim();
     const charts = [];
 
     const $ = window.BarateamApp.byId;
-    const showError = (text) => window.BarateamApp.showMessage("msg", text);
+    const showError = (txt) => window.BarateamApp.showMessage("msg", txt);
+
+    const COLORS = [
+      "#f54545", "#47b7d1", "#e7df39", "#03becc", "#f6be73", "#b857b5",
+      "#a95cbd", "#11a885", "#ff9f80", "#9dd463", "#f06f86", "#3f9a94",
+      "#58b654", "#eb56bb", "#3d7d8b", "#2b689b", "#a8d851", "#8974be",
+      "#eaa160", "#6a4fa8", "#7d62cf", "#21a06a", "#4d4d9b", "#b12f8d",
+      "#8291c2", "#c2185b", "#ed5397", "#fd8a34", "#4695b6", "#e5ca6b",
+      "#d8b844", "#73d8db", "#ffbb33", "#ed6ea8"
+    ];
 
     function parseCsvLine(line){
       const out = [];
       let cell = "";
       let inQuotes = false;
-      for (let i=0; i<line.length; i++){
+      for (let i = 0; i < line.length; i++){
         const ch = line[i];
-        if (ch === '"'){
-          if (inQuotes && line[i+1] === '"'){ cell += '"'; i++; }
+        if (ch === "\""){
+          if (inQuotes && line[i + 1] === "\""){ cell += "\""; i++; }
           else inQuotes = !inQuotes;
-        } else if (ch === ',' && !inQuotes){
-          out.push(cell); cell = "";
-        } else cell += ch;
+        } else if (ch === "," && !inQuotes){
+          out.push(cell);
+          cell = "";
+        } else {
+          cell += ch;
+        }
       }
       out.push(cell);
       return out;
@@ -86,129 +342,260 @@
     function parseCsv(text){
       const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter(Boolean);
       if (!lines.length) return { headers: [], rows: [] };
-      const headers = parseCsvLine(lines[0]).map(h => h.trim());
+      const headers = parseCsvLine(lines[0]).map((h) => h.trim());
       const rows = lines.slice(1).map((line) => {
         const arr = parseCsvLine(line);
         const obj = {};
-        headers.forEach((h, i) => { obj[h] = (arr[i] ?? "").trim(); });
+        headers.forEach((h, i) => { obj[h] = String(arr[i] ?? "").trim(); });
         return obj;
       });
       return { headers, rows };
     }
 
-    function isNumericColumn(values){
-      const clean = values.map(v => String(v || "").trim()).filter(Boolean);
-      if (!clean.length) return false;
-      const ok = clean.filter(v => /^-?\d+(?:[\.,]\d+)?$/.test(v)).length;
-      return ok / clean.length >= 0.8;
+    function cleanHeader(h){
+      return String(h || "").trim().toLowerCase();
     }
 
     function isLikelyMetaHeader(h){
-      const x = h.toLowerCase();
-      return x.includes("timestamp") || x.includes("correo") || x.includes("email") || x.includes("mail") || x.includes("nombre") || x.includes("name");
+      const x = cleanHeader(h);
+      return x.includes("timestamp") ||
+        x.includes("correo") ||
+        x.includes("email") ||
+        x.includes("mail") ||
+        x.includes("nombre") ||
+        x.includes("name") ||
+        x.includes("id") ||
+        x.includes("fecha") ||
+        x.includes("hora");
     }
 
-    function buildCategoricalCounts(values){
+    function splitMultiAnswer(v){
+      const raw = String(v || "").trim();
+      if (!raw) return [];
+      return raw.split(/\s*(?:,|;|\||\/)\s*/).map((x) => x.trim()).filter(Boolean);
+    }
+
+    function countCategorical(values){
       const map = new Map();
-      for (const raw of values){
-        const v = String(raw || "").trim();
-        if (!v) continue;
-        const parts = v.includes(",") ? v.split(/\s*,\s*/) : [v];
-        for (const p of parts){
-          if (!p) continue;
-          map.set(p, (map.get(p) || 0) + 1);
+      for (const v of values){
+        for (const part of splitMultiAnswer(v)){
+          map.set(part, (map.get(part) || 0) + 1);
         }
       }
-      return Array.from(map.entries()).sort((a,b) => b[1]-a[1]);
+      return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
     }
 
-    function makeChartCard(title, labels, data){
-      const root = $("charts");
-      const card = document.createElement("div");
-      card.className = "card";
-      const cid = `chart_${Math.random().toString(36).slice(2)}`;
-      card.innerHTML = `
-        <h3>${title}</h3>
-        <div class="muted">Top respuestas (${data.reduce((a,b)=>a+b,0)} respuestas consideradas)</div>
-        <div class="chartWrap"><canvas id="${cid}"></canvas></div>
-      `;
-      root.appendChild(card);
+    function scoreQuestion(header, rows){
+      const values = rows.map((r) => r[header]);
+      const counts = countCategorical(values);
+      const total = counts.reduce((acc, it) => acc + it[1], 0);
+      return { header, counts, total, unique: counts.length };
+    }
 
-      const ctx = document.getElementById(cid);
-      const chart = new Chart(ctx, {
+    function selectQuestions(headers, rows){
+      const candidates = [];
+      for (const h of headers){
+        if (isLikelyMetaHeader(h)) continue;
+        const sc = scoreQuestion(h, rows);
+        if (sc.unique >= 2 && sc.total >= 3){
+          candidates.push(sc);
+        }
+      }
+      candidates.sort((a, b) => (b.total - a.total) || (b.unique - a.unique));
+      return candidates;
+    }
+
+    function topWithOthers(counts, topN){
+      const top = counts.slice(0, topN);
+      const rest = counts.slice(topN).reduce((acc, x) => acc + x[1], 0);
+      if (rest > 0) top.push(["Otros", rest]);
+      return top;
+    }
+
+    function colorFor(i){
+      return COLORS[i % COLORS.length];
+    }
+
+    function makeBarChart(canvasId, labels, values){
+      const c = $(canvasId);
+      const ch = new Chart(c, {
         type: "bar",
         data: {
           labels,
-          datasets: [{ label: "Respuestas", data, borderWidth: 1 }]
+          datasets: [{
+            data: values,
+            backgroundColor: labels.map((_, i) => colorFor(i)),
+            borderRadius: 4,
+            borderSkipped: false
+          }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-          plugins: { legend: { display: false } }
+          animation: { duration: 350 },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0, color: "#283055", font: { weight: "700" } },
+              grid: { color: "rgba(17,25,53,.12)" },
+              border: { display: false }
+            },
+            x: {
+              ticks: {
+                color: "#202a4c",
+                maxRotation: 45,
+                minRotation: 40,
+                autoSkip: false,
+                font: { weight: "700", size: 11 }
+              },
+              grid: { display: false },
+              border: { display: false }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` ${ctx.parsed.y} votos`
+              }
+            }
+          }
         }
       });
-      charts.push(chart);
+      charts.push(ch);
+    }
+
+    function makePieChart(canvasId, labels, values){
+      const c = $(canvasId);
+      const ch = new Chart(c, {
+        type: "doughnut",
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: labels.map((_, i) => colorFor(i)),
+            borderWidth: 0,
+            hoverOffset: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "18%",
+          animation: { duration: 420 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` ${ctx.label}: ${ctx.parsed} votos`
+              }
+            }
+          }
+        }
+      });
+      charts.push(ch);
+    }
+
+    function renderLegend(elId, labels, values){
+      const ul = $(elId);
+      ul.innerHTML = "";
+      labels.slice(0, 5).forEach((lab, i) => {
+        const li = document.createElement("li");
+        li.className = "legendItem";
+        li.innerHTML = `
+          <div class="legendLabel">
+            <span class="legendSwatch" style="background:${colorFor(i)}"></span>
+            <span class="legendText">${lab}</span>
+          </div>
+          <span class="legendVal">${values[i]}</span>
+        `;
+        ul.appendChild(li);
+      });
+    }
+
+    function findForced(headers, name){
+      if (!name) return null;
+      const norm = cleanHeader(name);
+      return headers.find((h) => cleanHeader(h) === norm) || null;
     }
 
     async function init(){
       if (!csvFile){
-        showError("Falta el parámetro ?csv=archivo.csv en la URL.");
+        showError("Falta el parametro ?csv=archivo.csv en la URL.");
         return;
       }
 
       $("csvPill").textContent = `CSV: ${csvFile}`;
-      $("title").textContent = customTitle || `Encuesta · ${csvFile}`;
+      $("title").textContent = customTitle || `Resultados de encuesta · ${csvFile}`;
 
       try{
         const res = await fetch(csvFile, { cache: "no-store" });
         if (!res.ok) throw new Error(`No pude cargar ${csvFile} (HTTP ${res.status})`);
         const text = await res.text();
-
         const { headers, rows } = parseCsv(text);
+
         $("responses").textContent = String(rows.length);
         $("columns").textContent = String(headers.length);
 
         if (!headers.length || !rows.length){
-          showError("CSV vacío o sin cabeceras válidas.");
+          showError("CSV vacio o sin cabeceras validas.");
           return;
         }
 
-        let chartCount = 0;
+        const candidates = selectQuestions(headers, rows);
+        $("usableQuestions").textContent = String(candidates.length);
 
-        for (const h of headers){
-          if (isLikelyMetaHeader(h)) continue;
+        let main = null;
+        let second = null;
+        const forcedMain = findForced(headers, forcedQ);
+        const forcedSecond = findForced(headers, forcedQ2);
 
-          const values = rows.map(r => r[h]);
-          if (isNumericColumn(values)){
-            const map = new Map();
-            for (const raw of values){
-              const n = Number(String(raw || "").replace(",", "."));
-              if (!Number.isFinite(n)) continue;
-              const key = String(n);
-              map.set(key, (map.get(key) || 0) + 1);
-            }
-            const sorted = Array.from(map.entries()).sort((a,b) => Number(a[0]) - Number(b[0])).slice(0, 20);
-            if (sorted.length >= 2){
-              makeChartCard(h, sorted.map(x=>x[0]), sorted.map(x=>x[1]));
-              chartCount++;
-            }
-            continue;
-          }
-
-          const counts = buildCategoricalCounts(values).slice(0, 12);
-          if (counts.length >= 2){
-            makeChartCard(h, counts.map(x=>x[0]), counts.map(x=>x[1]));
-            chartCount++;
-          }
+        if (forcedMain){
+          main = scoreQuestion(forcedMain, rows);
+        } else {
+          main = candidates[0] || null;
         }
 
-        $("chartsCount").textContent = String(chartCount);
-
-        if (!chartCount){
-          showError("No encontré columnas suficientes para graficar automáticamente. Revisa formato del CSV.");
+        if (forcedSecond){
+          second = scoreQuestion(forcedSecond, rows);
+        } else if (candidates.length > 1){
+          second = candidates.find((c) => c.header !== main?.header) || null;
         }
-      }catch(e){
+
+        if (!main || main.counts.length < 2){
+          showError("No encontre ninguna columna util para graficar. Revisa el CSV.");
+          return;
+        }
+
+        $("qPill").textContent = `Pregunta principal: ${main.header}`;
+        $("mainQuestion").textContent = main.header;
+        $("mainSub").textContent = `${main.total} votos agregados en ${main.unique} categorias.`;
+        $("pieQuestion").textContent = main.header;
+        $("pieSub").textContent = "Top categorias de la votacion general.";
+        $("topCats").textContent = String(main.unique);
+
+        const mainBar = main.counts.slice(0, 34);
+        makeBarChart("barMain", mainBar.map((x) => x[0]), mainBar.map((x) => x[1]));
+
+        const mainPie = topWithOthers(main.counts, 12);
+        const pieLabels = mainPie.map((x) => x[0]);
+        const pieVals = mainPie.map((x) => x[1]);
+        makePieChart("pieMain", pieLabels, pieVals);
+        renderLegend("legendMain", pieLabels, pieVals);
+
+        if (second && second.counts.length >= 2 && second.header !== main.header){
+          $("secondaryPanel").style.display = "";
+          $("secondaryQuestion").textContent = second.header;
+          $("secondarySub").textContent = `${second.total} votos agregados en ${second.unique} categorias.`;
+          const secBar = second.counts.slice(0, 20);
+          makeBarChart("barSecondary", secBar.map((x) => x[0]), secBar.map((x) => x[1]));
+
+          $("pieSecondaryPanel").style.display = "";
+          $("pieSecondaryQuestion").textContent = second.header;
+          const secPie = topWithOthers(second.counts, 8);
+          makePieChart("pieSecondary", secPie.map((x) => x[0]), secPie.map((x) => x[1]));
+        }
+      } catch (e){
         console.error(e);
         showError(e.message || "Error procesando CSV.");
       }
