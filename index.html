@@ -984,6 +984,7 @@
   }
 
   async function publishPost(){
+    console.log('test_publish');
     const title = $("post_title").value.trim();
     const tag = $("post_tag").value.trim();
     const body = $("post_body").value.trim();
@@ -1050,6 +1051,18 @@
     return `${y}-${m}-${da}`;
   }
 
+  function eventRawDate(e){
+    return String(e?.start_at || "").trim();
+  }
+
+  function eventDateObj(e){
+    const raw = eventRawDate(e);
+    if (!raw) return null;
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return null;
+    return d;
+  }
+
   async function fetchEventsForMonth(viewDate){
     if (USE_MOCK){
       const base = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
@@ -1061,39 +1074,38 @@
       ];
     }
 
+    const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1, 0, 0, 0, 0);
+    const monthEnd = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1, 0, 0, 0, 0);
     const { data, error } = await sb
       .from("events")
-      .select("*")
+      .select("id,title,start_at,location")
+      .gte("start_at", monthStart.toISOString())
+      .lt("start_at", monthEnd.toISOString())
+      .order("start_at", { ascending: true })
       .limit(1000);
 
     if (error){
       console.warn("events:", error.message);
       return [];
     }
-    const all = data || [];
-    const ym = `${viewDate.getFullYear()}-${String(viewDate.getMonth()+1).padStart(2,"0")}`;
-    return all
-      .filter((e) => {
-        const raw = String(e?.start_at || e?.date || e?.event_date || "").trim();
-        return raw.slice(0,7) === ym;
-      })
-      .sort((a,b) => {
-        const av = String(a?.start_at || a?.date || a?.event_date || "");
-        const bv = String(b?.start_at || b?.date || b?.event_date || "");
-        return av.localeCompare(bv);
-      });
+    return (data || []).filter((e) => !!eventDateObj(e));
   }
 
   function groupEventsByDay(events){
     const map = new Map();
     for (const e of events){
-      const d = new Date(e.start_at);
+      const d = eventDateObj(e);
+      if (!d) continue;
       const key = ymd(d);
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(e);
     }
     for (const [k, arr] of map.entries()){
-      arr.sort((a,b)=> (a.start_at||"").localeCompare(b.start_at||""));
+      arr.sort((a,b)=> {
+        const ad = eventDateObj(a);
+        const bd = eventDateObj(b);
+        return (ad?.getTime() || 0) - (bd?.getTime() || 0);
+      });
     }
     return map;
   }
@@ -1147,7 +1159,8 @@
           <div class="tooltip">
             <div class="tipTitle">${events.length} evento(s)</div>
             ${events.slice(0,5).map(ev => {
-              const dt = new Date(ev.start_at);
+              const dt = eventDateObj(ev);
+              if (!dt) return "";
               const hh = String(dt.getHours()).padStart(2,"0");
               const mm = String(dt.getMinutes()).padStart(2,"0");
               const loc = ev.location ? ` · ${escapeHtml(ev.location)}` : "";
@@ -1165,10 +1178,18 @@
     root.innerHTML = "";
 
     const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const upcoming = (events || [])
-      .filter(e => new Date(e.start_at) >= new Date(now.getFullYear(), now.getMonth(), now.getDate()))
+      .filter(e => {
+        const d = eventDateObj(e);
+        return !!d && d >= todayStart;
+      })
       .slice()
-      .sort((a,b)=> (a.start_at||"").localeCompare(b.start_at||""))
+      .sort((a,b)=> {
+        const ad = eventDateObj(a);
+        const bd = eventDateObj(b);
+        return (ad?.getTime() || 0) - (bd?.getTime() || 0);
+      })
       .slice(0, 6);
 
     if (!upcoming.length){
@@ -1177,7 +1198,8 @@
     }
 
     for (const e of upcoming){
-      const dt = new Date(e.start_at);
+      const dt = eventDateObj(e);
+      if (!dt) continue;
       const d = ymd(dt);
       const hh = String(dt.getHours()).padStart(2,"0");
       const mm = String(dt.getMinutes()).padStart(2,"0");
