@@ -434,15 +434,24 @@
     async function loadLeaders(){
       if (leadersCache) return leadersCache;
       try{
-        const { data, error } = await sb
-          .from("leaders")
-          .select("name,code,leader_alias,image,image_url,leader_image_url");
-        if (error) throw error;
+        const restUrl = `${window.BarateamApp.SUPABASE_URL}/rest/v1/leaders?select=*`;
+        const anonKey = window.BarateamApp.SUPABASE_ANON_KEY;
+        const res = await fetch(restUrl, {
+          headers: {
+            apikey: anonKey,
+            Authorization: `Bearer ${anonKey}`
+          }
+        });
+        if (!res.ok){
+          const errText = await res.text();
+          throw new Error(`leaders fetch ${res.status}: ${errText}`);
+        }
+        const data = await res.json();
         leadersCache = (data || []).map((x) => ({
-          name: x?.name || "",
-          code: x?.code || "",
-          alias: x?.leader_alias || "",
-          image: x?.image || x?.image_url || x?.leader_image_url || ""
+          name: x?.name || x?.leader || "",
+          code: x?.code || x?.expansion || "",
+          alias: x?.leader_alias || x?.alias || "",
+          image: x?.image || x?.image_url || x?.leader_image_url || x?.img_url || x?.photo_url || ""
         })).filter((x) => x.image);
       } catch (_e){
         leadersCache = [];
