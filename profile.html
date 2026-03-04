@@ -171,6 +171,40 @@
       font-size:12px;
       min-height: 16px;
     }
+    .helpBtn{
+      border:1px solid rgba(15,23,42,.2);
+      border-radius:12px;
+      padding:10px 14px;
+      font-weight:900;
+      cursor:pointer;
+      background: rgba(15,23,42,.04);
+      color:#0f172a;
+      margin-top: -2px;
+      margin-bottom: 10px;
+    }
+    .helpPanel{
+      display:none;
+      border:1px solid rgba(15,23,42,.12);
+      background: rgba(255,255,255,.72);
+      border-radius:14px;
+      padding:10px;
+      margin-bottom:12px;
+    }
+    .helpPanel.open{ display:block; }
+    .helpStep{
+      font-size:13px;
+      color:#334155;
+      margin: 0 0 8px;
+      line-height: 1.45;
+    }
+    .helpShot{
+      width:100%;
+      border-radius:10px;
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+      margin-bottom:10px;
+      display:block;
+    }
 
     .msg{
       margin-top:12px;
@@ -238,6 +272,17 @@
 
       <label>Username</label>
       <input id="username" placeholder="ej: coquito">
+      <div class="fieldHint">Este username se utilizara para realizar la conexion con los stats del simulador.</div>
+
+      <label>SIM profile URL</label>
+      <input id="sim_profile_url" placeholder="https://...">
+      <button class="helpBtn" id="btnSimUrlHelp" type="button">Donde conseguir la URL de mi perfil del SIM?</button>
+      <div class="helpPanel" id="simUrlHelpPanel">
+        <p class="helpStep"><strong>DOC0:</strong> Accedemos al simulador, vamos a la parte de encontrar match y clicamos en match history.</p>
+        <img class="helpShot" src="DOC/DOC0.png" alt="DOC0 - Match history en simulador" />
+        <p class="helpStep"><strong>DOC1:</strong> Necesitamos la URL a la que nos dirige, que nos dara la informacion del usuario y del dispositivo para asegurar que eres tu.</p>
+        <img class="helpShot" src="DOC/DOC1.png" alt="DOC1 - URL del perfil del simulador" />
+      </div>
 
       <label>Nombre visible</label>
       <input id="display_name" placeholder="Ej: Ernest">
@@ -337,6 +382,7 @@
       }
 
       $("username").value = data.username || "";
+      $("sim_profile_url").value = data.sim_profile_url || "";
       $("display_name").value = data.display_name || "";
       $("bio").value = data.bio || "";
       currentAvatarUrl = data.avatar_url || null;
@@ -371,6 +417,7 @@
       const payload = {
         id: session.user.id,
         username: $("username").value.trim(),
+        sim_profile_url: $("sim_profile_url").value.trim(),
         display_name: $("display_name").value.trim(),
         bio: $("bio").value.trim(),
         avatar_url: avatarUrl || null,
@@ -425,6 +472,9 @@
       $("username").addEventListener("input", async () => {
         const { data: { session: usernameSession } } = await sb.auth.getSession();
         updatePublicLink($("username").value, usernameSession?.user?.id || "");
+      });
+      $("btnSimUrlHelp").addEventListener("click", () => {
+        $("simUrlHelpPanel").classList.toggle("open");
       });
       $("btnCopyPublicLink").addEventListener("click", copyPublicLink);
 
