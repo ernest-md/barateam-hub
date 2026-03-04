@@ -171,24 +171,68 @@
       font-size:12px;
       min-height: 16px;
     }
+    .usernameHint{
+      margin-top: -6px;
+      margin-bottom: 12px;
+      color:#64748b;
+      font-size:12px;
+      line-height:1.4;
+      background: rgba(15,23,42,.04);
+      border: 1px solid rgba(15,23,42,.08);
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+    .simConnect{
+      margin: 0 0 14px;
+      border: 1px solid rgba(15,23,42,.10);
+      border-radius: 14px;
+      background:
+        radial-gradient(500px 120px at 8% 0%, rgba(124,58,237,.07), transparent 60%),
+        radial-gradient(500px 120px at 95% 10%, rgba(6,182,212,.06), transparent 60%),
+        rgba(255,255,255,.62);
+      padding: 10px;
+    }
+    .simConnectHead{
+      margin: 2px 0 8px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color:#334155;
+      font-weight: 1000;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .simConnectHead::after{
+      content:"";
+      height:1px;
+      flex:1;
+      background: linear-gradient(90deg, rgba(15,23,42,.18), transparent);
+    }
     .helpBtn{
-      border:1px solid rgba(15,23,42,.2);
+      width:100%;
+      border:1px solid rgba(15,23,42,.16);
       border-radius:12px;
-      padding:10px 14px;
+      padding:10px 12px;
       font-weight:900;
       cursor:pointer;
-      background: rgba(15,23,42,.04);
+      background: rgba(255,255,255,.8);
       color:#0f172a;
-      margin-top: -2px;
-      margin-bottom: 10px;
+      margin: 0;
+      text-align:left;
+      transition: border-color .18s ease, background .18s ease;
+    }
+    .helpBtn:hover{
+      border-color: rgba(124,58,237,.35);
+      background: rgba(255,255,255,.96);
     }
     .helpPanel{
       display:none;
       border:1px solid rgba(15,23,42,.12);
-      background: rgba(255,255,255,.72);
+      background: rgba(255,255,255,.84);
       border-radius:14px;
       padding:10px;
-      margin-bottom:12px;
+      margin-top:8px;
     }
     .helpPanel.open{ display:block; }
     .helpStep{
@@ -204,6 +248,7 @@
       background:#fff;
       margin-bottom:10px;
       display:block;
+      box-shadow: 0 6px 18px rgba(0,0,0,.08);
     }
 
     .msg{
@@ -272,16 +317,19 @@
 
       <label>Username</label>
       <input id="username" placeholder="ej: coquito">
-      <div class="fieldHint">Este username se utilizara para realizar la conexion con los stats del simulador.</div>
+      <div class="usernameHint">Este username se utilizara para realizar la conexion con los stats del simulador.</div>
 
-      <label>SIM profile URL</label>
-      <input id="sim_profile_url" placeholder="https://...">
-      <button class="helpBtn" id="btnSimUrlHelp" type="button">Donde conseguir la URL de mi perfil del SIM?</button>
-      <div class="helpPanel" id="simUrlHelpPanel">
-        <p class="helpStep"><strong>DOC0:</strong> Accedemos al simulador, vamos a la parte de encontrar match y clicamos en match history.</p>
-        <img class="helpShot" src="DOC/DOC0.png" alt="DOC0 - Match history en simulador" />
-        <p class="helpStep"><strong>DOC1:</strong> Necesitamos la URL a la que nos dirige, que nos dara la informacion del usuario y del dispositivo para asegurar que eres tu.</p>
-        <img class="helpShot" src="DOC/DOC1.png" alt="DOC1 - URL del perfil del simulador" />
+      <div class="simConnect">
+        <div class="simConnectHead">Conexion SIM</div>
+        <label>SIM profile URL</label>
+        <input id="sim_profile_url" placeholder="https://...">
+        <button class="helpBtn" id="btnSimUrlHelp" type="button">Donde conseguir la URL de mi perfil del SIM?</button>
+        <div class="helpPanel" id="simUrlHelpPanel">
+          <p class="helpStep"><strong>DOC0:</strong> Accedemos al simulador, vamos a la parte de encontrar match y clicamos en match history.</p>
+          <img class="helpShot" src="DOC/DOC0.png" alt="DOC0 - Match history en simulador" />
+          <p class="helpStep"><strong>DOC1:</strong> Necesitamos la URL a la que nos dirige, que nos dara la informacion del usuario y del dispositivo para asegurar que eres tu.</p>
+          <img class="helpShot" src="DOC/DOC1.png" alt="DOC1 - URL del perfil del simulador" />
+        </div>
       </div>
 
       <label>Nombre visible</label>
