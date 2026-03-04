@@ -1161,6 +1161,7 @@
     const btn = $("btnCreateEvent");
 
     try{
+      if (btn?.disabled) return;
       if (btn) btn.disabled = true;
       const user = currentUser || null;
       if (!user){
@@ -1182,7 +1183,8 @@
       $("event_location").value = "";
       $("event_description").value = "";
       showEventMsg("Evento guardado", "ok");
-      await refreshCalendarOnly();
+      // Refresco en background para no bloquear el boton de guardar
+      void refreshCalendarOnly();
     }catch(e){
       console.error(e);
       showEventMsg("Error guardando evento: " + (e.message || "unknown"), "err");
