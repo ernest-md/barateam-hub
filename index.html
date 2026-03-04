@@ -810,7 +810,7 @@
   function userLabelById(userId){
     if (!userId) return "Usuario";
     if (profileNameCache.has(userId)) return profileNameCache.get(userId);
-    return "user-" + String(userId).slice(0,8);
+    return "usuario";
   }
 
   function profileHrefById(userId){
@@ -836,15 +836,18 @@
 
     if (error){
       console.warn("profiles:", error.message);
+      for (const id of missing){
+        if (!profileNameCache.has(id)) profileNameCache.set(id, "usuario");
+      }
       return;
     }
 
     for (const row of (data || [])){
-      const label = row.username || row.display_name || ("user-" + String(row.id).slice(0,8));
+      const label = row.username || row.display_name || "usuario";
       profileNameCache.set(row.id, label);
     }
     for (const id of missing){
-      if (!profileNameCache.has(id)) profileNameCache.set(id, "user-" + String(id).slice(0,8));
+      if (!profileNameCache.has(id)) profileNameCache.set(id, "usuario");
     }
   }
 

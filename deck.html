@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Deck ï¿½ Barateam Hub</title>
+  <title>Deck · Barateam Hub</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
@@ -407,7 +407,7 @@
     function userLabel(userId){
       if (!userId) return "Usuario";
       if (profileCache.has(userId)) return profileCache.get(userId);
-      return "user-" + String(userId).slice(0,8);
+      return "usuario";
     }
 
     function norm(value){
@@ -520,14 +520,17 @@
 
       if (error){
         console.warn("profiles:", error.message);
+        for (const id of missing){
+          if (!profileCache.has(id)) profileCache.set(id, "usuario");
+        }
         return;
       }
 
       for (const row of (data || [])){
-        profileCache.set(row.id, row.username || row.display_name || ("user-" + String(row.id).slice(0,8)));
+        profileCache.set(row.id, row.username || row.display_name || "usuario");
       }
       for (const id of missing){
-        if (!profileCache.has(id)) profileCache.set(id, "user-" + String(id).slice(0,8));
+        if (!profileCache.has(id)) profileCache.set(id, "usuario");
       }
     }
 

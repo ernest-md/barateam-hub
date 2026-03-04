@@ -676,17 +676,33 @@
 
       if (error){
         console.warn("profiles:", error.message);
+        for (const id of missing){
+          if (!usernameByUserId.has(id)){
+            usernameByUserId.set(id, "usuario");
+          }
+        }
         return;
       }
 
       for (const p of (data || [])){
-        usernameByUserId.set(p.id, p.username || ("user-" + String(p.id).slice(0, 8)));
+        usernameByUserId.set(p.id, p.username || "usuario");
       }
       for (const id of missing){
         if (!usernameByUserId.has(id)){
-          usernameByUserId.set(id, "user-" + String(id).slice(0, 8));
+          usernameByUserId.set(id, "usuario");
         }
       }
+    }
+
+    function profileHrefById(userId){
+      if (!userId) return "";
+      return `user.html?id=${encodeURIComponent(userId)}`;
+    }
+
+    function profileLinkById(userId, label){
+      const safe = label || "Usuario";
+      if (!userId) return escapeHtml(safe);
+      return `<a class="userLink" href="${escapeAttr(profileHrefById(userId))}">${escapeHtml(safe)}</a>`;
     }
 
     function renderDecksAsTable(decks){
@@ -713,9 +729,12 @@
         tr.innerHTML = `
           <td><span class="pillMini">${escapeHtml(name)}</span></td>
           <td><div class="leaderCell">${imgHtml}<span class="pillMini">${escapeHtml(leader)}</span></div></td>
-          <td><span class="mono">${escapeHtml(autor)}</span></td>
+          <td><span class="mono">${profileLinkById(d.autor, autor)}</span></td>
           <td title="${escapeAttr(dateExact)}">${escapeHtml(date)}</td>
         `;
+        tr.querySelectorAll("a.userLink").forEach((a) => {
+          a.addEventListener("click", (ev) => ev.stopPropagation());
+        });
 
         tr.addEventListener("click", () => {
           location.href = `deck.html?id=${encodeURIComponent(d.id)}`;

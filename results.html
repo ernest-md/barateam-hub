@@ -328,7 +328,7 @@
         console.warn("profile username:", error.message);
         return;
       }
-      const username = data?.username || ("user-" + String(currentUser.id).slice(0,8));
+      const username = data?.username || (currentUser.email ? currentUser.email.split("@")[0] : "usuario");
       $("currentUsernameHint").textContent = `Usuario: @${username}`;
     }
 

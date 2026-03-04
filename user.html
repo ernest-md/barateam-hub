@@ -275,9 +275,9 @@
     }
 
     function renderProfile(profile){
-      const displayName = profile.display_name || profile.username || ("user-" + String(profile.id).slice(0,8));
+      const displayName = profile.display_name || profile.username || "Usuario";
       $("name").textContent = displayName;
-      $("username").textContent = profile.username ? ("@" + profile.username) : ("id: " + String(profile.id).slice(0,8));
+      $("username").textContent = profile.username ? ("@" + profile.username) : "@usuario";
       $("bio").textContent = profile.bio || "Sin bio.";
 
       if (profile.avatar_url){
@@ -359,15 +359,45 @@
         return;
       }
 
-      let query = sb.from("profiles").select("id,username,display_name,bio,avatar_url");
-      query = byUsername ? query.eq("username", byUsername) : query.eq("id", byId);
-      const { data: profile, error } = await query.maybeSingle();
-      if (error){
-        show("Error cargando perfil: " + error.message, "");
-        return;
+      let profile = null;
+      let targetUserId = byId || null;
+
+      if (byUsername){
+        const { data, error } = await sb
+          .from("profiles")
+          .select("id,username,display_name,bio,avatar_url")
+          .eq("username", byUsername)
+          .maybeSingle();
+        if (error){
+          show("Error cargando perfil: " + error.message, "");
+          return;
+        }
+        if (!data){
+          show("No se encontro el perfil publico.", "");
+          return;
+        }
+        profile = data;
+        targetUserId = data.id;
+      } else {
+        const { data, error } = await sb
+          .from("profiles")
+          .select("id,username,display_name,bio,avatar_url")
+          .eq("id", byId)
+          .maybeSingle();
+        if (error){
+          console.warn("profiles by id:", error.message);
+        }
+        profile = data || {
+          id: byId,
+          username: "",
+          display_name: "Usuario",
+          bio: "",
+          avatar_url: ""
+        };
       }
-      if (!profile){
-        show("No se encontro el perfil publico.", "");
+
+      if (!targetUserId){
+        show("No se pudo resolver el usuario del perfil.", "");
         return;
       }
 
@@ -376,12 +406,12 @@
       const [decksRes, resultsRes] = await Promise.all([
         sb.from("decks")
           .select("id,name,leader,created_at")
-          .eq("autor", profile.id)
+          .eq("autor", targetUserId)
           .order("created_at", { ascending: false })
           .limit(10),
         sb.from("results")
           .select("id,created_at,wins,loses,event,leader")
-          .eq("autor", profile.id)
+          .eq("autor", targetUserId)
           .order("created_at", { ascending: false })
           .limit(10)
       ]);
