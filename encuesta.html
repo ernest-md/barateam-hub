@@ -339,16 +339,15 @@
 
       <div class="stack">
         <article class="panel">
-          <h2 class="sectionTitle">Top metajuegos</h2>
+          <h2 class="sectionTitle">Predicción Meta</h2>
           <h3 class="question" id="pieQuestion">Distribucion principal</h3>
           <p class="sub" id="pieSub">Se ocultan mazos con 2 votos o menos.</p>
           <div class="chartMid"><canvas id="pieMain"></canvas></div>
           <ul class="legendList" id="legendMain"></ul>
-          <p class="tip">Tip: puedes fijar las 2 preguntas con <code>?csv=archivo.csv&amp;q=Pregunta1&amp;q2=Pregunta2</code>.</p>
         </article>
 
         <article class="panel" id="pieSecondaryPanel" style="display:none;">
-          <h2 class="sectionTitle">Mazo unico / alternativo</h2>
+          <h2 class="sectionTitle">Mazo unico</h2>
           <h3 class="question" id="pieSecondaryQuestion">Distribucion secundaria</h3>
           <div class="chartSmall"><canvas id="pieSecondary"></canvas></div>
         </article>
@@ -599,21 +598,20 @@
       const key = `${c1}|${c2}`;
       if (_barPatternCache.has(key)) return _barPatternCache.get(key);
       const p = document.createElement("canvas");
-      p.width = 28;
-      p.height = 28;
+      p.width = 48;
+      p.height = 48;
       const pctx = p.getContext("2d");
       if (!pctx) return c1;
       pctx.fillStyle = c1;
-      pctx.fillRect(0, 0, 28, 28);
+      pctx.fillRect(0, 0, p.width, p.height);
       pctx.strokeStyle = c2;
-      pctx.lineWidth = 8;
+      pctx.lineWidth = 12;
+      pctx.lineCap = "butt";
       pctx.beginPath();
-      pctx.moveTo(-4, 24);
-      pctx.lineTo(24, -4);
-      pctx.stroke();
-      pctx.beginPath();
-      pctx.moveTo(10, 32);
-      pctx.lineTo(32, 10);
+      for (let x = -p.width; x <= p.width * 2; x += 18){
+        pctx.moveTo(x, p.height);
+        pctx.lineTo(x + p.height, 0);
+      }
       pctx.stroke();
       const pattern = ctx.createPattern(p, "repeat") || c1;
       _barPatternCache.set(key, pattern);
