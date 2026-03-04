@@ -411,9 +411,9 @@
     async function fetchResults(){
       const { data, error } = await sb
         .from("results")
-        .select("id,start_at,wins,loses,event,leader,description,autor")
+        .select("id,created_at,wins,loses,event,leader,description,autor")
         .eq("autor", currentUser.id)
-        .order("start_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(300);
 
       if (error){
@@ -429,6 +429,12 @@
       if (!raw) return "";
       const normalized = String(raw).slice(0, 10);
       return /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : "";
+    }
+
+    function resultEventDateKey(resultRow){
+      const ev = eventsById.get(resultRow?.event) || null;
+      const d = eventDateForFilter(ev);
+      return d || "";
     }
 
     function renderResultsPager(total){
@@ -472,8 +478,7 @@
       const sort = $("filter_sort_results").value || "newest";
 
       filteredResults = allResults.filter((r) => {
-        const ev = eventsById.get(r.event) || null;
-        const d = eventDateForFilter(ev);
+        const d = resultEventDateKey(r);
         if (!d) return !from && !to;
         if (from && d < from) return false;
         if (to && d > to) return false;
@@ -481,9 +486,17 @@
       });
 
       filteredResults.sort((a, b) => {
-        const byNewest = () => String(b.start_at || "").localeCompare(String(a.start_at || ""));
+        const byEventNewest = () => {
+          const da = resultEventDateKey(a);
+          const db = resultEventDateKey(b);
+          return String(db || "").localeCompare(String(da || ""));
+        };
+        const byCreatedNewest = () => String(b.created_at || "").localeCompare(String(a.created_at || ""));
+        const byNewest = () => byEventNewest() || byCreatedNewest();
         if (sort === "oldest"){
-          return String(a.start_at || "").localeCompare(String(b.start_at || "")) || String(a.id || "").localeCompare(String(b.id || ""));
+          const byEventOldest = String(resultEventDateKey(a) || "").localeCompare(String(resultEventDateKey(b) || ""));
+          const byCreatedOldest = String(a.created_at || "").localeCompare(String(b.created_at || ""));
+          return byEventOldest || byCreatedOldest || String(a.id || "").localeCompare(String(b.id || ""));
         }
         if (sort === "wins_desc"){
           return (Number(b.wins || 0) - Number(a.wins || 0)) || byNewest();
@@ -628,4 +641,3 @@
   </script>
 </body>
 </html>
-
