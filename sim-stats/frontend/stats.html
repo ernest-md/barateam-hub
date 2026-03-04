@@ -1,18 +1,131 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Stats · Team Hub</title>
+  <title>Stats · Barateam Hub</title>
+  <link rel="icon" href="../../favicon.ico" type="image/x-icon" />
+  <link rel="stylesheet" href="../../app.css" />
   <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../app.js"></script>
+
+  <style>
+    body{
+      margin:0;
+      padding:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:#0b1220;
+      color:#0f172a;
+    }
+    body::before{
+      content:"";
+      position: fixed;
+      inset:0;
+      background:
+        radial-gradient(1200px 800px at 10% 10%, rgba(124,58,237,.35), transparent 60%),
+        radial-gradient(900px 650px at 90% 20%, rgba(6,182,212,.28), transparent 60%),
+        radial-gradient(1000px 700px at 40% 95%, rgba(245,158,11,.20), transparent 55%),
+        linear-gradient(180deg, rgba(11,18,32,.78), rgba(11,18,32,.78)),
+        url("../../bg.png");
+      background-size: cover;
+      background-position: center;
+      filter: saturate(1.1);
+      z-index:-2;
+    }
+    body::after{
+      content:"";
+      position: fixed;
+      inset:0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
+      opacity:.18;
+      mix-blend-mode: overlay;
+      pointer-events:none;
+      z-index:-1;
+    }
+
+    .bar{ max-width:1200px; }
+    .brand{
+      display:flex;
+      flex-direction: column;
+      gap:2px;
+      color:#fff;
+      font-weight:900;
+      letter-spacing:.4px;
+      margin-right: 6px;
+      line-height: 1.1;
+    }
+    .brand small{
+      font-weight:700;
+      color: rgba(255,255,255,.72);
+      letter-spacing:.2px;
+    }
+
+    .page{
+      max-width: 1400px;
+      margin: 14px auto 28px;
+      padding: 0 14px;
+      box-sizing: border-box;
+    }
+
+    .card{
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(255,255,255,.20);
+      border-radius: 22px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+      padding: 20px;
+    }
+
+    @media (max-width:760px){
+      .page{ padding:0 10px; margin:12px auto 22px; }
+      .card{ padding:12px; border-radius:16px; }
+    }
+  </style>
 </head>
 
 <body>
+  <div class="topbar">
+    <div class="bar with-auth-corner">
+      <div class="brand">
+        BARATEAM HUB
+        <small>stats</small>
+      </div>
+
+      <div class="nav">
+        <a class="btn" href="../../index.html">&#127968; Home</a>
+        <a class="btn primary active" href="../../sim-stats/frontend/stats.html" data-requires-auth="1">&#128202; SIM Stats</a>
+        <a class="btn" href="../../op-wrapped.html">&#127956; OP Wrapped</a>
+        <a class="btn" href="../../decks.html">&#127183; DeckLists</a>
+        <a class="btn" href="../../results.html" data-requires-auth="1">&#127942; Results</a>
+        <a class="btn" href="../../encuestas.html">&#128499;&#65039; Encuestas</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="authCorner">
+    <a class="btn" id="navLogin" href="../../login.html">&#128274; Login</a>
+    <div class="userwrap" id="navUser" style="display:none;">
+      <button class="btn userbtn" id="userBtn" type="button">
+        <img id="navAvatarImg" class="navAvatarImg" alt="avatar" />
+        <span id="navAvatarFallback" class="navAvatarFallback">?</span>
+        <span id="userLabel" style="display:none;">Usuario</span>
+        <span class="chev">v</span>
+      </button>
+      <div class="menu" id="userMenu">
+        <div class="head">
+          <strong id="userEmail">—</strong>
+          <span>Sesion iniciada</span>
+        </div>
+        <a href="../../profile.html">Ver perfil</a>
+        <div class="sep"></div>
+        <button class="danger" id="menuLogout" type="button">Cerrar sesion</button>
+      </div>
+    </div>
+  </div>
 
   <div class="page">
     <div class="card">
 
-      <!-- HEADER -->
       <div class="headerRow">
         <div class="title">Barateam Stats</div>
 
@@ -23,20 +136,17 @@
           </div>
 
           <div class="filterBlock">
-            Expansión:
+            Expansion:
             <select id="expansionSelect"></select>
           </div>
           <button id="syncMatchesBtn" class="sync-btn">
-            🔄 Cargar nuevas partidas
+            Cargar nuevas partidas
           </button>
           <div id="syncStatus" class="sync-status"></div>
         </div>
       </div>
 
-      <!-- SUMMARY VIEW -->
       <div id="summaryView">
-
-        <!-- RESUMEN -->
         <div class="summary">
           <div class="summaryBox">
             Total
@@ -59,11 +169,9 @@
           </div>
         </div>
 
-        <!-- TABLAS -->
         <div class="mainLayout">
-
           <div class="leaders">
-            <h3>Estadísticas por líder</h3>
+            <h3>Estadisticas por lider</h3>
 
             <table>
               <thead>
@@ -83,14 +191,13 @@
           </div>
 
           <div class="matchups">
-
             <h3>Matchups Globales</h3>
 
-            <h4>Más victorias</h4>
-            <table> 
+            <h4>Mas victorias</h4>
+            <table>
               <thead>
                 <tr>
-                  <th>Líder</th>
+                  <th>Lider</th>
                   <th>W</th>
                   <th>P</th>
                   <th>WR</th>
@@ -99,28 +206,24 @@
               <tbody id="topWins"></tbody>
             </table>
 
-            <h4>Más derrotas</h4>
+            <h4>Mas derrotas</h4>
             <table>
-                <thead>
-                  <tr>
-                    <th>Líder</th>
-                    <th>L</th>
-                    <th>P</th>
-                    <th>WR</th>
-                  </tr>
-                </thead>
+              <thead>
+                <tr>
+                  <th>Lider</th>
+                  <th>L</th>
+                  <th>P</th>
+                  <th>WR</th>
+                </tr>
+              </thead>
               <tbody id="topLosses"></tbody>
             </table>
-
           </div>
-
         </div>
       </div>
 
-      <!-- LEADER VIEW -->
       <div id="leaderView" style="display:none; margin-top:20px;">
-
-        <button id="backToSummary">← Volver</button>
+        <button id="backToSummary">Volver</button>
 
         <div id="leaderSummary" class="leaderSummary"></div>
 
@@ -128,7 +231,7 @@
           <thead>
             <tr>
               <th>Img</th>
-              <th>Líder</th>
+              <th>Lider</th>
               <th>Partidas</th>
               <th>Victorias</th>
               <th>Derrotas</th>
@@ -141,13 +244,36 @@
           </thead>
           <tbody id="leaderMatchups"></tbody>
         </table>
-
       </div>
 
     </div>
   </div>
 
-  <script type="module" src="./js/stats.js"></script>
+  <script>
+    const sb = window.BarateamApp.createClient();
+    window.BarateamApp.bindProtectedNavLinks(sb);
 
+    const navController = window.BarateamApp.initUserNav({
+      onLogout: async () => {
+        await sb.auth.signOut();
+        location.href = "../../login.html";
+      },
+      formatLabel: (user) => (user?.email || "Usuario").split("@")[0] || "Usuario",
+      formatEmail: (user) => user?.email || "user"
+    });
+
+    (async function initNav(){
+      const { data } = await sb.auth.getSession();
+      navController.setUser(data?.session?.user || null);
+      void window.BarateamApp.syncTopbarAvatar(sb, data?.session?.user || null);
+      sb.auth.onAuthStateChange((_event, session) => {
+        navController.setUser(session?.user || null);
+        void window.BarateamApp.syncTopbarAvatar(sb, session?.user || null);
+      });
+    })();
+  </script>
+
+  <script type="module" src="./js/stats.js"></script>
 </body>
 </html>
+
