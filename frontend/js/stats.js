@@ -429,6 +429,13 @@ syncButton.addEventListener("click", async () => {
 async function syncMatchesForSelectedPlayer(playerId) {
 
   const statusDiv = document.getElementById("syncStatus")
+  const selectedPlayerId = playerId ?? playerSelect.value
+
+  if (!selectedPlayerId) {
+    statusDiv.textContent = "Selecciona un jugador antes de sincronizar"
+    statusDiv.className = "sync-status sync-error"
+    return
+  }
 
   statusDiv.textContent = "Cargando partidas..."
   statusDiv.className = "sync-status sync-loading"
@@ -442,10 +449,14 @@ async function syncMatchesForSelectedPlayer(playerId) {
         "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNldW5oa3Foc2t3bnNvcXl1bnplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NDQ0ODcsImV4cCI6MjA4ODAyMDQ4N30.qBGXYYQXlyQwFGeyaeMOtLPHrjBy-eU05AO37yLvi5o",
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNldW5oa3Foc2t3bnNvcXl1bnplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NDQ0ODcsImV4cCI6MjA4ODAyMDQ4N30.qBGXYYQXlyQwFGeyaeMOtLPHrjBy-eU05AO37yLvi5o"
       },
-      body: JSON.stringify({ playerId })
+      body: JSON.stringify({ playerId: selectedPlayerId })
     })
 
-    const data = await res.json()
+    const data = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      throw new Error(data?.error || `Error HTTP ${res.status}`)
+    }
 
     if (data.inserted > 0) {
       statusDiv.textContent = `Se han añadido ${data.inserted} partidas nuevas`
@@ -457,7 +468,7 @@ async function syncMatchesForSelectedPlayer(playerId) {
 
   } catch (err) {
 
-    statusDiv.textContent = "Error al sincronizar partidas"
+    statusDiv.textContent = `Error al sincronizar partidas: ${err.message}`
     statusDiv.className = "sync-status sync-error"
 
   }
