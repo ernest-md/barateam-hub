@@ -224,15 +224,45 @@
       display:none;
       white-space:pre-line;
     }
-    .loading{
-      margin-top:12px;
-      border-radius:14px;
-      padding:10px 12px;
-      border:1px solid rgba(59,130,246,.35);
-      background:rgba(59,130,246,.10);
-      color:#1e3a8a;
-      font-size:13px;
-      display:none;
+    .loadingOverlay{
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(9, 14, 28, .55);
+      backdrop-filter: blur(4px);
+    }
+    .loadingBox{
+      min-width: 280px;
+      max-width: min(92vw, 520px);
+      border-radius: 18px;
+      padding: 14px 16px;
+      border: 1px solid rgba(255,255,255,.28);
+      background: linear-gradient(135deg, rgba(15,23,42,.95), rgba(30,64,175,.88));
+      color: #eef4ff;
+      box-shadow: 0 20px 44px rgba(0,0,0,.35);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .spinner{
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,.28);
+      border-top-color: #fff;
+      animation: spin .8s linear infinite;
+      flex: 0 0 auto;
+    }
+    .loadingText{
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+    @keyframes spin{
+      to { transform: rotate(360deg); }
     }
     .tip{
       margin-top:8px;
@@ -283,7 +313,12 @@
     </section>
 
     <div id="msg" class="msg"></div>
-    <div id="loading" class="loading">Cargando imagenes y generando graficas...</div>
+    <div id="loadingOverlay" class="loadingOverlay" aria-live="polite" aria-busy="true">
+      <div class="loadingBox">
+        <span class="spinner" aria-hidden="true"></span>
+        <span id="loadingText" class="loadingText">Cargando imagenes y generando graficas...</span>
+      </div>
+    </div>
 
     <section class="layout">
       <div class="stack">
@@ -335,10 +370,12 @@
     const $ = window.BarateamApp.byId;
     const showError = (txt) => window.BarateamApp.showMessage("msg", txt);
     const setLoading = (on, text) => {
-      const el = $("loading");
-      if (!el) return;
-      if (text) el.textContent = text;
-      el.style.display = on ? "block" : "none";
+      const overlay = $("loadingOverlay");
+      const label = $("loadingText");
+      if (!overlay || !label) return;
+      if (text) label.textContent = text;
+      overlay.style.display = on ? "flex" : "none";
+      document.body.style.overflow = on ? "hidden" : "";
     };
 
     const COLORS = [
@@ -505,6 +542,8 @@
             name: x?.name || x?.leader || "",
             code: x?.code || x?.expansion || "",
             alias: x?.leader_alias || x?.alias || "",
+            colorPrimary: x?.color_primary || "",
+            colorSecondary: x?.color_secondary || "",
             image
           });
         }
@@ -516,25 +555,60 @@
     }
 
     function findLeaderImageForLabel(label, leaders){
+      const leader = findLeaderForLabel(label, leaders);
+      return leader?.image || "";
+    }
+
+    function findLeaderForLabel(label, leaders){
       const q = normalizeLabel(label);
-      if (!q) return "";
+      if (!q) return null;
       for (const l of leaders){
         const alias = normalizeLabel(l.alias);
         if (alias && q === alias){
-          return l.image;
+          return l;
         }
       }
-      let best = "";
       for (const l of leaders){
         const name = normalizeLabel(l.name);
         const code = normalizeLabel(l.code);
         const full = normalizeLabel(`${l.name} ${l.code}`);
         if (q === name || q === code || q === full || q.includes(full) || full.includes(q)){
-          best = l.image;
-          break;
+          return l;
         }
       }
-      return best;
+      return null;
+    }
+
+    function colorTokenToHex(token){
+      const t = String(token || "").trim().toLowerCase();
+      if (!t) return "";
+      const map = {
+        red: "#ef4444", rojo: "#ef4444",
+        blue: "#3b82f6", azul: "#3b82f6",
+        green: "#22c55e", verde: "#22c55e",
+        yellow: "#f59e0b", amarillo: "#f59e0b",
+        purple: "#a855f7", lila: "#a855f7", violet: "#8b5cf6",
+        black: "#111827", negro: "#111827",
+        white: "#e5e7eb", blanco: "#e5e7eb"
+      };
+      return map[t] || (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(t) ? t : "");
+    }
+
+    function barFillForLabel(label, leaders, fallbackColor, canvasEl){
+      const leader = findLeaderForLabel(label, leaders);
+      if (!leader) return fallbackColor;
+      const c1 = colorTokenToHex(leader.colorPrimary);
+      const c2 = colorTokenToHex(leader.colorSecondary);
+      if (!c1 && !c2) return fallbackColor;
+      if (c1 && !c2) return c1;
+      if (!c1 && c2) return c2;
+      const ctx = canvasEl?.getContext?.("2d");
+      if (!ctx) return c1;
+      const h = Math.max(120, canvasEl.height || 300);
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, c1);
+      g.addColorStop(1, c2);
+      return g;
     }
 
     async function loadImage(url){
@@ -622,7 +696,8 @@
 
     async function makeBarChart(canvasId, labels, values){
       const c = $(canvasId);
-      const fills = await buildFills(labels, "bar");
+      const leaders = await loadLeaders();
+      const fills = labels.map((lab, i) => barFillForLabel(lab, leaders, colorFor(i), c));
       const ch = new Chart(c, {
         type: "bar",
         data: {
@@ -772,15 +847,28 @@
       charts.push(ch);
     }
 
-    function renderLegend(elId, labels, values){
+    function legendSwatchStyle(label, leaders, fallbackColor){
+      const leader = findLeaderForLabel(label, leaders);
+      if (!leader) return `background:${fallbackColor};`;
+      const c1 = colorTokenToHex(leader.colorPrimary);
+      const c2 = colorTokenToHex(leader.colorSecondary);
+      if (!c1 && !c2) return `background:${fallbackColor};`;
+      if (c1 && !c2) return `background:${c1};`;
+      if (!c1 && c2) return `background:${c2};`;
+      return `background:linear-gradient(135deg, ${c1}, ${c2});`;
+    }
+
+    async function renderLegend(elId, labels, values){
       const ul = $(elId);
       ul.innerHTML = "";
+      const leaders = await loadLeaders();
       labels.slice(0, 5).forEach((lab, i) => {
+        const swatchStyle = legendSwatchStyle(lab, leaders, colorFor(i));
         const li = document.createElement("li");
         li.className = "legendItem";
         li.innerHTML = `
           <div class="legendLabel">
-            <span class="legendSwatch" style="background:${colorFor(i)}"></span>
+            <span class="legendSwatch" style="${swatchStyle}"></span>
             <span class="legendText">${lab}</span>
           </div>
           <span class="legendVal">${values[i]}</span>
@@ -865,7 +953,7 @@
         if (mainFilteredForDonut.length){
           setLoading(true, "Cargando imagenes de lideres...");
           await makePieChart("pieMain", mainFilteredForDonut.map((x) => x[0]), mainFilteredForDonut.map((x) => x[1]));
-          renderLegend("legendMain", mainFilteredForDonut.map((x) => x[0]), mainFilteredForDonut.map((x) => x[1]));
+          await renderLegend("legendMain", mainFilteredForDonut.map((x) => x[0]), mainFilteredForDonut.map((x) => x[1]));
         } else {
           showError("Pregunta 1: no hay mazos con mas de 2 votos para donut.");
         }
