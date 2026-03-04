@@ -411,9 +411,9 @@
     async function fetchResults(){
       const { data, error } = await sb
         .from("results")
-        .select("id,created_at,wins,loses,event,leader,description,autor")
+        .select("id,start_at,wins,loses,event,leader,description,autor")
         .eq("autor", currentUser.id)
-        .order("created_at", { ascending: false })
+        .order("start_at", { ascending: false })
         .limit(300);
 
       if (error){
@@ -481,9 +481,9 @@
       });
 
       filteredResults.sort((a, b) => {
-        const byNewest = () => String(b.created_at || "").localeCompare(String(a.created_at || ""));
+        const byNewest = () => String(b.start_at || "").localeCompare(String(a.start_at || ""));
         if (sort === "oldest"){
-          return String(a.created_at || "").localeCompare(String(b.created_at || "")) || String(a.id || "").localeCompare(String(b.id || ""));
+          return String(a.start_at || "").localeCompare(String(b.start_at || "")) || String(a.id || "").localeCompare(String(b.id || ""));
         }
         if (sort === "wins_desc"){
           return (Number(b.wins || 0) - Number(a.wins || 0)) || byNewest();
