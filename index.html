@@ -721,7 +721,7 @@
 
   async function refreshSession(){
     try{
-      const { data } = await withTimeout(sb.auth.getSession(), 8000);
+      const { data } = await sb.auth.getSession();
       const user = data?.session?.user || null;
       currentUser = user;
       window.__barateamCurrentUser = user;
@@ -1110,8 +1110,7 @@
 
     try{
       if (btn) btn.disabled = true;
-      const { data } = await withTimeout(sb.auth.getSession(), 8000);
-      const user = data?.session?.user || null;
+      const user = currentUser || null;
       if (!user){
         showPostMsg("No hay sesion activa.", "err");
         return;
@@ -1159,9 +1158,11 @@
     const description = $("event_description")?.value?.trim() || null;
     const start_at = startLocal ? new Date(startLocal).toISOString() : null;
 
+    const btn = $("btnCreateEvent");
+
     try{
-      const { data } = await withTimeout(sb.auth.getSession(), 8000);
-      const user = data?.session?.user || null;
+      if (btn) btn.disabled = true;
+      const user = currentUser || null;
       if (!user){
         showEventMsg("No hay sesion activa.", "err");
         return;
@@ -1185,6 +1186,8 @@
     }catch(e){
       console.error(e);
       showEventMsg("Error guardando evento: " + (e.message || "unknown"), "err");
+    }finally{
+      if (btn) btn.disabled = false;
     }
   }
 
