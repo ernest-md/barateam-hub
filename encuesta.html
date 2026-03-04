@@ -446,6 +446,21 @@
       }
     }
 
+    function normalizeExternalImageUrl(url){
+      let out = String(url || "").trim();
+      if (!out) return "";
+      out = out.replace("/Card Images/", "/Card_Images/");
+      out = out.replace("/Card%20Images/", "/Card_Images/");
+      return encodeURI(out);
+    }
+
+    function asImageProxy(url){
+      const clean = normalizeExternalImageUrl(url);
+      if (!clean) return "";
+      const withoutProto = clean.replace(/^https?:\/\//i, "");
+      return `https://images.weserv.nl/?url=${encodeURIComponent(withoutProto)}`;
+    }
+
     async function loadLeaders(){
       if (leadersCache) return leadersCache;
       try{
@@ -507,11 +522,21 @@
 
     async function loadImage(url){
       return await new Promise((resolve, reject) => {
-        const img = new Image();        
-        img.crossOrigin = "anonymous";
+        const direct = normalizeExternalImageUrl(url);
+        const proxy = asImageProxy(url);
+        const img = new Image();
         img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = url;
+        img.onerror = () => {
+          if (!proxy || proxy === direct){
+            reject(new Error("image load failed"));
+            return;
+          }
+          const img2 = new Image();
+          img2.onload = () => resolve(img2);
+          img2.onerror = reject;
+          img2.src = proxy;
+        };
+        img.src = direct || url;
       });
     }
 
