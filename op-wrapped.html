@@ -302,8 +302,8 @@
     }
 
     .pImg{
-      width: 74px;
-      height: 104px;
+      width: 100px;
+      height: 139px;
       border-radius: 0px;
       border: 1px solid rgba(15,23,42,.14);
       background: rgba(255,255,255,.7);
@@ -695,7 +695,6 @@
         const item = document.createElement("div");
         item.className = "pCard";
         item.innerHTML = `
-          <div class="pNum">#${n++}</div>
           <img class="pImg" ${hasImg ? `src="${escapeAttr(img)}"` : ""} alt="" style="opacity:${hasImg ? 1 : .25}">
           <div class="pMeta">
             <div class="pTitle">${escapeHtml(title)}</div>
