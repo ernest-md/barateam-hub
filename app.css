@@ -329,4 +329,8 @@ html, body{
     max-width: 100%;
     overflow-x: clip;
   }
+
+  #menuLogout {
+    width: 100% !important;
+  }
 }
