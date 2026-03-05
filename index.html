@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Home � Barateam Hub</title>
+  <title>Home · Barateam Hub</title>
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
 
   <link rel="stylesheet" href="app.css?v=20260305b" />
@@ -422,27 +422,63 @@
       line-height: 1.05;
     }
     .featuredSub{
-      margin:4px 0 0;
+      margin:0;
       font-size: 12px;
       color: rgba(226,232,240,.82);
     }
     .featuredHero{
       display:flex;
-      align-items:center;
-      gap: 10px;
-      margin-bottom: 6px;
+      align-items:flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
     }
-    .champTag{
-      font-size: 10px;
-      letter-spacing: .9px;
-      text-transform: uppercase;
-      font-weight: 1000;
-      color:#fef3c7;
-      border: 1px solid rgba(254,243,199,.45);
-      background: rgba(245,158,11,.22);
+    .featuredIdentity{
+      min-width: 0;
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+    }
+    .featuredNameLine{
+      display:flex;
+      align-items:baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .featuredAvatar{
+      width: 44px;
+      height: 44px;
       border-radius: 999px;
-      padding: 4px 8px;
-      white-space: nowrap;
+      object-fit: cover;
+      border: 2px solid rgba(255,255,255,.36);
+      background: rgba(15,23,42,.35);
+      box-shadow: 0 8px 16px rgba(2,6,23,.35);
+      flex: 0 0 auto;
+    }
+    .featuredAvatarFallback{
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,.34);
+      background: rgba(15,23,42,.46);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: 16px;
+      font-weight: 1000;
+      text-transform: uppercase;
+      box-shadow: 0 8px 16px rgba(2,6,23,.35);
+      flex: 0 0 auto;
+    }
+    .featuredRankNo{
+      font-size: 20px;
+      font-weight: 1000;
+      letter-spacing: .9px;
+      color:#fde68a;
+      text-transform: uppercase;
+      text-shadow:
+        0 1px 10px rgba(245,158,11,.45),
+        0 1px 1px rgba(2,6,23,.65);
     }
     .featuredStats{
       margin-top: 10px;
@@ -852,7 +888,7 @@
     <div class="bar with-auth-corner">
       <div class="brand">
         <img class="brandLogo" src="BT_LOGO.png" alt="BARATEAM HUB" />
-        <small>home � tools � novedades</small>
+        <small>home · tools · novedades</small>
       </div>
 
       <div class="nav">
@@ -878,7 +914,7 @@
     </button>
     <div class="menu" id="userMenu">
       <div class="head">
-        <strong id="userEmail">�</strong>
+        <strong id="userEmail">â€”</strong>
         <span>Sesion iniciada</span>
       </div>
       <a href="profile.html">Ver perfil</a>
@@ -946,7 +982,7 @@
       </div>
     </div>
 
-    <div class="foot">Hecho con &#10084;&#65039; para el team � GitHub Pages</div>
+    <div class="foot">Hecho con &#10084;&#65039; para el team · GitHub Pages</div>
   </div>
 
   <script>
@@ -1432,7 +1468,7 @@
 
     const { data, error } = await sb
       .from("profiles")
-      .select("id,username,display_name")
+      .select("id,username,display_name,avatar_url")
       .in("id", ids);
 
     if (error){
@@ -1600,7 +1636,7 @@
 
   function matchupHtml(item, cls){
     if (!item){
-      return `<div class="lrMu ${cls}"><span class="featuredMuted">�</span></div>`;
+      return `<div class="lrMu ${cls}"><span class="featuredMuted">â€”</span></div>`;
     }
     return `
       <div class="lrMu ${cls}" title="${escapeAttr(item.name || item.code || "-")}">
@@ -1657,6 +1693,8 @@
     const mainPlayer = playersMap.get(main.playerId);
     const mainProfile = profileMap.get(featuredPlayerProfileId(playersMap, main.playerId));
     const mainLabel = playerLabel(mainProfile, mainPlayer, main.playerId);
+    const mainAvatar = mainProfile?.avatar_url || "";
+    const mainInitial = String(mainLabel || "U").trim().charAt(0) || "U";
     const topGamesLeader = main.topLeaderByGames;
     const topWrLeader = main.topLeaderByWr;
 
@@ -1679,10 +1717,17 @@
       <div class="featuredMain">
         <div>
           <div class="featuredHero">
-            <span class="champTag">Jugador #1</span>
+            ${mainAvatar
+              ? `<img class="featuredAvatar" src="${escapeAttr(mainAvatar)}" alt="${escapeAttr(mainLabel)}">`
+              : `<div class="featuredAvatarFallback">${escapeHtml(mainInitial)}</div>`}
+            <div class="featuredIdentity">
+              <div class="featuredNameLine">
+                <h3 class="featuredTitle">${featuredPlayerLabelHtml(playersMap, main.playerId, mainLabel)}</h3>
+                <span class="featuredRankNo">#1</span>
+              </div>
+              <p class="featuredSub">Mejor winrate con volumen de partidas</p>
+            </div>
           </div>
-          <h3 class="featuredTitle">${featuredPlayerLabelHtml(playersMap, main.playerId, mainLabel)}</h3>
-          <p class="featuredSub">Mejor winrate con volumen de partidas</p>
           <div class="featuredStats">
             <div class="featuredStat">
               <div class="k">Partidas</div>
@@ -1708,7 +1753,7 @@
             <div class="leaderLine">
               ${leaderImageHtml(topGamesLeader)}
               <div>
-                <p class="leaderName">${escapeHtml(topGamesLeader?.name || "�")}</p>
+                <p class="leaderName">${escapeHtml(topGamesLeader?.name || "â€”")}</p>
                 <p class="leaderMeta">${topGamesLeader ? `${topGamesLeader.games} partidas` : "Sin datos"}</p>
               </div>
             </div>
@@ -1718,7 +1763,7 @@
             <div class="leaderLine">
               ${leaderImageHtml(topWrLeader)}
               <div>
-                <p class="leaderName">${escapeHtml(topWrLeader?.name || "�")}</p>
+                <p class="leaderName">${escapeHtml(topWrLeader?.name || "â€”")}</p>
                 <p class="leaderMeta">${topWrLeader ? `${percentText(topWrLeader.wins, topWrLeader.games)} en ${topWrLeader.games} partidas` : "Sin datos"}</p>
               </div>
             </div>
@@ -2060,8 +2105,8 @@
               if (!dt) return "";
               const hh = String(dt.getHours()).padStart(2,"0");
               const mm = String(dt.getMinutes()).padStart(2,"0");
-              const loc = ev.location ? ` � ${escapeHtml(ev.location)}` : "";
-              return `<div class="tipItem">&#128197; ${hh}:${mm} � <strong>${escapeHtml(ev.title)}</strong>${loc}</div>`;
+              const loc = ev.location ? ` · ${escapeHtml(ev.location)}` : "";
+              return `<div class="tipItem">&#128197; ${hh}:${mm} · <strong>${escapeHtml(ev.title)}</strong>${loc}</div>`;
             }).join("")}
           </div>
         ` : ""}
@@ -2190,6 +2235,7 @@
 </script>
 </body>
 </html>
+
 
 
 

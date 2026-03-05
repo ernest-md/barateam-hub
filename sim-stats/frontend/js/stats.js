@@ -14,6 +14,15 @@ let currentFilteredMatches = []
 let selectedLeaderCode = null
 let allowedPlayerIds = new Set()
 
+function setLoading(on, text) {
+  const overlay = document.getElementById("loadingOverlay")
+  const label = document.getElementById("loadingText")
+  if (!overlay || !label) return
+  if (text) label.textContent = text
+  overlay.style.display = on ? "flex" : "none"
+  document.body.style.overflow = on ? "hidden" : ""
+}
+
 /* ================= INIT ================= */
 
 
@@ -527,4 +536,18 @@ async function syncMatchesForSelectedPlayer(playerId) {
 }
 
 
-init()
+;(async function bootstrap() {
+  setLoading(true, "Cargando estadisticas...")
+  try {
+    await init()
+  } catch (err) {
+    console.error("stats init:", err)
+    const statusDiv = document.getElementById("syncStatus")
+    if (statusDiv) {
+      statusDiv.textContent = "Error cargando estadisticas."
+      statusDiv.className = "sync-status sync-error"
+    }
+  } finally {
+    setLoading(false)
+  }
+})()

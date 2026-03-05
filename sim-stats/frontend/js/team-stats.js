@@ -11,6 +11,15 @@ let allExpansions = []
 let playersMap = new Map()
 let currentUserTeam = "SIN EQUIPO"
 
+function setLoading(on, text) {
+  const overlay = document.getElementById("loadingOverlay")
+  const label = document.getElementById("loadingText")
+  if (!overlay || !label) return
+  if (text) label.textContent = text
+  overlay.style.display = on ? "flex" : "none"
+  document.body.style.overflow = on ? "hidden" : ""
+}
+
 async function init() {
   currentUserTeam = await getCurrentUserTeam()
   updateTitles()
@@ -252,4 +261,14 @@ expansionSelect.addEventListener("change", () => {
   renderTeamSummary(applyExpansionFilter(allMatches))
 })
 
-init()
+;(async function bootstrap() {
+  setLoading(true, "Cargando estadisticas de equipo...")
+  try {
+    await init()
+  } catch (err) {
+    console.error("team stats init:", err)
+    renderEmpty("Error cargando estadisticas de equipo.")
+  } finally {
+    setLoading(false)
+  }
+})()
