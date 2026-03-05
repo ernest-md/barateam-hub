@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Home · Barateam Hub</title>
+  <title>Home Â· Barateam Hub</title>
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
 
   <link rel="stylesheet" href="app.css" />
@@ -523,7 +523,7 @@
     <div class="bar with-auth-corner">
       <div class="brand">
         <img class="brandLogo" src="BT_LOGO.png" alt="BARATEAM HUB" />
-        <small>home · tools · novedades</small>
+        <small>home Â· tools Â· novedades</small>
       </div>
 
       <div class="nav">
@@ -548,7 +548,7 @@
     </button>
     <div class="menu" id="userMenu">
       <div class="head">
-        <strong id="userEmail">—</strong>
+        <strong id="userEmail">â€”</strong>
         <span>Sesion iniciada</span>
       </div>
       <a href="profile.html">Ver perfil</a>
@@ -617,7 +617,7 @@
             <button class="btn btnDark" id="btnToday" type="button">Hoy</button>
             <button class="btn btnDark" id="btnNext" type="button">&#8594;</button>
           </div>
-          <div class="calTitle" id="calTitle">—</div>
+          <div class="calTitle" id="calTitle">â€”</div>
         </div>
 
         <div class="calGrid" id="calDow"></div>
@@ -658,7 +658,7 @@
       </div>
     </div>
 
-    <div class="foot">Hecho con &#10084;&#65039; para el team · GitHub Pages</div>
+    <div class="foot">Hecho con &#10084;&#65039; para el team Â· GitHub Pages</div>
   </div>
 
   <script>
@@ -1299,8 +1299,8 @@
               if (!dt) return "";
               const hh = String(dt.getHours()).padStart(2,"0");
               const mm = String(dt.getMinutes()).padStart(2,"0");
-              const loc = ev.location ? ` · ${escapeHtml(ev.location)}` : "";
-              return `<div class="tipItem">&#128197; ${hh}:${mm} · <strong>${escapeHtml(ev.title)}</strong>${loc}</div>`;
+              const loc = ev.location ? ` Â· ${escapeHtml(ev.location)}` : "";
+              return `<div class="tipItem">&#128197; ${hh}:${mm} Â· <strong>${escapeHtml(ev.title)}</strong>${loc}</div>`;
             }).join("")}
           </div>
         ` : ""}

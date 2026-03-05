@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Resultados ∑ Barateam Hub</title>
+  <title>Resultados ¬∑ Barateam Hub</title>
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="app.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -156,7 +156,7 @@
   <div class="wrap">
     <div class="hero">
       <h1>Resultados de torneo</h1>
-      <p>Solo ver·s y editar·s tus resultados. <span id="currentUsernameHint"></span></p>
+      <p>Solo ver√°s y editar√°s tus resultados. <span id="currentUsernameHint"></span></p>
     </div>
 
     <div class="card">
@@ -172,8 +172,8 @@
             <select id="event"><option value="">(Selecciona evento)</option></select>
           </div>
           <div class="span2">
-            <label for="leader">LÌder jugado</label>
-            <select id="leader"><option value="">(Selecciona lÌder)</option></select>
+            <label for="leader">L√≠der jugado</label>
+            <select id="leader"><option value="">(Selecciona l√≠der)</option></select>
           </div>
           <div>
             <label for="wins">Wins</label>
@@ -189,7 +189,7 @@
           </div>
         </div>
         <div class="actions">
-          <span class="muted">Se vincula autom·ticamente a tu usuario.</span>
+          <span class="muted">Se vincula autom√°ticamente a tu usuario.</span>
           <button class="btn btnDark" id="btnCreate" type="button">Guardar resultado</button>
         </div>
         <div class="msg" id="msg"></div>
@@ -243,7 +243,7 @@
             <tr>
               <th>Evento</th>
               <th>Fecha evento</th>
-              <th>LÌder jugado</th>
+              <th>L√≠der jugado</th>
               <th>Resultado</th>
             </tr>
           </thead>
@@ -376,7 +376,7 @@
         if (!evId) continue;
         const opt = document.createElement("option");
         opt.value = evId;
-        opt.textContent = `${eventTitle(e)} ∑ ${eventDate(e)}`;
+        opt.textContent = `${eventTitle(e)} ¬∑ ${eventDate(e)}`;
         sel.appendChild(opt);
       }
     }
@@ -401,7 +401,7 @@
           .filter((pair) => !!pair[0])
       );
       const sel = $("leader");
-      sel.innerHTML = '<option value="">(Selecciona lÌder)</option>';
+      sel.innerHTML = '<option value="">(Selecciona l√≠der)</option>';
       for (const l of leaders){
         const leaderId = pickUuid(l, ["leader_uuid"]);
         if (!leaderId) continue;
@@ -560,11 +560,11 @@
       const description = $("description").value.trim();
 
       if (!event) return show("Selecciona un evento.", "err");
-      if (!leader) return show("Selecciona un lÌder.", "err");
-      if (!isUuid(event)) return show("El evento seleccionado no tiene UUID v·lido.", "err");
-      if (!isUuid(leader)) return show("El lÌder seleccionado no tiene UUID v·lido.", "err");
-      if (!isNonNegativeNumber(wins)) return show("Wins inv·lido.", "err");
-      if (!isNonNegativeNumber(loses)) return show("Loses inv·lido.", "err");
+      if (!leader) return show("Selecciona un l√≠der.", "err");
+      if (!isUuid(event)) return show("El evento seleccionado no tiene UUID v√°lido.", "err");
+      if (!isUuid(leader)) return show("El l√≠der seleccionado no tiene UUID v√°lido.", "err");
+      if (!isNonNegativeNumber(wins)) return show("Wins inv√°lido.", "err");
+      if (!isNonNegativeNumber(loses)) return show("Loses inv√°lido.", "err");
 
       const payload = {
         autor: currentUser.id,
