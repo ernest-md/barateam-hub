@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Encuestas · Barateam Hub</title>
+  <title>Encuestas � Barateam Hub</title>
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="app.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -15,7 +15,8 @@
     .brand{
       display:flex;
       flex-direction: column;
-      gap:2px;
+
+      align-items: center;
       color:#fff;
       font-weight:900;
       letter-spacing:.4px;
@@ -23,6 +24,9 @@
       line-height: 1.1;
     }
     .brand small{
+      display:block;
+      text-align: center;
+      padding-left: 4px;
       font-weight:700;
       color: rgba(255,255,255,.72);
       letter-spacing:.2px;
@@ -50,17 +54,17 @@
         <small>encuestas</small>
       </div>
       <div class="nav">
-        <a class="btn" href="index.html">🏠 Home</a>
-        <a class="btn" href="sim-stats/frontend/stats.html" data-requires-auth="1">📊 SIM Stats</a>
-        <a class="btn" href="op-wrapped.html">🎴 OP Wrapped</a>
-        <a class="btn" href="decks.html">🃏 DeckLists</a>
-        <a class="btn" href="results.html" data-requires-auth="1">🏆 Results</a>
-        <a class="btn primary active" href="encuestas.html">🗳️ Encuestas</a>
+        <a class="btn" href="index.html">&#127968; Home</a>
+        <a class="btn" href="sim-stats/frontend/stats.html" data-requires-auth="1">&#128202; SIM Stats</a>
+        <a class="btn" href="op-wrapped.html">&#127956; OP Wrapped</a>
+        <a class="btn" href="decks.html">&#127183; DeckLists</a>
+        <a class="btn" href="results.html" data-requires-auth="1">&#127942; Results</a>
+        <a class="btn primary active" href="encuestas.html">&#128499;&#65039; Encuestas</a>
       </div>
     </div>
   </div>
   <div class="authCorner">
-    <a class="btn" id="navLogin" href="login.html">🔐 Login</a>
+    <a class="btn" id="navLogin" href="login.html">&#128274; Login</a>
     <div class="userwrap" id="navUser" style="display:none;">
       <button class="btn userbtn" id="userBtn" type="button">
         <img id="navAvatarImg" class="navAvatarImg" alt="avatar" />
@@ -83,7 +87,7 @@
   <div class="wrap">
     <div class="hero">
       <h1>Listado de encuestas</h1>
-      <p>Este listado es estático para que lo mantengas tú manualmente.</p>
+      <p>Este listado es est�tico para que lo mantengas t� manualmente.</p>
     </div>
 
     <div class="card">
@@ -93,7 +97,7 @@
           <thead>
             <tr>
               <th>Encuesta</th>
-              <th>Descripción</th>
+              <th>Descripci�n</th>
             </tr>
           </thead>
           <tbody id="tbody">
@@ -146,5 +150,7 @@
   </script>
 </body>
 </html>
+
+
 
 

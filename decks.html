@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -56,7 +56,8 @@
     .brand{
       display:flex;
       flex-direction: column;
-      gap:2px;
+
+      align-items: center;
       color:#fff;
       font-weight:900;
       letter-spacing:.4px;
@@ -64,6 +65,9 @@
       line-height: 1.1;
     }
     .brand small{
+      display:block;
+      text-align: center;
+      padding-left: 4px;
       font-weight:700;
       color: rgba(255,255,255,.72);
       letter-spacing:.2px;
@@ -329,18 +333,18 @@
       </div>
 
       <div class="nav">
-        <a class="btn" href="index.html">🏠 Home</a>
-        <a class="btn" href="sim-stats/frontend/stats.html" data-requires-auth="1">📊 SIM Stats</a>
-        <a class="btn" href="op-wrapped.html">🎴 OP Wrapped</a>
-        <a class="btn primary active" href="decks.html">🃏 DeckLists</a>
-        <a class="btn" href="results.html" data-requires-auth="1">🏆 Results</a>
-        <a class="btn" href="encuestas.html">🗳️ Encuestas</a>
+        <a class="btn" href="index.html">&#127968; Home</a>
+        <a class="btn" href="sim-stats/frontend/stats.html" data-requires-auth="1">&#128202; SIM Stats</a>
+        <a class="btn" href="op-wrapped.html">&#127956; OP Wrapped</a>
+        <a class="btn primary active" href="decks.html">&#127183; DeckLists</a>
+        <a class="btn" href="results.html" data-requires-auth="1">&#127942; Results</a>
+        <a class="btn" href="encuestas.html">&#128499;&#65039; Encuestas</a>
       </div>
 
     </div>
   </div>
   <div class="authCorner">
-    <a class="btn" id="navLogin" href="login.html">🔐 Login</a>
+    <a class="btn" id="navLogin" href="login.html">&#128274; Login</a>
     <div class="userwrap" id="navUser" style="display:none;">
       <button class="btn userbtn" id="userBtn" type="button">
         <img id="navAvatarImg" class="navAvatarImg" alt="avatar" />
@@ -936,6 +940,8 @@
   </script>
 </body>
 </html>
+
+
 
 
 

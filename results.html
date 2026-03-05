@@ -1,9 +1,9 @@
-ï»¿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Resultados Â· Barateam Hub</title>
+  <title>Resultados · Barateam Hub</title>
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="app.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -15,7 +15,8 @@
     .brand{
       display:flex;
       flex-direction: column;
-      gap:2px;
+
+      align-items: center;
       color:#fff;
       font-weight:900;
       letter-spacing:.4px;
@@ -23,6 +24,9 @@
       line-height: 1.1;
     }
     .brand small{
+      display:block;
+      text-align: center;
+      padding-left: 4px;
       font-weight:700;
       color: rgba(255,255,255,.72);
       letter-spacing:.2px;
@@ -119,17 +123,17 @@
         <small>resultados</small>
       </div>
       <div class="nav">
-        <a class="btn" href="index.html">ğŸ  Home</a>
-        <a class="btn" href="sim-stats/frontend/stats.html" data-requires-auth="1">ğŸ“Š SIM Stats</a>
-        <a class="btn" href="op-wrapped.html">ğŸ´ OP Wrapped</a>
-        <a class="btn" href="decks.html">ğŸƒ DeckLists</a>
-        <a class="btn primary active" href="results.html" data-requires-auth="1">ğŸ† Results</a>
-        <a class="btn" href="encuestas.html">ğŸ—³ï¸ Encuestas</a>
+        <a class="btn" href="index.html">&#127968; Home</a>
+        <a class="btn" href="sim-stats/frontend/stats.html" data-requires-auth="1">&#128202; SIM Stats</a>
+        <a class="btn" href="op-wrapped.html">&#127956; OP Wrapped</a>
+        <a class="btn" href="decks.html">&#127183; DeckLists</a>
+        <a class="btn primary active" href="results.html" data-requires-auth="1">&#127942; Results</a>
+        <a class="btn" href="encuestas.html">&#128499;&#65039; Encuestas</a>
       </div>
     </div>
   </div>
   <div class="authCorner">
-    <a class="btn" id="navLogin" href="login.html">ğŸ” Login</a>
+    <a class="btn" id="navLogin" href="login.html">&#128274; Login</a>
     <div class="userwrap" id="navUser" style="display:none;">
       <button class="btn userbtn" id="userBtn" type="button">
         <img id="navAvatarImg" class="navAvatarImg" alt="avatar" />
@@ -152,7 +156,7 @@
   <div class="wrap">
     <div class="hero">
       <h1>Resultados de torneo</h1>
-      <p>Solo verÃ¡s y editarÃ¡s tus resultados. <span id="currentUsernameHint"></span></p>
+      <p>Solo verás y editarás tus resultados. <span id="currentUsernameHint"></span></p>
     </div>
 
     <div class="card">
@@ -168,8 +172,8 @@
             <select id="event"><option value="">(Selecciona evento)</option></select>
           </div>
           <div class="span2">
-            <label for="leader">LÃ­der jugado</label>
-            <select id="leader"><option value="">(Selecciona lÃ­der)</option></select>
+            <label for="leader">Líder jugado</label>
+            <select id="leader"><option value="">(Selecciona líder)</option></select>
           </div>
           <div>
             <label for="wins">Wins</label>
@@ -185,7 +189,7 @@
           </div>
         </div>
         <div class="actions">
-          <span class="muted">Se vincula automÃ¡ticamente a tu usuario.</span>
+          <span class="muted">Se vincula automáticamente a tu usuario.</span>
           <button class="btn btnDark" id="btnCreate" type="button">Guardar resultado</button>
         </div>
         <div class="msg" id="msg"></div>
@@ -239,7 +243,7 @@
             <tr>
               <th>Evento</th>
               <th>Fecha evento</th>
-              <th>LÃ­der jugado</th>
+              <th>Líder jugado</th>
               <th>Resultado</th>
             </tr>
           </thead>
@@ -372,7 +376,7 @@
         if (!evId) continue;
         const opt = document.createElement("option");
         opt.value = evId;
-        opt.textContent = `${eventTitle(e)} Â· ${eventDate(e)}`;
+        opt.textContent = `${eventTitle(e)} · ${eventDate(e)}`;
         sel.appendChild(opt);
       }
     }
@@ -397,7 +401,7 @@
           .filter((pair) => !!pair[0])
       );
       const sel = $("leader");
-      sel.innerHTML = '<option value="">(Selecciona lÃ­der)</option>';
+      sel.innerHTML = '<option value="">(Selecciona líder)</option>';
       for (const l of leaders){
         const leaderId = pickUuid(l, ["leader_uuid"]);
         if (!leaderId) continue;
@@ -556,11 +560,11 @@
       const description = $("description").value.trim();
 
       if (!event) return show("Selecciona un evento.", "err");
-      if (!leader) return show("Selecciona un lÃ­der.", "err");
-      if (!isUuid(event)) return show("El evento seleccionado no tiene UUID vÃ¡lido.", "err");
-      if (!isUuid(leader)) return show("El lÃ­der seleccionado no tiene UUID vÃ¡lido.", "err");
-      if (!isNonNegativeNumber(wins)) return show("Wins invÃ¡lido.", "err");
-      if (!isNonNegativeNumber(loses)) return show("Loses invÃ¡lido.", "err");
+      if (!leader) return show("Selecciona un líder.", "err");
+      if (!isUuid(event)) return show("El evento seleccionado no tiene UUID válido.", "err");
+      if (!isUuid(leader)) return show("El líder seleccionado no tiene UUID válido.", "err");
+      if (!isNonNegativeNumber(wins)) return show("Wins inválido.", "err");
+      if (!isNonNegativeNumber(loses)) return show("Loses inválido.", "err");
 
       const payload = {
         autor: currentUser.id,
@@ -587,7 +591,7 @@
       $("wins").value = "";
       $("loses").value = "";
       $("description").value = "";
-      show("Resultado guardado âœ…", "ok");
+      show("Resultado guardado ?", "ok");
 
       allResults = await fetchResults();
       applyResultsFilters(true);
@@ -641,4 +645,6 @@
   </script>
 </body>
 </html>
+
+
 

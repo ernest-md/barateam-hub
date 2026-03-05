@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Home · Barateam Hub</title>
+  <title>Home � Barateam Hub</title>
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
 
   <link rel="stylesheet" href="app.css" />
@@ -92,42 +92,6 @@
       z-index: 40;
       display: flex;
       align-items: center;
-    }
-    .authCorner .userwrap{ position: relative; }
-    .authCorner .userbtn{
-      width: 42px;
-      height: 42px;
-      padding: 4px;
-      border-radius: 999px;
-      overflow: hidden;
-      justify-content: center;
-      gap: 0;
-      border-color: rgba(255,255,255,.30);
-      background: rgba(255,255,255,.16);
-    }
-    .authCorner .userbtn .chev{ display:none; }
-    .navAvatarImg{
-      width: 32px;
-      height: 32px;
-      aspect-ratio: 1 / 1;
-      border-radius: 50%;
-      object-fit: cover;
-      display: none;
-      border: 1px solid rgba(255,255,255,.30);
-    }
-    .navAvatarFallback{
-      width: 32px;
-      height: 32px;
-      aspect-ratio: 1 / 1;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 1000;
-      font-size: 13px;
-      color:#fff;
-      background: linear-gradient(135deg, rgba(124,58,237,.9), rgba(6,182,212,.6));
-      border: 1px solid rgba(255,255,255,.30);
     }
 
     /* ===== Content ===== */
@@ -559,16 +523,16 @@
     <div class="bar with-auth-corner">
       <div class="brand">
         <img class="brandLogo" src="BT_LOGO.png" alt="BARATEAM HUB" />
-        <small>home · tools · novedades</small>
+        <small>home � tools � novedades</small>
       </div>
 
       <div class="nav">
-        <a class="btn primary active" href="index.html">🏠 Home</a>
-        <a class="btn" href="sim-stats/frontend/stats.html" data-requires-auth="1">📊 SIM Stats</a>
-        <a class="btn" href="op-wrapped.html">🎴 OP Wrapped</a>
-        <a class="btn" href="decks.html">🃏 DeckLists</a>
-        <a class="btn" href="results.html" data-requires-auth="1">🏆 Results</a>
-        <a class="btn" href="encuestas.html">🗳️ Encuestas</a>
+        <a class="btn primary active" href="index.html">&#127968; Home</a>
+        <a class="btn" href="sim-stats/frontend/stats.html" data-requires-auth="1">&#128202; SIM Stats</a>
+        <a class="btn" href="op-wrapped.html">&#127956; OP Wrapped</a>
+        <a class="btn" href="decks.html">&#127183; DeckLists</a>
+        <a class="btn" href="results.html" data-requires-auth="1">&#127942; Results</a>
+        <a class="btn" href="encuestas.html">&#128499;&#65039; Encuestas</a>
       </div>
     </div>
   </div>
@@ -584,7 +548,7 @@
     </button>
     <div class="menu" id="userMenu">
       <div class="head">
-        <strong id="userEmail">—</strong>
+        <strong id="userEmail">�</strong>
         <span>Sesion iniciada</span>
       </div>
       <a href="profile.html">Ver perfil</a>
@@ -653,7 +617,7 @@
             <button class="btn btnDark" id="btnToday" type="button">Hoy</button>
             <button class="btn btnDark" id="btnNext" type="button">&#8594;</button>
           </div>
-          <div class="calTitle" id="calTitle">—</div>
+          <div class="calTitle" id="calTitle">�</div>
         </div>
 
         <div class="calGrid" id="calDow"></div>
@@ -694,7 +658,7 @@
       </div>
     </div>
 
-    <div class="foot">Hecho con ❤️ para el team · GitHub Pages</div>
+    <div class="foot">Hecho con &#10084;&#65039; para el team � GitHub Pages</div>
   </div>
 
   <script>
@@ -1335,8 +1299,8 @@
               if (!dt) return "";
               const hh = String(dt.getHours()).padStart(2,"0");
               const mm = String(dt.getMinutes()).padStart(2,"0");
-              const loc = ev.location ? ` · ${escapeHtml(ev.location)}` : "";
-              return `<div class="tipItem">🕒 ${hh}:${mm} · <strong>${escapeHtml(ev.title)}</strong>${loc}</div>`;
+              const loc = ev.location ? ` � ${escapeHtml(ev.location)}` : "";
+              return `<div class="tipItem">&#128197; ${hh}:${mm} � <strong>${escapeHtml(ev.title)}</strong>${loc}</div>`;
             }).join("")}
           </div>
         ` : ""}
@@ -1381,9 +1345,9 @@
       div.innerHTML = `
         <p class="t">${escapeHtml(e.title || "Evento")}</p>
         <p class="s">
-          <span>📅 ${escapeHtml(d)}</span>
-          <span>🕒 ${hh}:${mm}</span>
-          ${e.location ? `<span>📍 ${escapeHtml(e.location)}</span>` : ``}
+          <span>&#128197; ${escapeHtml(d)}</span>
+          <span>&#128338; ${hh}:${mm}</span>
+          ${e.location ? `<span>&#128205; ${escapeHtml(e.location)}</span>` : ``}
         </p>
       `;
       root.appendChild(div);
@@ -1460,6 +1424,8 @@
 </script>
 </body>
 </html>
+
+
 
 
 

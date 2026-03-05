@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Stats · Barateam Hub</title>
+  <title>Stats � Barateam Hub</title>
   <link rel="icon" href="../../favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="../../app.css" />
   <link rel="stylesheet" href="css/styles.css">
@@ -48,7 +48,8 @@
     .brand{
       display:flex;
       flex-direction: column;
-      gap:2px;
+
+      align-items: center;
       color:#fff;
       font-weight:900;
       letter-spacing:.4px;
@@ -56,6 +57,9 @@
       line-height: 1.1;
     }
     .brand small{
+      display:block;
+      text-align: center;
+      padding-left: 4px;
       font-weight:700;
       color: rgba(255,255,255,.72);
       letter-spacing:.2px;
@@ -94,7 +98,7 @@
       <div class="nav">
         <a class="btn" href="../../index.html">&#127968; Home</a>
         <a class="btn primary active" href="../../sim-stats/frontend/stats.html" data-requires-auth="1">&#128202; SIM Stats</a>
-        <a class="btn" href="../../op-wrapped.html">🎴 OP Wrapped</a>
+        <a class="btn" href="../../op-wrapped.html">&#127956; OP Wrapped</a>
         <a class="btn" href="../../decks.html">&#127183; DeckLists</a>
         <a class="btn" href="../../results.html" data-requires-auth="1">&#127942; Results</a>
         <a class="btn" href="../../encuestas.html">&#128499;&#65039; Encuestas</a>
@@ -113,7 +117,7 @@
       </button>
       <div class="menu" id="userMenu">
         <div class="head">
-          <strong id="userEmail">—</strong>
+          <strong id="userEmail">�</strong>
           <span>Sesion iniciada</span>
         </div>
         <a href="../../profile.html">Ver perfil</a>
@@ -276,5 +280,7 @@
   <script type="module" src="./js/stats.js"></script>
 </body>
 </html>
+
+
 
 
