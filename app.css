@@ -67,7 +67,7 @@
 
 .brandLogo{
   display:block;
-  height: 34px;
+  height: 52px;
   width: auto;
   object-fit: contain;
 }
@@ -222,7 +222,7 @@
   }
   .wrap{ padding: 0 10px; margin: 12px auto 22px; }
   .brand{ width: 100%; }
-  .brandLogo{ height: 30px; }
+  .brandLogo{ height: 42px; }
   .topbar .nav{
     order: 3;
     width: 100%;
