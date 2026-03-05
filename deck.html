@@ -75,9 +75,42 @@
       background: rgba(255,255,255,.72);
       padding: 12px;
     }
+    .leaderPanel{
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      background: linear-gradient(135deg, rgba(255,255,255,.90), rgba(255,255,255,.82));
+    }
+    .leaderPanel::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(108deg, rgba(255,255,255,.95) 0%, rgba(255,255,255,.88) 45%, rgba(255,255,255,.72) 100%),
+        var(--leader-bg-image, none);
+      background-size: cover, cover;
+      background-position-y: -165px;
+      z-index:-1;
+    }
+    .leaderPanel::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: radial-gradient(320px 160px at 15% 15%, rgba(59,130,246,.15), transparent 72%);
+      z-index:-1;
+      pointer-events:none;
+    }
     .panel h3{ margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:.8px; color:#334155; }
     .leaderRow{ display:flex; align-items:center; gap:12px; }
-    .leaderImg{ width:72px; height:72px; border-radius:14px; object-fit:cover; border:1px solid rgba(15,23,42,.12); background:#fff; }
+    .leaderImg{
+      width: calc(96px * 0.72);
+      height: 96px;
+      aspect-ratio: 2 / 3;
+      border-radius: 10px;
+      object-fit: contain;
+      border: 1px solid rgba(15,23,42,.12);
+      background: #fff;
+    }
     .leaderName{ font-weight:900; font-size:16px; }
     .deckImg{
       width:100%;
@@ -148,6 +181,15 @@
       border:1px solid rgba(15,23,42,.16);
       background: rgba(15,23,42,.06);
       color:#0f172a;
+    }
+    .btnDanger{
+      border: 1px solid rgba(185,28,28,.34);
+      background: rgba(239,68,68,.12);
+      color: #7f1d1d;
+    }
+    .btnDanger:hover{
+      background: rgba(239,68,68,.20);
+      border-color: rgba(185,28,28,.48);
     }
 
     .socialCard{ margin-top:14px; }
@@ -268,7 +310,14 @@
       .title{ font-size: 22px; }
       .card{ padding: 12px; border-radius: 16px; }
       .panel{ border-radius: 12px; }
-      .leaderImg{ width: 62px; height: 62px; }
+      .leaderPanel::before{
+        background-position-y: -66px;
+      }
+      .leaderImg{
+        width: calc(84px * 0.72);
+        height: 84px;
+        border-radius: 9px;
+      }
       .hoverUsers{ width: min(220px, calc(100vw - 40px)); }
       .socialRow .iconBtn{ flex: 1 1 auto; justify-content: center; }
     }
@@ -294,7 +343,7 @@
       </div>
 
       <div class="grid">
-        <div class="panel">
+        <div class="panel leaderPanel" id="leaderPanel">
           <h3>Lider</h3>
           <div class="leaderRow">
             <img id="leaderImage" class="leaderImg" alt="Lider" />
@@ -351,6 +400,7 @@
           </div>
         </div>
         <div class="editActions">
+          <button class="btn btnDanger" id="btnDeleteDeck" type="button">Eliminar deck</button>
           <button class="btn btnLight" id="btnCancelEditDeck" type="button">Cancelar</button>
           <button class="btn btnLight" id="btnSaveEditDeck" type="button">Guardar cambios</button>
         </div>
@@ -516,7 +566,7 @@
 
       const { data, error } = await sb
         .from("profiles")
-        .select("id,username,display_name")
+        .select("id,username")
         .in("id", missing);
 
       if (error){
@@ -528,7 +578,8 @@
       }
 
       for (const row of (data || [])){
-        profileCache.set(row.id, row.username || row.display_name || "usuario");
+        const label = row.username || row.id?.slice(0, 8) || "usuario";
+        profileCache.set(row.id, label);
       }
       for (const id of missing){
         if (!profileCache.has(id)) profileCache.set(id, "usuario");
@@ -548,6 +599,13 @@
 
       $("leaderName").textContent = deck.leader || "-";
       setImage($("leaderImage"), deck.leader_image_url || "");
+      const leaderPanel = $("leaderPanel");
+      if (leaderPanel){
+        const bg = deck.leader_image_url
+          ? `url("${String(deck.leader_image_url).replace(/"/g, '\\"')}")`
+          : "none";
+        leaderPanel.style.setProperty("--leader-bg-image", bg);
+      }
 
       const deckImage = deck.image_url || "";
       if (deckImage){
@@ -644,6 +702,32 @@
         showError("No pude guardar los cambios: " + (e.message || "unknown"));
       }
     }
+    async function deleteDeck(){
+      if (!isDeckOwner || !currentDeck || !deckId || !currentUser){
+        showError("No tienes permisos para eliminar este deck.");
+        return;
+      }
+
+      const ok = window.confirm("¿Seguro que quieres eliminar este deck? Esta accion no se puede deshacer.");
+      if (!ok) return;
+
+      try{
+        const { error } = await sb
+          .from("decks")
+          .delete()
+          .eq("id", deckId)
+          .eq("autor", currentUser.id);
+
+        if (error){
+          showError("No pude eliminar el deck: " + error.message);
+          return;
+        }
+
+        window.location.href = "decks.html";
+      }catch(e){
+        showError("No pude eliminar el deck: " + (e.message || "unknown"));
+      }
+    }
 async function loadDeck(){
       const params = new URLSearchParams(window.location.search);
       deckId = params.get("id");
@@ -666,6 +750,7 @@ async function loadDeck(){
           return false;
         }
 
+        await fillProfiles([data.autor]);
         currentDeck = data;
         renderDeck(currentDeck);
         computeDeckOwner();
@@ -828,6 +913,7 @@ async function loadDeck(){
     $("btnCopyDeckLink").addEventListener("click", copyDeckLink);
     $("btnCancelEditDeck").addEventListener("click", closeEditPanel);
     $("btnSaveEditDeck").addEventListener("click", saveDeckEdits);
+    $("btnDeleteDeck").addEventListener("click", deleteDeck);
 
     (async function init(){
       await refreshSession();

@@ -239,10 +239,16 @@
 
     /* List as table */
     .tableWrap{
-      overflow:auto;
       border-radius: 18px;
       border: 1px solid rgba(15,23,42,.10);
       background: rgba(255,255,255,.70);
+      overflow: visible;
+      position: relative;
+      z-index: 1;
+    }
+    .tableScroll{
+      overflow: visible;
+      border-radius: inherit;
     }
     table{
       width:100%;
@@ -286,19 +292,63 @@
       font-size: 12px;
       color:#475569;
     }
+    .userLink{
+      color: inherit;
+      text-decoration: underline;
+      text-decoration-color: rgba(15,23,42,.28);
+      text-underline-offset: 2px;
+    }
+    .userLink:hover{
+      text-decoration-color: rgba(15,23,42,.58);
+    }
     .leaderCell{
       display:flex;
       align-items:center;
       gap:10px;
     }
     .leaderThumb{
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
+      width: calc(56px * 0.72);
+      height: 56px;
+      border-radius: 7px;
       border: 1px solid rgba(15,23,42,.10);
-      object-fit: cover;
+      object-fit: contain;
       background: rgba(255,255,255,.75);
       flex: 0 0 auto;
+    }
+    .leaderZoom{
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 0;
+    }
+    .leaderZoomPreview{
+      position: absolute;
+      left: 50%;
+      top: calc(100% + 8px);
+      transform: translateX(-50%) translateY(-4px) scale(.96);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 120;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.35);
+      background: rgba(2,6,23,.90);
+      box-shadow: 0 20px 38px rgba(2,6,23,.55);
+      padding: 6px;
+      transition: opacity .14s ease, transform .14s ease;
+    }
+    .leaderZoomPreview img{
+      width: 180px;
+      height: auto;
+      max-height: 280px;
+      object-fit: contain;
+      display:block;
+      border-radius: 8px;
+      background: rgba(2,6,23,.40);
+    }
+    .leaderZoom:hover .leaderZoomPreview{
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
     }
     .pager{
       margin-top: 10px;
@@ -319,6 +369,10 @@
       .pill{ font-size: 11px; padding: 5px 8px; }
       .hero h1{ font-size: 22px; }
       .tableWrap{ border-radius: 14px; }
+      .tableScroll{
+        overflow-x: auto;
+        overflow-y: visible;
+      }
       table{ min-width: 560px; }
     }
   </style>
@@ -468,17 +522,19 @@
       <div class="muted" id="listLoading" style="display:none; margin-bottom:8px;">Cargando decks...</div>
 
       <div class="tableWrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Lider</th>
-              <th>Autor</th>
-              <th>Creado</th>
-            </tr>
-          </thead>
-          <tbody id="decksTbody"></tbody>
-        </table>
+        <div class="tableScroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Lider</th>
+                <th>Autor</th>
+                <th>Creado</th>
+              </tr>
+            </thead>
+            <tbody id="decksTbody"></tbody>
+          </table>
+        </div>
       </div>
       <div class="pager">
         <div class="pagerInfo" id="decksPagerInfo">Mostrando 0 de 0</div>
@@ -728,7 +784,14 @@
         const name = d.name || "Sin nombre";
         const leaderImg = d.leader_image_url || "";
         const imgHtml = leaderImg
-          ? `<img class="leaderThumb" src="${escapeAttr(leaderImg)}" alt="${escapeAttr(leader)}">`
+          ? `
+            <span class="leaderZoom">
+              <img class="leaderThumb" src="${escapeAttr(leaderImg)}" alt="${escapeAttr(leader)}">
+              <span class="leaderZoomPreview">
+                <img src="${escapeAttr(leaderImg)}" alt="${escapeAttr(leader)}">
+              </span>
+            </span>
+          `
           : `<div class="leaderThumb" aria-hidden="true"></div>`;
 
         tr.innerHTML = `
