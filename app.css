@@ -310,6 +310,9 @@ html, body{
     width: auto;
     justify-content: flex-start;
   }
+  .logoutButton {
+    width: 100% !important;
+  }
   .spacer{ display:none; }
   .menu{ max-width: calc(100vw - 24px); min-width: 200px; }
   .authCorner .menu{
