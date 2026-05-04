@@ -24,6 +24,7 @@
   const PORTRAITS = window.BarateamFantasyPortraits || {};
   const PORTRAIT_PLACEHOLDER = String(window.BarateamFantasyPortraitPlaceholder || 'fantasy_placeholder.jpeg').trim();
   const COIN_ICON = 'berries.png';
+  const PAGE_VIEW = String(document.body?.dataset?.fantasyView || 'overview').trim().toLowerCase();
   const DEFAULT_BUDGET = 100000;
   const DEFAULT_SQUAD_SIZE = 3;
   const DEFAULT_STARTER_SIZE = 3;
@@ -130,6 +131,7 @@
     marketSort: 'vbf_full_rank',
     modalPlayerSlug: '',
     modalSource: '',
+    modalTeamId: '',
     confirmBuySlug: '',
     confirmBuyTargetTeamId: '',
     confirmBuyOutgoingSlug: '',
@@ -1002,24 +1004,188 @@
     return state.teamRounds.find((row) => String(row.team_id) === String(teamId) && String(row.round_key) === String(roundKey || '')) || null;
   }
 
-  function liveWeeklyPoints(roster){
-    let total = 0;
-    roster.forEach((row) => {
-      const player = playerForRosterRow(row);
-      total += Number(player.currentFantasyPoints || 0);
-    });
-    return total;
+  function storedWeeklyPoints(teamId){
+    const currentKey = state.currentRound?.key || '';
+    if (!currentKey) return 0;
+    return Number(getTeamRound(teamId, currentKey)?.weekly_points || 0);
   }
 
-  function generalPoints(teamId, liveWeekly){
+  function storedGeneralPoints(team){
+    const direct = Number(team?.total_points);
+    if (Number.isFinite(direct)) return direct;
+    return state.teamRounds
+      .filter((row) => String(row.team_id) === String(team?.id || ''))
+      .reduce((sum, row) => sum + Number(row.weekly_points || 0), 0);
+  }
+
+  function storedRewardCoins(teamId){
     const currentKey = state.currentRound?.key || '';
-    const rows = state.teamRounds.filter((row) => String(row.team_id) === String(teamId));
-    let total = rows.reduce((sum, row) => sum + Number(row.weekly_points || 0), 0);
-    if (currentKey){
-      const currentStored = rows.find((row) => String(row.round_key) === currentKey);
-      total += liveWeekly - Number(currentStored?.weekly_points || 0);
+    if (!currentKey) return 0;
+    return Number(getTeamRound(teamId, currentKey)?.reward_coins || 0);
+  }
+
+  function currentWeekTeamRows(){
+    const currentKey = state.currentRound?.key || '';
+    if (!currentKey) return [];
+    return state.teamRounds.filter((row) => String(row.round_key || '') === String(currentKey));
+  }
+
+  function topGeneralPlayers(limit){
+    return state.poolPlayers
+      .slice()
+      .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0) || (b.wins || 0) - (a.wins || 0) || collator.compare(a.name, b.name))
+      .slice(0, Number(limit || 5));
+  }
+
+  function topSurprisePlayers(limit){
+    const source = state.poolPlayers
+      .map((player) => ({
+        ...player,
+        surpriseDelta: Math.max(0, Number(player.rank || 9999) - Number(player.roundRank || 9999))
+      }))
+      .filter((player) => player.surpriseDelta > 0 && Number(player.currentFantasyPoints || 0) > 0)
+      .sort((a, b) => b.surpriseDelta - a.surpriseDelta || (b.currentFantasyPoints || 0) - (a.currentFantasyPoints || 0) || collator.compare(a.name, b.name));
+    return (source.length ? source : state.poolPlayers.slice().sort((a, b) => (b.currentFantasyPoints || 0) - (a.currentFantasyPoints || 0) || collator.compare(a.name, b.name)))
+      .slice(0, Number(limit || 5));
+  }
+
+  function latestFantasyEntry(player){
+    const history = Array.isArray(player?.history) ? player.history : [];
+    const rows = history.filter((entry) => entry?.counts_for_fantasy === true);
+    return rows.length ? rows[rows.length - 1] : null;
+  }
+
+  function previousFantasyEntry(player){
+    const history = Array.isArray(player?.history) ? player.history : [];
+    const rows = history.filter((entry) => entry?.counts_for_fantasy === true);
+    return rows.length > 1 ? rows[rows.length - 2] : null;
+  }
+
+  function fantasyTrendDelta(player){
+    const latest = latestFantasyEntry(player);
+    const previous = previousFantasyEntry(player);
+    if (!latest) return 0;
+    if (!previous) return Number(latest.fantasy_points || 0);
+    return Number(latest.fantasy_points || 0) - Number(previous.fantasy_points || 0);
+  }
+
+  function playerPulse(player){
+    const latestPoints = Number(player?.currentFantasyPoints || latestFantasyEntry(player)?.fantasy_points || 0);
+    const delta = fantasyTrendDelta(player);
+    if (player?.currentWon) return { label: 'Viene de ganar', tone: 'gold' };
+    if (delta >= 8) return { label: `Explota +${formatPoints(delta)}`, tone: 'hot' };
+    if (latestPoints >= 18) return { label: `Muy caliente ${formatPointsLabel(latestPoints)}`, tone: 'good' };
+    if (delta >= 3) return { label: `Sube ${formatPointsLabel(delta)}`, tone: 'good' };
+    if (delta <= -3) return { label: `Baja ${formatPointsLabel(Math.abs(delta))}`, tone: 'muted' };
+    return { label: 'Ritmo estable', tone: 'soft' };
+  }
+
+  function surpriseDelta(player){
+    return Math.max(0, Number(player?.rank || 9999) - Number(player?.roundRank || 9999));
+  }
+
+  function rosterEntriesWithPlayers(entries){
+    return (entries || [])
+      .map((entry) => ({ ...entry, player: entry?.player || playerForRosterRow(entry) }))
+      .filter((entry) => entry.player);
+  }
+
+  function contributionRowsFromEntries(entries){
+    const rows = rosterEntriesWithPlayers(entries).map((entry) => {
+      const player = entry.player;
+      return {
+        slug: String(entry.player_slug || player.slug || ''),
+        name: player.name || entry.player_name || 'Jugador',
+        tier: player.tier || entry.player_tier || '',
+        rank: Number(player.rank || entry.player_rank || 9999),
+        weeklyPoints: Number(player.currentFantasyPoints || 0),
+        totalPoints: Number(player.totalPoints || 0),
+        price: Number(player.price || entry.buy_price || 0),
+        clause: Number(entry.clause_price || player.clausePrice || defaultClauseForPrice(player.price || 0)),
+        wins: Number(player.wins || 0),
+        delta: fantasyTrendDelta(player),
+        roundLabel: String(latestFantasyEntry(player)?.round_label || state.currentRound?.label || ''),
+        player
+      };
+    }).sort((a, b) =>
+      b.weeklyPoints - a.weeklyPoints
+      || b.price - a.price
+      || collator.compare(a.name, b.name)
+    );
+    const maxPoints = Math.max(...rows.map((row) => Number(row.weeklyPoints || 0)), 0);
+    return rows.map((row) => ({
+      ...row,
+      share: maxPoints > 0 ? clamp(Number(row.weeklyPoints || 0) / maxPoints, 0, 1) : 0,
+      pulse: playerPulse(row.player)
+    }));
+  }
+
+  function renderContributionList(rows, options){
+    const opts = options || {};
+    if (!rows.length){
+      return '<div class="empty">Aun no hay una jornada cerrada suficiente para desgranar el impacto del roster.</div>';
     }
-    return total;
+    return `<div class="impactList ${opts.compact ? 'compact' : ''}">${rows.map((row) => {
+      const portrait = playerPortraitUrl(row.player);
+      const weeklyLabel = row.weeklyPoints > 0 ? formatPointsLabel(row.weeklyPoints) : 'Sin puntos';
+      const deltaLabel = row.delta > 0 ? `+${formatPoints(row.delta)} vs cierre previo` : row.delta < 0 ? `-${formatPoints(Math.abs(row.delta))} vs cierre previo` : 'Mismo ritmo';
+      return `<article class="impactRow ${frameClass(row.tier)}">
+        <div class="impactIdentity">
+          <div class="impactAvatar">${portrait ? `<img src="${escapeAttr(portrait)}" alt="${escapeAttr(row.name)}" loading="lazy" decoding="async" />` : ''}</div>
+          <div class="impactCopy">
+            <strong>${escapeHtml(row.name)}</strong>
+            <span>#${intFmt.format(row.rank || 0)} · ${escapeHtml(tierLabel(row.tier))}</span>
+          </div>
+        </div>
+        <div class="impactScore">
+          <div class="impactScoreTop">
+            <strong>${weeklyLabel}</strong>
+            <span class="signalTag ${escapeAttr(row.pulse.tone)}">${escapeHtml(row.pulse.label)}</span>
+          </div>
+          <div class="impactRail"><span style="width:${Math.max(8, Math.round((row.share || 0) * 100))}%"></span></div>
+          <div class="impactHint">${escapeHtml(deltaLabel)}</div>
+        </div>
+        <div class="impactStats">
+          ${opts.hidePrice ? '' : `<span>${renderCoinInline(row.price || 0, false)}<small>valor</small></span>`}
+          ${opts.hideClause ? '' : `<span>${renderCoinInline(row.clause || 0, false)}<small>clausula</small></span>`}
+        </div>
+      </article>`;
+    }).join('')}</div>`;
+  }
+
+  function renderOverviewFeature(player, mode){
+    const portrait = playerPortraitUrl(player);
+    const pulse = playerPulse(player);
+    const latestPoints = Number(player.currentFantasyPoints || 0);
+    const delta = surpriseDelta(player);
+    const subtitle = mode === 'surprise'
+      ? `+${intFmt.format(delta)} puestos frente a su ranking VadeBack`
+      : `${intFmt.format(Math.round(player.totalPoints || 0))} berries historicas`;
+    const stats = mode === 'surprise'
+      ? [
+        { value: formatPointsLabel(latestPoints), label: 'ultimo sabado' },
+        { value: intFmt.format(player.rank || 0), label: 'ranking real' },
+        { value: renderCoinInline(player.price || 0, true), label: 'valor' }
+      ]
+      : [
+        { value: renderCoinInline(player.price || 0, true), label: 'valor actual' },
+        { value: intFmt.format(player.wins || 0), label: 'victorias' },
+        { value: latestPoints > 0 ? formatPointsLabel(latestPoints) : 'Sin puntos', label: 'ultimo sabado' }
+      ];
+    return `<button class="overviewFeatureCard ${frameClass(player.tier)}" type="button" data-open-player="${escapeAttr(player.slug || '')}" data-player-source="market">
+      <div class="overviewFeatureVisual">${portrait ? `<img src="${escapeAttr(portrait)}" alt="${escapeAttr(player.name || 'Jugador')}" loading="lazy" decoding="async" />` : ''}<div class="standingRosterShade"></div><span class="overviewRankBadge">#${intFmt.format(mode === 'surprise' ? (player.roundRank || 0) : (player.rank || 0))}</span></div>
+      <div class="overviewFeatureBody">
+        <div class="overviewFeatureHead">
+          <div>
+            <div class="overviewFeatureName">${escapeHtml(player.name || 'Jugador')}</div>
+            <div class="overviewFeatureSubtitle">${escapeHtml(subtitle)}</div>
+          </div>
+          <span class="signalTag ${escapeAttr(pulse.tone)}">${escapeHtml(pulse.label)}</span>
+        </div>
+        <div class="overviewFeatureMeta">${escapeHtml(tierLabel(player.tier))} · ${mode === 'surprise' ? `Jornada #${intFmt.format(player.roundRank || 0)}` : `Ranking VBF #${intFmt.format(player.rank || 0)}`}</div>
+        <div class="overviewFeatureStats">${stats.map((stat) => `<span><strong>${stat.value}</strong><small>${escapeHtml(stat.label)}</small></span>`).join('')}</div>
+      </div>
+    </button>`;
   }
 
   function sortPlayers(a, b, mode){
@@ -1060,7 +1226,7 @@
     const teamById = new Map(state.seasonTeams.map((team) => [String(team.id), team]));
     const standings = state.seasonTeams.map((team) => {
       const roster = rosterByTeam.get(String(team.id)) || [];
-      const weeklyPoints = liveWeeklyPoints(roster);
+      const weeklyPoints = storedWeeklyPoints(team.id);
       const coachName = profileNameForUser(team.user_id);
       const teamName = String(team.team_name || '').trim() || coachName || 'Equipo';
       const weeklyState = getTeamRound(team.id, state.currentRound?.key || '');
@@ -1075,7 +1241,8 @@
         coins: Number(team.coins || 0),
         rosterCount: roster.length,
         weeklyPoints,
-        generalPoints: generalPoints(team.id, weeklyPoints),
+        generalPoints: storedGeneralPoints(team),
+        rewardCoins: Number(weeklyState?.reward_coins || Math.max(0, Math.round(weeklyPoints * 1000))),
         transfersUsed: Number(weeklyState?.transfers_used || 0),
         players
       };
@@ -1158,10 +1325,62 @@
     };
   }
 
+  function suggestedTargets(limit){
+    if (!state.currentTeam) return [];
+    const derived = leagueDerived();
+    const ownSlugs = new Set((derived.myRoster || []).map((row) => String(row.player_slug || '')));
+    const currentRows = contributionRowsFromEntries(derived.myRoster || []);
+    const weakest = currentRows.slice().sort((a, b) =>
+      a.weeklyPoints - b.weeklyPoints
+      || a.price - b.price
+      || collator.compare(a.name, b.name)
+    )[0] || null;
+    const budget = Number(state.currentTeam?.coins || 0);
+    return state.poolPlayers
+      .filter((player) => !ownSlugs.has(String(player.slug || '')))
+      .map((player) => {
+        const details = marketDetailsForPlayer(player, derived);
+        const direct = details.canDirectBuy;
+        const cost = direct ? Number(player.price || 0) : Number(details.minClause || defaultClauseForPrice(player.price || 0));
+        const delta = surpriseDelta(player);
+        const gain = weakest ? Number(player.currentFantasyPoints || 0) - Number(weakest.weeklyPoints || 0) : Number(player.currentFantasyPoints || 0);
+        const affordable = budget >= cost;
+        const score = (Number(player.currentFantasyPoints || 0) * 5)
+          + (delta * 1.5)
+          + (Number(player.wins || 0) * 1.2)
+          + (direct ? 5 : 0)
+          + (affordable ? 3 : -8)
+          + gain;
+        const reason = direct
+          ? (delta > 0 ? `Sube ${intFmt.format(delta)} puestos y sigue libre` : 'Disponible ahora mismo')
+          : `Solo clausula · desde ${formatCoins(cost)}`;
+        return {
+          player,
+          details,
+          cost,
+          affordable,
+          gain,
+          reason,
+          score,
+          direct
+        };
+      })
+      .sort((a, b) =>
+        b.score - a.score
+        || b.gain - a.gain
+        || (b.player.currentFantasyPoints || 0) - (a.player.currentFantasyPoints || 0)
+        || collator.compare(a.player.name, b.player.name)
+      )
+      .slice(0, Number(limit || 4));
+  }
+
   function renderHero(){
-    $('statPlayers').textContent = state.loadingPlayers ? '...' : intFmt.format(state.poolPlayers.length);
-    $('statTeams').textContent = state.loadingLeague ? '...' : intFmt.format(state.seasonTeams.length);
-    $('statCurrentRound').textContent = state.loadingPlayers ? '...' : (state.currentRound?.label || '-');
+    const statPlayers = $('statPlayers');
+    const statTeams = $('statTeams');
+    const statCurrentRound = $('statCurrentRound');
+    if (statPlayers) statPlayers.textContent = state.loadingPlayers ? '...' : intFmt.format(state.poolPlayers.length);
+    if (statTeams) statTeams.textContent = state.loadingLeague ? '...' : intFmt.format(state.seasonTeams.length);
+    if (statCurrentRound) statCurrentRound.textContent = state.loadingPlayers ? '...' : (state.currentRound?.label || '-');
   }
 
   function openPlayerModal(slug, source){
@@ -1174,6 +1393,16 @@
     state.modalPlayerSlug = '';
     state.modalSource = '';
     renderPlayerModal();
+  }
+
+  function openTeamModal(teamId){
+    state.modalTeamId = String(teamId || '').trim();
+    renderTeamModal();
+  }
+
+  function closeTeamModal(){
+    state.modalTeamId = '';
+    renderTeamModal();
   }
 
   function openBuyConfirm(slug, targetTeamId){
@@ -1297,6 +1526,73 @@
     document.body.style.overflow = 'hidden';
   }
 
+  function renderTeamModal(){
+    const wrap = $('teamModalWrap');
+    const body = $('teamModalBody');
+    if (!wrap || !body) return;
+    if (!state.modalTeamId){
+      wrap.classList.add('hidden');
+      wrap.setAttribute('aria-hidden', 'true');
+      if (!state.modalPlayerSlug && !state.confirmBuySlug) document.body.style.overflow = '';
+      body.innerHTML = '';
+      return;
+    }
+    const derived = leagueDerived();
+    const team = derived.standings.find((row) => String(row.id) === String(state.modalTeamId || ''));
+    if (!team){
+      closeTeamModal();
+      return;
+    }
+    const slots = Array.from({ length: config().squadSize }, (_, index) => team.players[index] || null);
+    const contributionRows = contributionRowsFromEntries(team.players || []);
+    const marketValue = contributionRows.reduce((sum, row) => sum + Number(row.price || 0), 0);
+    const clauseValue = contributionRows.reduce((sum, row) => sum + Number(row.clause || 0), 0);
+    const avgRank = contributionRows.length ? Math.round(contributionRows.reduce((sum, row) => sum + Number(row.rank || 0), 0) / contributionRows.length) : 0;
+    const bestAsset = contributionRows.slice().sort((a, b) => b.price - a.price || collator.compare(a.name, b.name))[0] || null;
+    const roster = slots.map((entry) => {
+      if (!entry){
+        return `<div class="standingRosterCard empty" aria-hidden="true"><div class="standingRosterVisual empty"></div><span class="standingRosterName">Hueco libre</span></div>`;
+      }
+      const portrait = playerPortraitUrl(entry.player);
+      return `<button class="standingRosterCard ${frameClass(entry.player.tier)}" type="button" data-open-player="${escapeAttr(entry.player_slug || '')}" data-player-source="market" title="Ver ficha de ${escapeAttr(entry.player.name || entry.player_slug || 'Jugador')}"><div class="standingRosterVisual">${portrait ? `<img src="${escapeAttr(portrait)}" alt="${escapeAttr(entry.player.name || 'Jugador')}" loading="lazy" decoding="async" />` : ''}<div class="standingRosterShade"></div></div><span class="standingRosterName">${escapeHtml(entry.player.name || entry.player_slug || 'Jugador')}</span></button>`;
+    }).join('');
+    body.innerHTML = `<div class="teamModalShell">
+      <div class="teamModalHero">
+        <div>
+          <div class="modalEyebrow">Equipo fantasy</div>
+          <h3 class="modalTitle">${escapeHtml(team.teamName)}</h3>
+          <div class="modalSubtitle">${escapeHtml(team.coachName || 'Manager')} · ${formatPointsLabel(team.generalPoints)} acumulados</div>
+        </div>
+        <div class="pillRow">
+          <span class="pill strong">${renderCoinInline(team.rewardCoins || 0, false)} esta semana</span>
+          <span class="pill">Jornada ${formatPointsLabel(team.weeklyPoints)}</span>
+        </div>
+      </div>
+      <div class="modalStats teamModalStatsWide">
+        <div class="modalStat"><span>Puesto semanal</span><strong>#${intFmt.format(team.displayRank || team.rank || 0)}</strong></div>
+        <div class="modalStat"><span>Valor del roster</span><strong>${renderCoinInline(marketValue, false)}</strong></div>
+        <div class="modalStat"><span>Clausulas vivas</span><strong>${renderCoinInline(clauseValue, false)}</strong></div>
+        <div class="modalStat"><span>Ranking medio</span><strong>#${intFmt.format(avgRank || 0)}</strong></div>
+        <div class="modalStat"><span>Mejor activo</span><strong>${escapeHtml(bestAsset?.name || 'Sin datos')}</strong></div>
+        <div class="modalStat"><span>Pieza mas caliente</span><strong>${escapeHtml(contributionRows[0]?.name || 'Sin datos')}</strong></div>
+      </div>
+      <div class="teamModalSplit">
+        <div class="historyWrap">
+          <div class="historyTitle">Plantilla actual</div>
+          <div class="standingRoster modalTeamRoster">${roster}</div>
+          <div class="helper">Pulsa una ficha para ver su rendimiento, sus copias en liga y, si procede, entrar por clausula.</div>
+        </div>
+        <div class="historyWrap">
+          <div class="historyTitle">Impacto de la jornada</div>
+          ${renderContributionList(contributionRows, { compact: true })}
+        </div>
+      </div>
+    </div>`;
+    wrap.classList.remove('hidden');
+    wrap.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
   function renderSeasonFacts(){
     const cfg = config();
     const facts = $('seasonFacts');
@@ -1347,6 +1643,143 @@
     host.classList.add('hidden');
   }
 
+  function renderOverviewPanels(){
+    const topPlayersHost = $('topPlayersList');
+    const surpriseHost = $('surprisePlayersList');
+    if (topPlayersHost){
+      const rows = topGeneralPlayers(5);
+      topPlayersHost.innerHTML = rows.map((player) => renderOverviewFeature(player, 'general')).join('') || '<div class="empty">Aun no hay datos de jugadores.</div>';
+    }
+    if (surpriseHost){
+      const rows = topSurprisePlayers(5);
+      surpriseHost.innerHTML = rows.map((player) => renderOverviewFeature(player, 'surprise')).join('') || '<div class="empty">Todavia no hay sorpresas marcadas esta jornada.</div>';
+    }
+  }
+
+  function renderTeamInsights(){
+    const host = $('teamInsights');
+    if (!host) return;
+    if (!state.currentTeam){
+      host.innerHTML = '';
+      host.classList.add('hidden');
+      return;
+    }
+    const derived = leagueDerived();
+    const roster = contributionRowsFromEntries(derived.myRoster || []);
+    const marketValue = roster.reduce((sum, row) => sum + Number(row.price || 0), 0);
+    const clauseValue = roster.reduce((sum, row) => sum + Number(row.clause || 0), 0);
+    const weeklyReward = storedRewardCoins(state.currentTeam.id);
+    const weeklyPoints = storedWeeklyPoints(state.currentTeam.id);
+    const generalPoints = storedGeneralPoints(state.currentTeam);
+    const highestAsset = roster.slice().sort((a, b) => b.price - a.price || collator.compare(a.name, b.name))[0] || null;
+    host.classList.remove('hidden');
+    host.innerHTML = `<div class="teamInsightsGrid">
+      <div class="teamInsightHero">
+        <span>Presupuesto disponible</span>
+        <strong>${renderCoinInline(state.currentTeam.coins || 0, 'large')}</strong>
+        <small>Lo que tienes listo para entrar al mercado o defenderte de un clausulazo.</small>
+      </div>
+      <div class="teamStateStrip">
+        <div class="teamStateChip"><span>Valor actual</span><strong>${formatCoins(marketValue)}</strong><small>Lo que vale hoy tu plantilla</small></div>
+        <div class="teamStateChip"><span>Clausulas totales</span><strong>${formatCoins(clauseValue)}</strong><small>Lo que te dejarian si te levantan el equipo entero</small></div>
+        <div class="teamStateChip"><span>Ultimo sabado</span><strong>${formatPointsLabel(weeklyPoints)}</strong><small>${formatCoins(weeklyReward)} generados</small></div>
+        <div class="teamStateChip"><span>Acumulado</span><strong>${formatPointsLabel(generalPoints)}</strong><small>${escapeHtml(highestAsset?.name || 'Sin activo destacado')} es tu ficha mas cara</small></div>
+      </div>
+    </div>
+    <div class="portfolioShelf">${roster.map((row) => `<article class="portfolioChip ${frameClass(row.tier)}"><strong>${escapeHtml(row.name)}</strong><span>${renderCoinInline(row.price || 0, false)}</span><small>Clausula ${formatCoins(row.clause || 0)}</small></article>`).join('')}</div>`;
+  }
+
+  function renderManagerTrend(){
+    const host = $('managerTrendPanel');
+    if (!host) return;
+    if (!state.currentTeam){
+      host.innerHTML = '<div class="empty">Crea tu equipo para ver tu evolucion semanal como manager.</div>';
+      return;
+    }
+    const rows = state.teamRounds
+      .filter((row) => String(row.team_id) === String(state.currentTeam.id))
+      .sort((a, b) => Number(a.round_order || 0) - Number(b.round_order || 0));
+    if (!rows.length){
+      host.innerHTML = '<div class="empty">Aun no hay jornadas cerradas para pintar tu evolucion.</div>';
+      return;
+    }
+    const latestBreakdown = contributionRowsFromEntries(leagueDerived().myRoster || []);
+    const latestBreakdownText = latestBreakdown.map((row) => `${row.name}: ${formatPointsLabel(row.weeklyPoints)}`).join(' · ');
+    const series = rows.map((row) => ({
+      label: String(row.round_label || row.round_key || '').trim(),
+      roundKey: String(row.round_key || ''),
+      value: Number(row.weekly_points || 0),
+      reward: Number(row.reward_coins || 0)
+    }));
+    const width = 620;
+    const height = 220;
+    const padX = 28;
+    const padTop = 20;
+    const padBottom = 30;
+    const plotWidth = width - padX * 2;
+    const plotHeight = height - padTop - padBottom;
+    const maxValue = Math.max(...series.map((item) => item.value), 1);
+    const stepX = series.length > 1 ? plotWidth / (series.length - 1) : 0;
+    const xFor = (index) => padX + index * stepX;
+    const yFor = (value) => padTop + (plotHeight - (Number(value || 0) / maxValue) * plotHeight);
+    const points = series.map((item, index) => `${xFor(index).toFixed(2)},${yFor(item.value).toFixed(2)}`).join(' ');
+    const pointsSvg = series.map((item, index) => {
+      const x = xFor(index).toFixed(2);
+      const y = yFor(item.value).toFixed(2);
+      const tooltip = `${item.label}: ${formatPointsLabel(item.value)} · ${formatCoins(item.reward)}${index === series.length - 1 && latestBreakdownText ? ` · ${latestBreakdownText}` : ''}`;
+      return `<line class="chartStem scoring" x1="${x}" y1="${height - padBottom}" x2="${x}" y2="${y}"></line><circle class="chartPoint scoring" cx="${x}" cy="${y}" r="8"><title>${escapeHtml(tooltip)}</title></circle>`;
+    }).join('');
+    const labelsSvg = series.map((item, index) => `<text x="${xFor(index).toFixed(2)}" y="${height - 8}" text-anchor="middle" font-size="10" font-weight="900" fill="#0f172a">${escapeHtml(item.label)}</text>`).join('');
+    host.innerHTML = `<div class="chartCard"><div class="chartMeta"><span>Evolucion del manager</span><strong>${formatPointsLabel(series[series.length - 1]?.value || 0)} ultima jornada</strong></div><svg class="chartSvg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Grafica semanal del manager"><line class="chartAxis" x1="${padX}" y1="${height - padBottom}" x2="${width - padX}" y2="${height - padBottom}"></line><polyline class="chartLine" points="${points}"></polyline>${pointsSvg}${labelsSvg}</svg>${latestBreakdown.length ? `<div class="trendBreakdown"><div class="trendBreakdownHead">Ultimo cierre · pasa el raton por el punto para ver el resumen</div>${latestBreakdown.map((row) => `<span class="trendBreakdownChip"><strong>${escapeHtml(row.name)}</strong>${formatPointsLabel(row.weeklyPoints)}</span>`).join('')}</div>` : ''}</div>`;
+  }
+
+  function renderTeamBreakdown(){
+    const host = $('teamBreakdownPanel');
+    if (!host) return;
+    if (!state.currentTeam){
+      host.innerHTML = '<div class="empty">Cuando tengas equipo activo, aqui veras exactamente de donde salen tus puntos fantasy.</div>';
+      return;
+    }
+    const rows = contributionRowsFromEntries(leagueDerived().myRoster || []);
+    const total = rows.reduce((sum, row) => sum + Number(row.weeklyPoints || 0), 0);
+    host.innerHTML = `<div class="breakdownHero"><div><span>Ultimo sabado puntuable</span><strong>${formatPointsLabel(total)}</strong><small>${formatCoins(storedRewardCoins(state.currentTeam.id))} convertidos en berries tras el cierre.</small></div><div class="pillRow"><span class="pill strong">${intFmt.format(rows.length)} piezas activas</span><span class="pill">${rows.filter((row) => row.weeklyPoints > 0).length}/${rows.length} aportando</span></div></div>${renderContributionList(rows, { hidePrice: true })}`;
+  }
+
+  function renderScoutingPanel(){
+    const host = $('scoutingPanel');
+    if (!host) return;
+    if (!state.currentTeam){
+      host.innerHTML = '<div class="empty">Crea tu equipo para que el radar te sugiera fichajes reales segun tu dinero y tus huecos.</div>';
+      return;
+    }
+    const targets = suggestedTargets(4);
+    if (!targets.length){
+      host.innerHTML = '<div class="empty">Todavia no tengo objetivos claros para mostrarte. Prueba a refrescar el fantasy cuando el pool tenga mas movimiento.</div>';
+      return;
+    }
+    host.innerHTML = `<div class="scoutGrid">${targets.map((entry) => {
+      const player = entry.player;
+      const portrait = playerPortraitUrl(player);
+      const pulse = playerPulse(player);
+      const badge = entry.direct ? `Fichable por ${formatCoins(entry.cost)}` : `Clausula desde ${formatCoins(entry.cost)}`;
+      return `<button class="scoutCard ${frameClass(player.tier)}" type="button" data-open-player="${escapeAttr(player.slug || '')}" data-player-source="market">
+        <div class="scoutVisual">${portrait ? `<img src="${escapeAttr(portrait)}" alt="${escapeAttr(player.name || 'Jugador')}" loading="lazy" decoding="async" />` : ''}<div class="standingRosterShade"></div></div>
+        <div class="scoutBody">
+          <div class="scoutHead">
+            <strong>${escapeHtml(player.name || 'Jugador')}</strong>
+            <span class="signalTag ${escapeAttr(pulse.tone)}">${escapeHtml(pulse.label)}</span>
+          </div>
+          <div class="scoutMeta">${escapeHtml(entry.reason)}</div>
+          <div class="scoutStats">
+            <span><strong>${formatPointsLabel(player.currentFantasyPoints || 0)}</strong><small>ultimo sabado</small></span>
+            <span><strong>#${intFmt.format(player.rank || 0)}</strong><small>ranking VBF</small></span>
+          </div>
+          <div class="scoutFoot">${escapeHtml(badge)}</div>
+        </div>
+      </button>`;
+    }).join('')}</div>`;
+  }
+
   function renderStandings(){
     const wrap = $('standingsBoard');
     const empty = $('standingsEmpty');
@@ -1358,10 +1791,21 @@
     if (meta.parentElement) meta.parentElement.classList.add('hidden');
     if (!derived.standings.length){ wrap.classList.add('hidden'); empty.classList.remove('hidden'); empty.textContent = 'Todavia no hay equipos inscritos en el fantasy.'; return; }
     empty.classList.add('hidden');
+    const standings = derived.standings.slice().sort((a, b) => {
+      if (PAGE_VIEW === 'overview'){
+        return (b.rewardCoins || 0) - (a.rewardCoins || 0)
+          || (b.weeklyPoints || 0) - (a.weeklyPoints || 0)
+          || (b.generalPoints || 0) - (a.generalPoints || 0)
+          || collator.compare(a.teamName, b.teamName);
+      }
+      return (b.weeklyPoints || 0) - (a.weeklyPoints || 0)
+        || (b.generalPoints || 0) - (a.generalPoints || 0)
+        || collator.compare(a.teamName, b.teamName);
+    }).map((row, index) => ({ ...row, displayRank: index + 1 }));
     wrap.classList.remove('hidden');
-    wrap.innerHTML = derived.standings.map((row) => {
+    wrap.innerHTML = standings.map((row) => {
       const mine = state.currentUser && String(row.userId) === String(state.currentUser.id);
-      const rankClass = row.rank === 1 ? 'top1' : row.rank === 2 ? 'top2' : row.rank === 3 ? 'top3' : '';
+      const rankClass = row.displayRank === 1 ? 'top1' : row.displayRank === 2 ? 'top2' : row.displayRank === 3 ? 'top3' : '';
       const slots = Array.from({ length: config().squadSize }, (_, index) => row.players[index] || null);
       const roster = slots.map((entry) => {
         if (!entry){
@@ -1370,7 +1814,10 @@
         const portrait = playerPortraitUrl(entry.player);
         return `<button class="standingRosterCard ${frameClass(entry.player.tier)}" type="button" data-open-player="${escapeAttr(entry.player_slug || '')}" data-player-source="market" title="Ver ficha de ${escapeAttr(entry.player.name || entry.player_slug || 'Jugador')}"><div class="standingRosterVisual">${portrait ? `<img src="${escapeAttr(portrait)}" alt="${escapeAttr(entry.player.name || 'Jugador')}" loading="lazy" decoding="async" />` : ''}<div class="standingRosterShade"></div></div><span class="standingRosterName">${escapeHtml(entry.player.name || entry.player_slug || 'Jugador')}</span></button>`;
       }).join('');
-      return `<article class="standingRow ${mine ? 'isMine' : ''}"><div><span class="rankBadge ${rankClass}">#${row.rank}</span></div><div class="standingIdentity"><div class="standingIdentityTop"><strong>${escapeHtml(row.teamName)}</strong><span>${formatPointsLabel(row.generalPoints)} acumulados</span></div><div class="standingIdentityBottom"><strong>${escapeHtml(row.coachName || 'Manager')}</strong><span>Manager · Jornada ${formatPointsLabel(row.weeklyPoints)}</span></div></div><div class="standingRoster">${roster}</div></article>`;
+      const secondary = PAGE_VIEW === 'overview'
+        ? `${renderCoinInline(row.rewardCoins || 0, false)} esta semana`
+        : `Manager · Jornada ${formatPointsLabel(row.weeklyPoints)}`;
+      return `<article class="standingRow ${mine ? 'isMine' : ''}" data-open-team="${escapeAttr(row.id)}"><div><span class="rankBadge ${rankClass}">#${row.displayRank}</span></div><div class="standingIdentity"><div class="standingIdentityTop"><strong>${escapeHtml(row.teamName)}</strong><span>${formatPointsLabel(row.generalPoints)} acumulados</span></div><div class="standingIdentityBottom"><strong>${escapeHtml(row.coachName || 'Manager')}</strong><span>${secondary}</span></div></div><div class="standingRoster">${roster}</div></article>`;
     }).join('');
   }
 
@@ -1394,7 +1841,10 @@
     grid.innerHTML = derived.squadCards.map((entry) => {
       const player = entry.player;
       const overlay = `<div class="playerOverlayBottom"><div class="overlayNamePlain">${escapeHtml(player.name)}</div><div class="overlaySubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div>`;
-      return `<article class="playerCard squadCard isInteractive ${frameClass(player.tier)}" data-open-player="${escapeAttr(entry.player_slug)}" data-player-source="team"><div class="playerHead">${renderPlayerVisual(player, overlay)}</div></article>`;
+      const detail = PAGE_VIEW === 'team'
+        ? `<div class="teamPlayerMeta"><span>${renderCoinInline(Number(player.price || entry.buy_price || 0), false)}</span><span>Clausula ${formatCoins(Number(entry.clause_price || player.clausePrice || 0))}</span></div>`
+        : '';
+      return `<article class="playerCard squadCard isInteractive ${frameClass(player.tier)}" data-open-player="${escapeAttr(entry.player_slug)}" data-player-source="team"><div class="playerHead">${renderPlayerVisual(player, overlay)}</div>${detail}</article>`;
     }).join('');
   }
 
@@ -1413,19 +1863,29 @@
     grid.innerHTML = derived.marketPlayers.map((player) => {
       const overlay = `<div class="playerOverlayBottom"><div class="overlayNamePlain">${escapeHtml(player.name)}</div><div class="overlaySubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div>`;
       const blocked = buyBlockReason(player, roster);
-      const buttonLabel = blocked ? escapeHtml(blocked) : `Fichar - ${renderCoinInline(Number(player.price || 0), true)}`;
-      return `<article class="playerCard marketCard isInteractive ${frameClass(player.tier)}" data-open-player="${escapeAttr(player.slug)}" data-player-source="market"><div class="playerHead">${renderPlayerVisual(player, overlay)}</div><div class="actionRow compactActions single"><button class="btn btnPrimary compactBtn buyFullBtn" type="button" data-buy-confirm="${escapeAttr(player.slug)}" aria-label="Comprar ${escapeAttr(player.name)}" ${blocked ? 'disabled' : ''} title="${escapeAttr(blocked || (player.marketMode === 'buyout' ? `Pagar clausula de ${player.name}` : `Fichar a ${player.name}`))}">${buttonLabel}</button></div></article>`;
+      const buttonLabel = blocked ? escapeHtml(blocked) : `Fichar por ${renderCoinInline(Number(player.price || 0), true)}`;
+      const pulse = playerPulse(player);
+      const ownerSlots = Array.from({ length: config().maxPlayerCopies }, (_, index) => {
+        const owner = player.owners[index];
+        if (!owner) return `<span class="copySlot isFree">Libre</span>`;
+        return `<span class="copySlot isOwned" title="${escapeAttr(`En ${owner.teamName} · ${owner.coachName}`)}">${escapeHtml(owner.coachName || owner.teamName || 'Ocupado')}</span>`;
+      }).join('');
+      const infoRow = `<div class="marketCardStats"><span class="marketSignal ${escapeAttr(pulse.tone)}">${escapeHtml(pulse.label)}</span><span class="marketSignal">Ranking VBF #${intFmt.format(player.rank || 0)}</span><span class="marketSignal">${player.currentFantasyPoints > 0 ? `Ult. sabado ${formatPointsLabel(player.currentFantasyPoints)}` : 'Ult. sabado sin puntos'}</span></div>`;
+      return `<article class="playerCard marketCard isInteractive ${frameClass(player.tier)}" data-open-player="${escapeAttr(player.slug)}" data-player-source="market"><div class="playerHead">${renderPlayerVisual(player, overlay)}</div>${infoRow}<div class="copySlotRow">${ownerSlots}</div><div class="actionRow compactActions single"><button class="btn btnPrimary compactBtn buyFullBtn" type="button" data-buy-confirm="${escapeAttr(player.slug)}" aria-label="Comprar ${escapeAttr(player.name)}" ${blocked ? 'disabled' : ''} title="${escapeAttr(blocked || (player.marketMode === 'buyout' ? `Pagar clausula de ${player.name}` : `Fichar a ${player.name}`))}">${buttonLabel}</button></div></article>`;
     }).join('');
   }
 
   function renderNotifications(){
     const host = $('marketNoticePanel');
     if (!host) return;
+    const card = host.closest('.card');
     if (!state.currentUser || !state.notifications.length){
       host.classList.add('hidden');
       host.innerHTML = '';
+      if (card) card.classList.add('hidden');
       return;
     }
+    if (card) card.classList.remove('hidden');
     host.classList.remove('hidden');
     host.innerHTML = `<div class="subPanelHead"><div><h3>Avisos de mercado</h3><p>Resumen rapido de starter pack, clausulas y recompensas semanales.</p></div><span class="pill">${intFmt.format(state.notifications.length)} avisos</span></div><div class="noticeList">${state.notifications.slice(0, 4).map((note) => `<article class="noticeItem"><span>${escapeHtml(String(note.kind || '').replace(/_/g, ' '))}</span><strong>${escapeHtml(note.title || 'Aviso')}</strong><p>${escapeHtml(note.body || '')}</p></article>`).join('')}</div>`;
   }
@@ -1435,9 +1895,15 @@
     renderSeasonFacts();
     renderSetupPanel();
     renderStandings();
+    renderOverviewPanels();
+    renderTeamInsights();
     renderTeam();
+    renderManagerTrend();
+    renderTeamBreakdown();
+    renderScoutingPanel();
     renderMarket();
     renderNotifications();
+    renderTeamModal();
     renderPlayerModal();
     renderBuyConfirm();
   }
@@ -1453,7 +1919,6 @@
         if (error) throw error;
         showPageMsg('Equipo OP15 creado. Tu starter pack ya esta repartido y el mercado queda listo para ti.', 'ok');
         await loadLeagueContext();
-        await syncCurrentRound(true);
         renderAll();
       } catch (error){
         if (isSchemaError(error)) markSchemaMissing(error);
@@ -1465,10 +1930,12 @@
   async function buyPlayer(playerSlug, targetTeamId, outgoingSlug){
     if (!state.currentTeam) return;
     await withActionLock(async () => {
+      let playerName = 'ese jugador';
       try{
         await ensureActionDataFresh();
         const player = leagueDerived().marketPlayers.find((item) => String(item.slug) === String(playerSlug || ''));
         if (!player) throw new Error('El jugador ya no esta disponible en el pool actual.');
+        playerName = player.name || playerName;
         const { error } = await rpcWithTimeout('fantasy_vbf_buy_player', {
           p_season: CURRENT_SEASON,
           p_round_key: state.currentRound?.key || state.sheetRound?.key || 'manual',
@@ -1479,11 +1946,10 @@
         if (error) throw error;
         showPageMsg(targetTeamId ? `${player.name} llega por clausula.` : `${player.name} anadido a tu plantilla.`, 'ok');
         await loadLeagueContext();
-        await syncCurrentRound(true);
         renderAll();
       } catch (error){
         if (isSchemaError(error)) markSchemaMissing(error);
-        showPageMsg(`No pude comprar a ${player.name}: ${error?.message || error}`, 'err');
+        showPageMsg(`No pude comprar a ${playerName}: ${error?.message || error}`, 'err');
       }
     });
   }
@@ -1495,7 +1961,6 @@
         if (error) throw error;
         showPageMsg('Operacion registrada.', 'ok');
         await loadLeagueContext();
-        await syncCurrentRound(true);
         renderAll();
       } catch (error){
         if (isSchemaError(error)) markSchemaMissing(error);
@@ -1606,26 +2071,35 @@
     return promise;
   }
 
-  $('reloadPlayersButton').addEventListener('click', async () => {
+  $('reloadPlayersButton')?.addEventListener('click', async () => {
     showPageMsg('Refrescando fantasy desde VBF...', 'ok');
     await refreshAllData({ forceSheet: true, skipSession: true, loadingLabel: 'Refrescando fantasy...' });
   });
-  $('marketSearch').addEventListener('input', () => { state.marketSearch = $('marketSearch').value || ''; renderMarket(); });
-  $('marketSort').addEventListener('change', () => { state.marketSort = $('marketSort').value || 'vbf_full_rank'; renderMarket(); });
+  $('marketSearch')?.addEventListener('input', () => { state.marketSearch = $('marketSearch')?.value || ''; renderMarket(); });
+  $('marketSort')?.addEventListener('change', () => { state.marketSort = $('marketSort')?.value || 'vbf_full_rank'; renderMarket(); });
   document.addEventListener('submit', async (event) => { if (event.target?.id === 'createTeamForm') await createTeam(event); });
   function handleOpenPlayerClick(event){
     const buyTrigger = event.target.closest('[data-buy-confirm]');
     if (buyTrigger){
       openBuyConfirm(buyTrigger.getAttribute('data-buy-confirm') || '', buyTrigger.getAttribute('data-buy-target-team') || '');
-      return;
+      return true;
     }
     const trigger = event.target.closest('[data-open-player]');
-    if (!trigger) return;
+    if (!trigger) return false;
     openPlayerModal(trigger.getAttribute('data-open-player') || '', trigger.getAttribute('data-player-source') || 'market');
+    return true;
   }
-  $('marketGrid').addEventListener('click', handleOpenPlayerClick);
-  $('squadGrid').addEventListener('click', handleOpenPlayerClick);
-  $('standingsBoard').addEventListener('click', handleOpenPlayerClick);
+  $('marketGrid')?.addEventListener('click', handleOpenPlayerClick);
+  $('squadGrid')?.addEventListener('click', handleOpenPlayerClick);
+  $('standingsBoard')?.addEventListener('click', (event) => {
+    if (handleOpenPlayerClick(event)) return;
+    const teamTrigger = event.target.closest('[data-open-team]');
+    if (!teamTrigger) return;
+    openTeamModal(teamTrigger.getAttribute('data-open-team') || '');
+  });
+  $('topPlayersList')?.addEventListener('click', handleOpenPlayerClick);
+  $('surprisePlayersList')?.addEventListener('click', handleOpenPlayerClick);
+  $('scoutingPanel')?.addEventListener('click', handleOpenPlayerClick);
   $('playerModalWrap')?.addEventListener('click', async (event) => {
     const closeTrigger = event.target.closest('[data-close-player-modal]');
     if (closeTrigger){ closePlayerModal(); return; }
@@ -1650,6 +2124,14 @@
     }
   });
   $('playerModalClose')?.addEventListener('click', closePlayerModal);
+  $('teamModalWrap')?.addEventListener('click', (event) => {
+    if (event.target.closest('[data-close-team-modal]')){ closeTeamModal(); return; }
+    const trigger = event.target.closest('[data-open-player]');
+    if (!trigger) return;
+    closeTeamModal();
+    openPlayerModal(trigger.getAttribute('data-open-player') || '', trigger.getAttribute('data-player-source') || 'market');
+  });
+  $('teamModalClose')?.addEventListener('click', closeTeamModal);
   $('buyConfirmWrap')?.addEventListener('change', (event) => {
     const input = event.target.closest('input[name="buyReplacePlayer"]');
     if (!input) return;
@@ -1669,6 +2151,7 @@
   });
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && state.modalPlayerSlug) closePlayerModal();
+    if (event.key === 'Escape' && state.modalTeamId) closeTeamModal();
     if (event.key === 'Escape' && state.confirmBuySlug) closeBuyConfirm();
   });
 

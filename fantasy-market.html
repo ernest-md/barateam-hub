@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>VadeFantasy - Inicio</title>
+  <title>VadeFantasy - Mercado</title>
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="app.css?v=20260306b" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -267,9 +267,9 @@
     @media (max-width:560px){.wrap{padding:10px}.hero{padding:16px 14px;border-radius:20px}.card{border-radius:18px;padding:12px}.heroStats,.factGrid,.playerGrid{grid-template-columns:1fr 1fr}.actionRow .btn{flex:1 1 calc(50% - 4px)}.loadingCard{padding:14px 16px;border-radius:18px}.overlayNamePlain{font-size:15px}.overlaySubtitle{font-size:9px}.modalCard{padding:14px}.modalTitle{font-size:22px}.standingRow{grid-template-columns:1fr}.standingRoster{grid-template-columns:repeat(3,minmax(0,1fr))}#squadGrid{grid-template-columns:1fr}}
     @media (max-width:420px){.playerGrid{grid-template-columns:1fr}}
   </style>
-  <link rel="stylesheet" href="fantasy-polish.css?v=20260504b" />
+  <link rel="stylesheet" href="fantasy-polish.css?v=20260504a" />
 </head>
-<body data-skip-global-access-guard="1" data-fantasy-view="overview">
+<body data-skip-global-access-guard="1" data-fantasy-view="market">
   <div class="topbar">
     <div class="bar with-auth-corner">
       <a class="brandLink" href="index.html" aria-label="Ir a la home">
@@ -302,9 +302,9 @@
         <div class="navInlineGroup is-current">
           <button class="navInlineButton" type="button" aria-expanded="false" aria-controls="vadeFantasyMenu" aria-haspopup="true"><span>VadeFantasy</span><span class="navInlineCaret" aria-hidden="true">v</span></button>
           <div class="navInlineMenu" id="vadeFantasyMenu">
-            <a class="navInlineMenuLink is-current" href="fantasy.html">Inicio</a>
+            <a class="navInlineMenuLink" href="fantasy.html">Inicio</a>
             <a class="navInlineMenuLink" href="fantasy-team.html">Organizar equipo</a>
-            <a class="navInlineMenuLink" href="fantasy-market.html">Mercado</a>
+            <a class="navInlineMenuLink is-current" href="fantasy-market.html">Mercado</a>
           </div>
         </div>
         <a class="navInlineLink" href="encuestas.html">Encuestas</a>
@@ -386,7 +386,7 @@
       <div class="schemaNote" id="schemaNote"></div>
     </section>
 
-    <div class="pageGrid overviewGrid">
+    <div class="pageGrid marketOnly">
       <div class="stack">
         <section class="card">
           <div class="sectionHead">
@@ -398,49 +398,33 @@
           </div>
           <div class="factGrid" id="seasonFacts"></div>
           <div class="subPanel" id="teamSetupPanel"><div class="empty">Cargando estado de la liga...</div></div>
-          <div class="actionRow">
-            <a class="btn" href="fantasy-team.html">Organizar equipo</a>
-            <a class="btn btnPrimary" href="fantasy-market.html">Ir al mercado</a>
-          </div>
           <div class="helper" id="authHint">Necesitas sesion para crear tu equipo, recibir tu starter pack y entrar al mercado.</div>
-        </section>
-
-        <section class="card">
-          <div class="sectionHead">
-            <div>
-                <h2>Managers de la semana</h2>
-                <p>Ordenados por berries ganados en la jornada cerrada del sabado. Desde aqui puedes entrar a sus jugadores y buscar clausulazos.</p>
-            </div>
-            <div class="inlineMeta"><span class="pill hidden" id="standingsMeta"></span></div>
+          <div class="actionRow">
+            <a class="btn" href="fantasy.html">Volver al inicio</a>
+            <a class="btn" href="fantasy-team.html">Organizar equipo</a>
           </div>
-          <div class="empty" id="standingsEmpty">Todavia no hay equipos inscritos en la liga fantasy.</div>
-          <div class="standingsBoard hidden" id="standingsBoard"></div>
-        </section>
-      </div>
-
-      <div class="stack">
-        <section class="card">
-          <div class="sectionHead">
-            <div>
-                <h2>Top 5 general</h2>
-                <p>Los jugadores que mas puntos han dado en el historico completo de Vade Back Fight.</p>
-            </div>
-          </div>
-          <div class="overviewList" id="topPlayersList"></div>
         </section>
         <section class="card">
           <div class="sectionHead">
             <div>
-                <h2>Dando la sorpresa</h2>
-                <p>Rinden mejor de lo que su posicion global en VadeBack dejaria esperar en la ultima jornada fantasy.</p>
+                <h2>Mercado OP15</h2>
+                <p>Explora a todos los jugadores, busca por nombre o tier y revisa que copias siguen libres y cuales ya estan en manos de otros managers.</p>
+            </div>
+            <div class="inlineMeta"><span class="pill hidden" id="marketMeta"></span></div>
+          </div>
+          <div class="toolbar">
+            <div class="marketFilters">
+              <label class="control"><span>Buscar</span><input id="marketSearch" type="search" placeholder="Jugador o tier" autocomplete="off" /></label>
+              <label class="control"><span>Orden</span><select id="marketSort"><option value="vbf_full_rank">VadeBack (Completa)</option><option value="weekly_desc">Mejor jornada anterior</option><option value="general_desc">Mas puntos</option><option value="price_desc">Precio mas alto</option><option value="price_asc">Precio mas bajo</option><option value="wins_desc">Mas ganados</option><option value="name_asc">Nombre A-Z</option></select></label>
             </div>
           </div>
-          <div class="overviewList" id="surprisePlayersList"></div>
+          <div class="empty hidden" id="marketEmpty">No hay jugadores que coincidan con este filtro.</div>
+          <div class="playerGrid" id="marketGrid"></div>
         </section>
       </div>
     </div>
   </div>
   <script src="fantasy-player-portraits.js?v=20260504a"></script>
-  <script src="fantasy.js?v=20260504b"></script>
+  <script src="fantasy.js?v=20260504a"></script>
 </body>
 </html>

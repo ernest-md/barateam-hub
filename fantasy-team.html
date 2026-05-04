@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>VadeFantasy - Inicio</title>
+  <title>VadeFantasy - Organizar equipo</title>
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="app.css?v=20260306b" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -267,9 +267,9 @@
     @media (max-width:560px){.wrap{padding:10px}.hero{padding:16px 14px;border-radius:20px}.card{border-radius:18px;padding:12px}.heroStats,.factGrid,.playerGrid{grid-template-columns:1fr 1fr}.actionRow .btn{flex:1 1 calc(50% - 4px)}.loadingCard{padding:14px 16px;border-radius:18px}.overlayNamePlain{font-size:15px}.overlaySubtitle{font-size:9px}.modalCard{padding:14px}.modalTitle{font-size:22px}.standingRow{grid-template-columns:1fr}.standingRoster{grid-template-columns:repeat(3,minmax(0,1fr))}#squadGrid{grid-template-columns:1fr}}
     @media (max-width:420px){.playerGrid{grid-template-columns:1fr}}
   </style>
-  <link rel="stylesheet" href="fantasy-polish.css?v=20260504b" />
+  <link rel="stylesheet" href="fantasy-polish.css?v=20260504a" />
 </head>
-<body data-skip-global-access-guard="1" data-fantasy-view="overview">
+<body data-skip-global-access-guard="1" data-fantasy-view="team">
   <div class="topbar">
     <div class="bar with-auth-corner">
       <a class="brandLink" href="index.html" aria-label="Ir a la home">
@@ -302,8 +302,8 @@
         <div class="navInlineGroup is-current">
           <button class="navInlineButton" type="button" aria-expanded="false" aria-controls="vadeFantasyMenu" aria-haspopup="true"><span>VadeFantasy</span><span class="navInlineCaret" aria-hidden="true">v</span></button>
           <div class="navInlineMenu" id="vadeFantasyMenu">
-            <a class="navInlineMenuLink is-current" href="fantasy.html">Inicio</a>
-            <a class="navInlineMenuLink" href="fantasy-team.html">Organizar equipo</a>
+            <a class="navInlineMenuLink" href="fantasy.html">Inicio</a>
+            <a class="navInlineMenuLink is-current" href="fantasy-team.html">Organizar equipo</a>
             <a class="navInlineMenuLink" href="fantasy-market.html">Mercado</a>
           </div>
         </div>
@@ -386,7 +386,7 @@
       <div class="schemaNote" id="schemaNote"></div>
     </section>
 
-    <div class="pageGrid overviewGrid">
+    <div class="pageGrid">
       <div class="stack">
         <section class="card">
           <div class="sectionHead">
@@ -398,23 +398,19 @@
           </div>
           <div class="factGrid" id="seasonFacts"></div>
           <div class="subPanel" id="teamSetupPanel"><div class="empty">Cargando estado de la liga...</div></div>
-          <div class="actionRow">
-            <a class="btn" href="fantasy-team.html">Organizar equipo</a>
-            <a class="btn btnPrimary" href="fantasy-market.html">Ir al mercado</a>
+          <div class="subPanel hidden" id="teamInsights"></div>
+          <div class="teamRosterBlock">
+            <div class="teamRosterHead">
+              <div>
+                <h3>Mi plantilla</h3>
+                <p>Tus 3 jugadores, su valor actual y la clausula que tendrian si otro manager viene a por ellos.</p>
+              </div>
+              <div class="inlineMeta" id="teamSummary"></div>
+            </div>
+            <div class="empty" id="squadEmpty">Crea tu equipo OP15 para empezar a fichar jugadores.</div>
+            <div class="playerGrid hidden" id="squadGrid"></div>
           </div>
           <div class="helper" id="authHint">Necesitas sesion para crear tu equipo, recibir tu starter pack y entrar al mercado.</div>
-        </section>
-
-        <section class="card">
-          <div class="sectionHead">
-            <div>
-                <h2>Managers de la semana</h2>
-                <p>Ordenados por berries ganados en la jornada cerrada del sabado. Desde aqui puedes entrar a sus jugadores y buscar clausulazos.</p>
-            </div>
-            <div class="inlineMeta"><span class="pill hidden" id="standingsMeta"></span></div>
-          </div>
-          <div class="empty" id="standingsEmpty">Todavia no hay equipos inscritos en la liga fantasy.</div>
-          <div class="standingsBoard hidden" id="standingsBoard"></div>
         </section>
       </div>
 
@@ -422,25 +418,43 @@
         <section class="card">
           <div class="sectionHead">
             <div>
-                <h2>Top 5 general</h2>
-                <p>Los jugadores que mas puntos han dado en el historico completo de Vade Back Fight.</p>
+                <h2>Tu evolucion como manager</h2>
+                <p>Lee como se va construyendo tu puntuacion jornada a jornada y cuanto te ha aportado cada cierre semanal.</p>
             </div>
           </div>
-          <div class="overviewList" id="topPlayersList"></div>
+          <div id="managerTrendPanel"><div class="empty">Cargando evolucion del manager...</div></div>
         </section>
         <section class="card">
           <div class="sectionHead">
             <div>
-                <h2>Dando la sorpresa</h2>
-                <p>Rinden mejor de lo que su posicion global en VadeBack dejaria esperar en la ultima jornada fantasy.</p>
+                <h2>Lectura de la jornada</h2>
+                <p>De donde salen tus puntos ahora mismo y que piezas estan tirando del equipo.</p>
             </div>
           </div>
-          <div class="overviewList" id="surprisePlayersList"></div>
+          <div id="teamBreakdownPanel"><div class="empty">Cargando desglose fantasy...</div></div>
+        </section>
+        <section class="card">
+          <div class="sectionHead">
+            <div>
+                <h2>Avisos de mercado</h2>
+                <p>Starter pack, clausulas y recompensas recientes de tu equipo.</p>
+            </div>
+          </div>
+          <div class="subPanel hidden" id="marketNoticePanel"></div>
+        </section>
+        <section class="card">
+          <div class="sectionHead">
+            <div>
+                <h2>Radar de fichajes</h2>
+                <p>Objetivos que mejor encajan por forma, valor y posibilidad real de mejorar tu plantilla.</p>
+            </div>
+          </div>
+          <div id="scoutingPanel"><div class="empty">Cargando objetivos de mercado...</div></div>
         </section>
       </div>
     </div>
   </div>
   <script src="fantasy-player-portraits.js?v=20260504a"></script>
-  <script src="fantasy.js?v=20260504b"></script>
+  <script src="fantasy.js?v=20260504a"></script>
 </body>
 </html>

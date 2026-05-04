@@ -1100,6 +1100,14 @@ begin
   where t.season = v_season
   on conflict (season, team_id, round_key) do nothing;
 
+  select rewards_applied into v_rewards_applied
+  from public.fantasy_vbf_rounds
+  where season = v_season and round_key = v_round_key;
+
+  if coalesce(v_rewards_applied, false) is true then
+    return jsonb_build_object('season', v_season, 'round_key', v_round_key, 'synced', false, 'reason', 'already-closed');
+  end if;
+
   update public.fantasy_vbf_team_rounds tr
   set weekly_points = coalesce(scores.weekly_points, 0),
       round_label = v_round_label,
@@ -1131,10 +1139,6 @@ begin
   set weekly_rank = ranked.row_rank
   from ranked
   where ranked.id = tr.id;
-
-  select rewards_applied into v_rewards_applied
-  from public.fantasy_vbf_rounds
-  where season = v_season and round_key = v_round_key;
 
   if coalesce(v_rewards_applied, false) is false then
     for v_row in

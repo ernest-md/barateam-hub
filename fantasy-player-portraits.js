@@ -7,6 +7,7 @@
     'Coquito.png',
     'DavidVaz.png',
     'Daword.png',
+    'Dragon.png',
     'Dilix.png',
     'DrYemo.png',
     'Ernest.png',
