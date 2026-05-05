@@ -7,6 +7,7 @@ drop table if exists public.fantasy_vbf_player_pool cascade;
 drop table if exists public.fantasy_vbf_team_rounds cascade;
 drop table if exists public.fantasy_vbf_rounds cascade;
 drop table if exists public.fantasy_vbf_transactions cascade;
+drop table if exists public.fantasy_vbf_roster_snapshots cascade;
 drop table if exists public.fantasy_vbf_roster_players cascade;
 drop table if exists public.fantasy_vbf_members cascade;
 drop table if exists public.fantasy_vbf_leagues cascade;
@@ -25,6 +26,8 @@ drop function if exists public.fantasy_vbf_buy_player(text, text, text, text, in
 drop function if exists public.fantasy_vbf_buy_player(text, text, text, text, integer);
 drop function if exists public.fantasy_vbf_create_team(text, text, jsonb);
 drop function if exists public.fantasy_vbf_create_team(text, text);
+drop function if exists public.fantasy_vbf_capture_round_snapshot_for_date(text, date, boolean);
+drop function if exists public.fantasy_vbf_capture_round_snapshot(text, text, text, integer, boolean);
 drop function if exists public.fantasy_vbf_sync_player_pool(text, text, text, integer, jsonb);
 drop function if exists public.fantasy_vbf_market_is_open(timestamptz);
 drop function if exists public.fantasy_vbf_price_bucket(integer);
@@ -178,6 +181,25 @@ create table public.fantasy_vbf_roster_players (
   unique (season, team_id, player_slug)
 );
 
+create table public.fantasy_vbf_roster_snapshots (
+  id uuid primary key default gen_random_uuid(),
+  season text not null references public.fantasy_vbf_seasons(season) on delete cascade,
+  round_key text not null,
+  round_label text not null,
+  round_order integer not null default 0,
+  team_id uuid not null references public.fantasy_vbf_teams(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  player_slug text not null,
+  player_name text not null,
+  player_tier text not null default '',
+  player_rank integer not null default 9999,
+  buy_price integer not null default 0 check (buy_price >= 0),
+  clause_price integer not null default 0 check (clause_price >= 0),
+  captured_at timestamptz not null default timezone('utc', now()),
+  created_at timestamptz not null default timezone('utc', now()),
+  unique (season, round_key, team_id, player_slug)
+);
+
 create table public.fantasy_vbf_transactions (
   id uuid primary key default gen_random_uuid(),
   season text not null references public.fantasy_vbf_seasons(season) on delete cascade,
@@ -253,6 +275,8 @@ create index fantasy_vbf_player_pool_season_idx on public.fantasy_vbf_player_poo
 create index fantasy_vbf_player_rounds_round_idx on public.fantasy_vbf_player_rounds (season, round_key, round_order, fantasy_points desc nulls last);
 create index fantasy_vbf_roster_team_idx on public.fantasy_vbf_roster_players (team_id, created_at desc);
 create index fantasy_vbf_roster_slug_idx on public.fantasy_vbf_roster_players (season, player_slug, clause_price, created_at);
+create index fantasy_vbf_roster_snapshots_team_idx on public.fantasy_vbf_roster_snapshots (season, round_key, team_id, captured_at desc);
+create index fantasy_vbf_roster_snapshots_slug_idx on public.fantasy_vbf_roster_snapshots (season, player_slug, round_key, captured_at desc);
 create index fantasy_vbf_team_rounds_round_idx on public.fantasy_vbf_team_rounds (season, round_key, weekly_rank);
 create index fantasy_vbf_notifications_user_idx on public.fantasy_vbf_notifications (user_id, created_at desc);
 create index fantasy_vbf_transactions_round_idx on public.fantasy_vbf_transactions (season, round_key, created_at desc);
@@ -277,6 +301,7 @@ alter table public.fantasy_vbf_player_pool enable row level security;
 alter table public.fantasy_vbf_player_rounds enable row level security;
 alter table public.fantasy_vbf_teams enable row level security;
 alter table public.fantasy_vbf_roster_players enable row level security;
+alter table public.fantasy_vbf_roster_snapshots enable row level security;
 alter table public.fantasy_vbf_transactions enable row level security;
 alter table public.fantasy_vbf_notifications enable row level security;
 alter table public.fantasy_vbf_bid_offers enable row level security;
@@ -288,6 +313,7 @@ create policy fantasy_vbf_player_pool_select_all on public.fantasy_vbf_player_po
 create policy fantasy_vbf_player_rounds_select_all on public.fantasy_vbf_player_rounds for select using (true);
 create policy fantasy_vbf_teams_select_all on public.fantasy_vbf_teams for select using (true);
 create policy fantasy_vbf_roster_select_all on public.fantasy_vbf_roster_players for select using (true);
+create policy fantasy_vbf_roster_snapshots_select_all on public.fantasy_vbf_roster_snapshots for select using (true);
 create policy fantasy_vbf_transactions_select_all on public.fantasy_vbf_transactions for select using (true);
 create policy fantasy_vbf_rounds_select_all on public.fantasy_vbf_rounds for select using (true);
 create policy fantasy_vbf_team_rounds_select_all on public.fantasy_vbf_team_rounds for select using (true);
@@ -300,6 +326,7 @@ revoke all on public.fantasy_vbf_player_pool from public;
 revoke all on public.fantasy_vbf_player_rounds from public;
 revoke all on public.fantasy_vbf_teams from public;
 revoke all on public.fantasy_vbf_roster_players from public;
+revoke all on public.fantasy_vbf_roster_snapshots from public;
 revoke all on public.fantasy_vbf_transactions from public;
 revoke all on public.fantasy_vbf_notifications from public;
 revoke all on public.fantasy_vbf_bid_offers from public;
@@ -311,6 +338,7 @@ grant select on public.fantasy_vbf_player_pool to anon, authenticated;
 grant select on public.fantasy_vbf_player_rounds to anon, authenticated;
 grant select on public.fantasy_vbf_teams to anon, authenticated;
 grant select on public.fantasy_vbf_roster_players to anon, authenticated;
+grant select on public.fantasy_vbf_roster_snapshots to anon, authenticated;
 grant select on public.fantasy_vbf_transactions to anon, authenticated;
 grant select on public.fantasy_vbf_rounds to anon, authenticated;
 grant select on public.fantasy_vbf_team_rounds to anon, authenticated;
@@ -1057,6 +1085,142 @@ begin
 end;
 $$;
 
+create or replace function public.fantasy_vbf_capture_round_snapshot(
+  p_season text,
+  p_round_key text,
+  p_round_label text default null,
+  p_round_order integer default null,
+  p_force boolean default false
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_season text := upper(trim(coalesce(p_season, '')));
+  v_round_key text := nullif(trim(coalesce(p_round_key, '')), '');
+  v_round_label text := nullif(trim(coalesce(p_round_label, '')), '');
+  v_round_order integer;
+  v_existing integer := 0;
+  v_inserted integer := 0;
+begin
+  if v_user is null and current_user not in ('postgres', 'supabase_admin') then
+    raise exception 'Debes iniciar sesion o ejecutar esta funcion desde backend para congelar la plantilla.';
+  end if;
+  if v_round_key is null then
+    raise exception 'La jornada no tiene round_key valido para congelar la plantilla.';
+  end if;
+
+  select coalesce(max(round_order), 0) + 1
+  into v_round_order
+  from public.fantasy_vbf_rounds
+  where season = v_season;
+
+  v_round_order := greatest(coalesce(p_round_order, v_round_order, 1), 1);
+  v_round_label := coalesce(v_round_label, v_round_key);
+
+  insert into public.fantasy_vbf_rounds (season, round_key, round_label, round_order, rewards_applied)
+  values (v_season, v_round_key, v_round_label, v_round_order, false)
+  on conflict (season, round_key) do update
+    set round_label = excluded.round_label,
+        round_order = excluded.round_order,
+        updated_at = timezone('utc', now());
+
+  select count(*)
+  into v_existing
+  from public.fantasy_vbf_roster_snapshots
+  where season = v_season and round_key = v_round_key;
+
+  if v_existing > 0 and not coalesce(p_force, false) then
+    return jsonb_build_object(
+      'season', v_season,
+      'round_key', v_round_key,
+      'captured', false,
+      'reason', 'already-captured',
+      'players', v_existing
+    );
+  end if;
+
+  if coalesce(p_force, false) then
+    delete from public.fantasy_vbf_roster_snapshots
+    where season = v_season and round_key = v_round_key;
+  end if;
+
+  insert into public.fantasy_vbf_roster_snapshots (
+    season, round_key, round_label, round_order,
+    team_id, user_id, player_slug, player_name, player_tier, player_rank,
+    buy_price, clause_price
+  )
+  select
+    rp.season,
+    v_round_key,
+    v_round_label,
+    v_round_order,
+    rp.team_id,
+    rp.user_id,
+    rp.player_slug,
+    rp.player_name,
+    rp.player_tier,
+    rp.player_rank,
+    rp.buy_price,
+    rp.clause_price
+  from public.fantasy_vbf_roster_players rp
+  join public.fantasy_vbf_teams t
+    on t.id = rp.team_id and t.season = rp.season
+  where rp.season = v_season;
+
+  get diagnostics v_inserted = row_count;
+
+  insert into public.fantasy_vbf_team_rounds (
+    season, team_id, user_id, round_key, round_label, round_order,
+    weekly_points, weekly_rank, reward_coins, transfers_used, captain_changes_used
+  )
+  select
+    v_season, t.id, t.user_id, v_round_key, v_round_label, v_round_order,
+    0, null, 0, 0, 0
+  from public.fantasy_vbf_teams t
+  where t.season = v_season
+  on conflict (season, team_id, round_key) do update
+    set round_label = excluded.round_label,
+        round_order = excluded.round_order,
+        synced_at = timezone('utc', now());
+
+  return jsonb_build_object(
+    'season', v_season,
+    'round_key', v_round_key,
+    'captured', true,
+    'players', v_inserted
+  );
+end;
+$$;
+
+create or replace function public.fantasy_vbf_capture_round_snapshot_for_date(
+  p_season text,
+  p_round_date date default (timezone('Europe/Madrid', now()))::date,
+  p_force boolean default false
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_date date := coalesce(p_round_date, (timezone('Europe/Madrid', now()))::date);
+  v_season text := upper(trim(coalesce(p_season, '')));
+  v_round_key text := format('%s:%s', v_season, to_char(v_date, 'YYYY-MM-DD'));
+begin
+  return public.fantasy_vbf_capture_round_snapshot(
+    v_season,
+    v_round_key,
+    to_char(v_date, 'YYYY-MM-DD'),
+    null,
+    p_force
+  );
+end;
+$$;
+
 create or replace function public.fantasy_vbf_sync_round(
   p_season text,
   p_round_key text,
@@ -1076,10 +1240,14 @@ declare
   v_round_label text := coalesce(nullif(trim(coalesce(p_round_label, '')), ''), v_round_key);
   v_round_order integer := greatest(coalesce(p_round_order, 0), 0);
   v_rewards_applied boolean := false;
+  v_snapshot_count integer := 0;
+  v_pool_ready integer := 0;
   v_row record;
   v_reward integer := 0;
 begin
-  if v_user is null then raise exception 'Debes iniciar sesion para sincronizar.'; end if;
+  if v_user is null and current_user not in ('postgres', 'supabase_admin') then
+    raise exception 'Debes iniciar sesion o ejecutar esta funcion desde backend para sincronizar.';
+  end if;
   if v_round_key is null then raise exception 'La jornada no tiene week_key valido.'; end if;
 
   insert into public.fantasy_vbf_rounds (season, round_key, round_label, round_order, rewards_applied)
@@ -1108,6 +1276,24 @@ begin
     return jsonb_build_object('season', v_season, 'round_key', v_round_key, 'synced', false, 'reason', 'already-closed');
   end if;
 
+  select count(*)
+  into v_snapshot_count
+  from public.fantasy_vbf_roster_snapshots
+  where season = v_season and round_key = v_round_key;
+
+  if v_snapshot_count = 0 and exists(select 1 from public.fantasy_vbf_teams where season = v_season) then
+    raise exception 'La jornada % no tiene snapshot de plantilla. Debes congelar la plantilla del sabado antes de sincronizar resultados.', v_round_key;
+  end if;
+
+  select count(*)
+  into v_pool_ready
+  from public.fantasy_vbf_player_pool
+  where season = v_season and current_round_key = v_round_key;
+
+  if v_pool_ready = 0 then
+    raise exception 'El pool fantasy aun no esta sincronizado con la jornada %.', v_round_key;
+  end if;
+
   update public.fantasy_vbf_team_rounds tr
   set weekly_points = coalesce(scores.weekly_points, 0),
       round_label = v_round_label,
@@ -1115,12 +1301,13 @@ begin
       synced_at = timezone('utc', now())
   from public.fantasy_vbf_teams t
   left join (
-    select rp.team_id, sum(coalesce(pp.current_fantasy_points, 0)) as weekly_points
-    from public.fantasy_vbf_roster_players rp
+    select rs.team_id, sum(coalesce(pp.current_fantasy_points, 0)) as weekly_points
+    from public.fantasy_vbf_roster_snapshots rs
     left join public.fantasy_vbf_player_pool pp
-      on pp.season = rp.season and pp.player_slug = rp.player_slug
-    where rp.season = v_season
-    group by rp.team_id
+      on pp.season = rs.season and pp.player_slug = rs.player_slug
+    where rs.season = v_season
+      and rs.round_key = v_round_key
+    group by rs.team_id
   ) scores on scores.team_id = t.id
   where tr.season = v_season
     and tr.round_key = v_round_key

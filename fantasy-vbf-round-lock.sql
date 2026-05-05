@@ -17,11 +17,17 @@ declare
   v_round_label text := coalesce(nullif(trim(coalesce(p_round_label, '')), ''), v_round_key);
   v_round_order integer := greatest(coalesce(p_round_order, 0), 0);
   v_rewards_applied boolean := false;
+  v_snapshot_count integer := 0;
+  v_pool_ready integer := 0;
   v_row record;
   v_reward integer := 0;
 begin
-  if v_user is null then raise exception 'Debes iniciar sesion para sincronizar.'; end if;
-  if v_round_key is null then raise exception 'La jornada no tiene week_key valido.'; end if;
+  if v_user is null and current_user not in ('postgres', 'supabase_admin') then
+    raise exception 'Debes iniciar sesion o ejecutar esta funcion desde backend para sincronizar.';
+  end if;
+  if v_round_key is null then
+    raise exception 'La jornada no tiene week_key valido.';
+  end if;
 
   insert into public.fantasy_vbf_rounds (season, round_key, round_label, round_order, rewards_applied)
   values (v_season, v_round_key, v_round_label, v_round_order, false)
@@ -49,6 +55,24 @@ begin
     return jsonb_build_object('season', v_season, 'round_key', v_round_key, 'synced', false, 'reason', 'already-closed');
   end if;
 
+  select count(*)
+  into v_snapshot_count
+  from public.fantasy_vbf_roster_snapshots
+  where season = v_season and round_key = v_round_key;
+
+  if v_snapshot_count = 0 and exists(select 1 from public.fantasy_vbf_teams where season = v_season) then
+    raise exception 'La jornada % no tiene snapshot de plantilla. Debes congelar la plantilla del sabado antes de sincronizar resultados.', v_round_key;
+  end if;
+
+  select count(*)
+  into v_pool_ready
+  from public.fantasy_vbf_player_pool
+  where season = v_season and current_round_key = v_round_key;
+
+  if v_pool_ready = 0 then
+    raise exception 'El pool fantasy aun no esta sincronizado con la jornada %.', v_round_key;
+  end if;
+
   update public.fantasy_vbf_team_rounds tr
   set weekly_points = coalesce(scores.weekly_points, 0),
       round_label = v_round_label,
@@ -56,12 +80,13 @@ begin
       synced_at = timezone('utc', now())
   from public.fantasy_vbf_teams t
   left join (
-    select rp.team_id, sum(coalesce(pp.current_fantasy_points, 0)) as weekly_points
-    from public.fantasy_vbf_roster_players rp
+    select rs.team_id, sum(coalesce(pp.current_fantasy_points, 0)) as weekly_points
+    from public.fantasy_vbf_roster_snapshots rs
     left join public.fantasy_vbf_player_pool pp
-      on pp.season = rp.season and pp.player_slug = rp.player_slug
-    where rp.season = v_season
-    group by rp.team_id
+      on pp.season = rs.season and pp.player_slug = rs.player_slug
+    where rs.season = v_season
+      and rs.round_key = v_round_key
+    group by rs.team_id
   ) scores on scores.team_id = t.id
   where tr.season = v_season
     and tr.round_key = v_round_key
