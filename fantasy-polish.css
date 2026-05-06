@@ -2135,6 +2135,43 @@ body[data-fantasy-view] .hero .pillRow{
   justify-content:flex-end;
 }
 
+body[data-fantasy-view] .fantasySheetPicker{
+  min-height:40px;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:8px;
+  background:rgba(255,255,255,.1);
+  padding:6px 10px;
+  color:#fff;
+  box-shadow:0 8px 22px rgba(0,0,0,.12);
+}
+
+body[data-fantasy-view] .fantasySheetPicker span{
+  color:rgba(255,255,255,.76);
+  font-size:11px;
+  font-weight:1000;
+  text-transform:uppercase;
+}
+
+body[data-fantasy-view] .fantasySheetPicker select{
+  min-width:116px;
+  border:1px solid rgba(255,255,255,.2);
+  border-radius:7px;
+  background:rgba(15,23,42,.82);
+  color:#fff;
+  padding:8px 30px 8px 10px;
+  font:inherit;
+  font-weight:1000;
+  outline:none;
+}
+
+body[data-fantasy-view] .fantasySheetPicker select:focus{
+  border-color:#60a5fa;
+  box-shadow:0 0 0 3px rgba(96,165,250,.25);
+}
+
 body[data-fantasy-view] .heroStats{
   grid-template-columns:repeat(3,minmax(0,1fr));
   margin-top:0;
@@ -2658,6 +2695,190 @@ body[data-fantasy-view] .chartPoint.scoring{
   fill:#b45309;
 }
 
+body[data-fantasy-view] .chartSvg{
+  overflow:visible;
+}
+
+body[data-fantasy-view] .chartPointGroup .chartPoint{
+  cursor:help;
+}
+
+body[data-fantasy-view] .chartTooltip{
+  display:none;
+  pointer-events:none;
+  overflow:visible;
+}
+
+body[data-fantasy-view] .chartPointGroup:hover .chartTooltip,
+body[data-fantasy-view] .chartPointGroup:focus-within .chartTooltip{
+  display:block;
+}
+
+body[data-fantasy-view] .chartTooltipBox{
+  display:grid;
+  gap:5px;
+  width:100%;
+  padding:9px 10px;
+  border:1px solid rgba(15,23,42,.16);
+  border-radius:8px;
+  background:rgba(255,255,255,.98);
+  box-shadow:0 18px 42px rgba(15,23,42,.22);
+  color:#0f172a;
+  font-size:11px;
+  line-height:1.15;
+}
+
+body[data-fantasy-view] .chartTooltipBox > div{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+body[data-fantasy-view] .chartTooltipBox span{
+  color:#64748b;
+  font-weight:900;
+}
+
+body[data-fantasy-view] .chartTooltipBox strong{
+  color:#0f172a;
+  font-weight:1000;
+  white-space:nowrap;
+}
+
+body[data-fantasy-view] .chartTooltipHead{
+  padding-bottom:5px;
+  border-bottom:1px solid rgba(15,23,42,.08);
+}
+
+body[data-fantasy-view] .chartTooltipHead span{
+  color:#0f172a;
+  font-size:12px;
+}
+
+body[data-fantasy-view] .chartTooltipHead strong{
+  border-radius:999px;
+  background:#eef2ff;
+  padding:3px 8px;
+}
+
+body[data-fantasy-view] .chartTooltipTotal{
+  margin-top:3px;
+  padding-top:6px;
+  border-top:1px solid rgba(15,23,42,.08);
+}
+
+body[data-fantasy-view] .playerTournamentHistory{
+  display:grid;
+  gap:8px;
+  width:100%;
+  padding:12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:8px;
+  background:rgba(255,255,255,.92);
+}
+
+body[data-fantasy-view] .playerTournamentRows{
+  display:grid;
+  gap:6px;
+}
+
+body[data-fantasy-view] .playerTournamentRow{
+  display:grid;
+  grid-template-columns:minmax(58px,.8fr) minmax(52px,.6fr) minmax(72px,.8fr);
+  align-items:center;
+  gap:8px;
+  min-height:30px;
+  border:1px solid rgba(15,23,42,.07);
+  border-radius:8px;
+  background:#f8fafc;
+  padding:6px 8px;
+}
+
+body[data-fantasy-view] .playerTournamentRow span,
+body[data-fantasy-view] .playerTournamentRow strong,
+body[data-fantasy-view] .playerTournamentRow em{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:11px;
+}
+
+body[data-fantasy-view] .playerTournamentRow span{
+  color:#64748b;
+  font-weight:1000;
+}
+
+body[data-fantasy-view] .playerTournamentRow strong{
+  justify-self:center;
+  border-radius:999px;
+  background:#e2e8f0;
+  padding:4px 9px;
+  color:#0f172a;
+  font-weight:1000;
+}
+
+body[data-fantasy-view] .playerTournamentRow em{
+  justify-self:end;
+  color:#0f766e;
+  font-style:normal;
+  font-weight:1000;
+}
+
+body[data-fantasy-view] .fantasyScoringLegend{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin-top:10px;
+}
+
+body[data-fantasy-view] .fantasyScoringLegend div{
+  display:grid;
+  gap:3px;
+  min-width:0;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:8px;
+  background:#fff;
+  padding:9px 10px;
+}
+
+body[data-fantasy-view] .fantasyScoringLegend span{
+  color:#64748b;
+  font-size:10px;
+  font-weight:1000;
+  text-transform:uppercase;
+}
+
+body[data-fantasy-view] .fantasyScoringLegend strong{
+  color:#0f172a;
+  font-size:13px;
+  font-weight:1000;
+}
+
+body[data-fantasy-view] .fantasyScoringLegend p{
+  grid-column:1 / -1;
+  margin:0;
+  border:1px solid rgba(14,165,233,.18);
+  border-radius:8px;
+  background:#f0f9ff;
+  padding:9px 10px;
+  color:#0f3f69;
+  font-size:12px;
+  font-weight:800;
+  line-height:1.35;
+}
+
+body[data-fantasy-view] .captainModalActions{
+  align-items:center;
+  margin-top:4px;
+}
+
+body[data-fantasy-view] .captainModalActions .helper{
+  flex:1 1 240px;
+  margin-top:0;
+}
+
 @media (max-width:920px){
   body[data-fantasy-view] .hero h1{
     font-size:34px;
@@ -2674,6 +2895,10 @@ body[data-fantasy-view] .chartPoint.scoring{
 
   body[data-fantasy-view] .fantasyTabs{
     width:100%;
+  }
+
+  body[data-fantasy-view] .fantasyScoringLegend{
+    grid-template-columns:repeat(2,minmax(0,1fr));
   }
 
   .fantasyTabs a{
@@ -2693,6 +2918,10 @@ body[data-fantasy-view] .chartPoint.scoring{
 
   body[data-fantasy-view] .hero{
     padding:18px 14px;
+  }
+
+  body[data-fantasy-view] .fantasyScoringLegend{
+    grid-template-columns:1fr;
   }
 
   body[data-fantasy-view] .hero h1{

@@ -20,11 +20,23 @@
   const decFmt = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
   const CURRENT_SEASON = 'OP15';
-  const SHEET_ID = '1bRu9xDWAO8vBLF2GkzmsGL2M4P3AqczkDCXl6t-coFo';
+  const PLAYER_POOL_SOURCES = {
+    PRUEBAS: {
+      label: 'PRUEBAS',
+      id: '1dlUEEZhUf_p-p8pAPpB3RmJE0AMwoZ35u1nBTZZBYrc',
+      gid: '1775308876'
+    },
+    VADE: {
+      label: 'VADE',
+      id: '1bRu9xDWAO8vBLF2GkzmsGL2M4P3AqczkDCXl6t-coFo',
+      sheet: CURRENT_SEASON
+    }
+  };
+  const DEFAULT_PLAYER_POOL_SOURCE = 'PRUEBAS';
   const PORTRAITS = window.BarateamFantasyPortraits || {};
   const PORTRAIT_PLACEHOLDER = String(window.BarateamFantasyPortraitPlaceholder || 'fantasy_placeholder.jpeg').trim();
   const COIN_ICON = 'berries.png';
-  const PLAYER_POOL_CACHE_VERSION = '20260505h';
+  const PLAYER_POOL_CACHE_VERSION = '20260506h';
   const PLAYER_POOL_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
   const PLAYER_POOL_BACKGROUND_REFRESH_MS = 45 * 60 * 1000;
   const TEAM_ROUNDS_SELECT = 'season,round_key,round_label,round_order,team_id,weekly_points,reward_coins,transfers_used';
@@ -570,18 +582,59 @@
     return picked;
   }
 
-  function getSheetUrl(force){
-    const stamp = force ? `&cacheBust=${Date.now()}` : '';
-    return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(CURRENT_SEASON)}${stamp}`;
+  function normalizePlayerPoolSource(value){
+    const key = String(value || '').trim().toUpperCase();
+    return PLAYER_POOL_SOURCES[key] ? key : DEFAULT_PLAYER_POOL_SOURCE;
   }
 
-  function playerPoolCacheKey(){
-    return `barateamFantasyPlayerPool:${CURRENT_SEASON}:${PLAYER_POOL_CACHE_VERSION}`;
+  function playerPoolSourceStorageKey(){
+    return `barateamFantasyPlayerPoolSource:${CURRENT_SEASON}`;
   }
 
-  function readCachedPlayerPool(){
+  function currentPlayerPoolSourceKey(){
     try{
-      const raw = window.localStorage?.getItem(playerPoolCacheKey());
+      return normalizePlayerPoolSource(window.localStorage?.getItem(playerPoolSourceStorageKey()));
+    } catch (_error){
+      return DEFAULT_PLAYER_POOL_SOURCE;
+    }
+  }
+
+  function playerPoolSourceByKey(value){
+    return PLAYER_POOL_SOURCES[normalizePlayerPoolSource(value)] || PLAYER_POOL_SOURCES[DEFAULT_PLAYER_POOL_SOURCE];
+  }
+
+  function currentPlayerPoolSource(){
+    return playerPoolSourceByKey(currentPlayerPoolSourceKey());
+  }
+
+  function setPlayerPoolSource(value){
+    const key = normalizePlayerPoolSource(value);
+    try{
+      window.localStorage?.setItem(playerPoolSourceStorageKey(), key);
+    } catch (_error){}
+    syncPlayerPoolSourcePicker();
+    return key;
+  }
+
+  function syncPlayerPoolSourcePicker(){
+    const select = $('fantasySheetSelect');
+    if (select) select.value = currentPlayerPoolSourceKey();
+  }
+
+  function getSheetUrl(force, sourceKey){
+    const stamp = force ? `&cacheBust=${Date.now()}` : '';
+    const source = sourceKey ? playerPoolSourceByKey(sourceKey) : currentPlayerPoolSource();
+    const selector = source.gid ? `gid=${encodeURIComponent(source.gid)}` : `sheet=${encodeURIComponent(source.sheet || CURRENT_SEASON)}`;
+    return `https://docs.google.com/spreadsheets/d/${source.id}/gviz/tq?tqx=out:json&${selector}${stamp}`;
+  }
+
+  function playerPoolCacheKey(sourceKey){
+    return `barateamFantasyPlayerPool:${CURRENT_SEASON}:${normalizePlayerPoolSource(sourceKey || currentPlayerPoolSourceKey())}:${PLAYER_POOL_CACHE_VERSION}`;
+  }
+
+  function readCachedPlayerPool(sourceKey){
+    try{
+      const raw = window.localStorage?.getItem(playerPoolCacheKey(sourceKey));
       if (!raw) return null;
       const cached = JSON.parse(raw);
       const savedAt = Number(cached?.savedAt || 0);
@@ -596,7 +649,7 @@
     }
   }
 
-  function writeCachedPlayerPool(model){
+  function writeCachedPlayerPool(model, sourceKey){
     if (!model || !Array.isArray(model.players) || !model.players.length) return;
     try{
       const compactModel = {
@@ -604,7 +657,7 @@
         currentRound: model.currentRound || null,
         eventLabels: Array.isArray(model.eventLabels) ? model.eventLabels : []
       };
-      window.localStorage?.setItem(playerPoolCacheKey(), JSON.stringify({
+      window.localStorage?.setItem(playerPoolCacheKey(sourceKey), JSON.stringify({
         season: CURRENT_SEASON,
         version: PLAYER_POOL_CACHE_VERSION,
         savedAt: Date.now(),
@@ -615,9 +668,9 @@
     }
   }
 
-  function cachedPlayerPoolAgeMs(){
+  function cachedPlayerPoolAgeMs(sourceKey){
     try{
-      const raw = window.localStorage?.getItem(playerPoolCacheKey());
+      const raw = window.localStorage?.getItem(playerPoolCacheKey(sourceKey));
       if (!raw) return null;
       const cached = JSON.parse(raw);
       const savedAt = Number(cached?.savedAt || 0);
@@ -628,9 +681,9 @@
     }
   }
 
-  function shouldRefreshPlayerPoolInBackground(force){
+  function shouldRefreshPlayerPoolInBackground(force, sourceKey){
     if (force) return true;
-    const age = cachedPlayerPoolAgeMs();
+    const age = cachedPlayerPoolAgeMs(sourceKey);
     return age == null || age > PLAYER_POOL_BACKGROUND_REFRESH_MS;
   }
 
@@ -710,6 +763,7 @@
     const table = json?.table;
     if (!table || !Array.isArray(table.cols) || !Array.isArray(table.rows)) throw new Error('Formato GViz inesperado');
     return {
+      colLabels: table.cols.map((col) => String(col?.label || '').trim()),
       rows: table.rows.map((row) => (row?.c || []).map((cell) => {
         const value = cell?.v;
         if (value == null) return '';
@@ -777,6 +831,43 @@
 
   function isSaturdayInfo(info){
     return Number(info?.weekday) === 6;
+  }
+
+  function looksLikeEventDateCell(value){
+    const number = Number(value);
+    if (Number.isFinite(number) && number >= 30000) return true;
+    const text = String(value || '').trim().toLowerCase();
+    return /^\d{1,2}\s*[-/]\s*(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic|\d{1,2})/.test(text)
+      || /^\d{4}-\d{2}-\d{2}$/.test(text);
+  }
+
+  function eventHeaderInfo(rows){
+    const candidates = (rows || []).slice(0, 4);
+    let dateRowIndex = 0;
+    let bestScore = -1;
+    candidates.forEach((row, index) => {
+      const score = (row || []).slice(3).reduce((sum, cell) => sum + (looksLikeEventDateCell(cell) ? 1 : 0), 0);
+      if (score > bestScore){
+        bestScore = score;
+        dateRowIndex = index;
+      }
+    });
+    return {
+      dateRowIndex,
+      dateRow: rows[dateRowIndex] || rows[0] || [],
+      metaRow: dateRowIndex > 0 ? rows[dateRowIndex - 1] || [] : []
+    };
+  }
+
+  function parseEventMeta(value){
+    const text = String(value || '').trim();
+    const tier = Number(text.match(/tier\s*(\d+)/i)?.[1] || 0);
+    const players = Number(text.match(/\((\d+)\)/)?.[1] || 0);
+    return {
+      label: text,
+      tier: Number.isFinite(tier) ? tier : 0,
+      players: Number.isFinite(players) ? players : 0
+    };
   }
 
   function madridNowParts(){
@@ -944,7 +1035,8 @@
   }
 
   function chartSeries(player){
-    const history = Array.isArray(player?.history) ? player.history : [];
+    const history = (Array.isArray(player?.history) ? player.history : [])
+      .filter((entry) => entry?.counts_for_fantasy === true);
     return history.map((entry, index) => {
       const raw = Number.isFinite(Number(entry?.raw_points)) ? Number(entry.raw_points) : null;
       const fantasy = Number.isFinite(Number(entry?.fantasy_points)) ? Number(entry.fantasy_points) : null;
@@ -954,9 +1046,36 @@
         fantasy,
         raw,
         countsForFantasy: entry?.counts_for_fantasy === true,
-        won: entry?.won === true
+        won: entry?.won === true,
+        resultLabel: String(entry?.result_label || '').trim(),
+        wins: Number(entry?.wins || 0),
+        losses: Number(entry?.losses || 0)
       };
     }).filter((item) => item.label);
+  }
+
+  function plainPoints(value){
+    const number = Number(value || 0);
+    const abs = Math.abs(number);
+    const label = Number.isInteger(abs) ? intFmt.format(abs) : decFmt.format(abs);
+    return `${number > 0 ? '+' : number < 0 ? '-' : ''}${label} punto${abs === 1 ? '' : 's'}`;
+  }
+
+  function totalPointsText(value){
+    const number = Number(value || 0);
+    const label = Number.isInteger(number) ? intFmt.format(number) : decFmt.format(number);
+    return `${label} punto${Math.abs(number) === 1 ? '' : 's'}`;
+  }
+
+  function fantasyPointBreakdown(item){
+    const wins = Number(item?.wins || 0);
+    const losses = Number(item?.losses || 0);
+    const winPoints = wins * 3;
+    const lossPoints = -losses;
+    const winnerBonus = item?.won === true ? 5 : 0;
+    const fourWinsBonus = !winnerBonus && wins >= 4 ? 2 : 0;
+    const total = winPoints + lossPoints + winnerBonus + fourWinsBonus;
+    return { wins, losses, winPoints, lossPoints, winnerBonus, fourWinsBonus, total };
   }
 
   function renderHistoryChart(player){
@@ -1009,10 +1128,20 @@
       const x = xFor(index).toFixed(2);
       if (Number.isFinite(item.fantasy)){
         const y = yFor(item.fantasy).toFixed(2);
-        const title = `${item.label}${item.countsForFantasy ? ' · cuenta para fantasy' : ''}: ${formatPointsLabel(item.fantasy)}${Number.isFinite(item.raw) ? ` · ${intFmt.format(Math.round(item.raw))} pts VDBF` : ''}${item.won ? ' · ganador' : ''}`;
+        const breakdown = fantasyPointBreakdown(item);
+        const tooltipWidth = 190;
+        const tooltipHeight = item.won ? 132 : (breakdown.fourWinsBonus ? 132 : 108);
+        const tooltipX = Math.max(2, Math.min(width - tooltipWidth - 2, Number(x) - (tooltipWidth / 2)));
+        const tooltipY = Math.max(2, Number(y) - tooltipHeight - 16);
         const pointClass = `chartPoint${item.countsForFantasy ? ' scoring' : ''}${item.won ? ' won' : ''}`;
         const radius = item.countsForFantasy ? 8.5 : 6;
-        return `<line class="chartStem${item.countsForFantasy ? ' scoring' : ''}" x1="${x}" y1="${axisY.toFixed(2)}" x2="${x}" y2="${y}"></line><circle class="${pointClass}" cx="${x}" cy="${y}" r="${radius}"><title>${escapeHtml(title)}</title></circle>`;
+        const rows = [
+          `<div><span>Victorias</span><strong>${plainPoints(breakdown.winPoints)}</strong></div>`,
+          `<div><span>Derrotas</span><strong>${plainPoints(breakdown.lossPoints)}</strong></div>`,
+          breakdown.fourWinsBonus ? `<div><span>Bonus +4 victorias</span><strong>${plainPoints(breakdown.fourWinsBonus)}</strong></div>` : '',
+          breakdown.winnerBonus ? `<div><span>Bonus ganador</span><strong>${plainPoints(breakdown.winnerBonus)}</strong></div>` : ''
+        ].filter(Boolean).join('');
+        return `<g class="chartPointGroup"><line class="chartStem${item.countsForFantasy ? ' scoring' : ''}" x1="${x}" y1="${axisY.toFixed(2)}" x2="${x}" y2="${y}"></line><circle class="${pointClass}" cx="${x}" cy="${y}" r="${radius}"></circle><foreignObject class="chartTooltip" x="${tooltipX.toFixed(2)}" y="${tooltipY.toFixed(2)}" width="${tooltipWidth}" height="${tooltipHeight}"><div xmlns="http://www.w3.org/1999/xhtml" class="chartTooltipBox"><div class="chartTooltipHead"><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.resultLabel || `${breakdown.wins}-${breakdown.losses}`)}</strong></div>${rows}<div class="chartTooltipTotal"><span>Total</span><strong>${totalPointsText(breakdown.total)}</strong></div></div></foreignObject></g>`;
       }
       return `<circle class="chartPoint miss${item.countsForFantasy ? ' scoring' : ''}" cx="${x}" cy="${yFor(0).toFixed(2)}" r="${item.countsForFantasy ? '4.5' : '3.5'}"><title>${escapeHtml(`${item.label}${item.countsForFantasy ? ' · jornada fantasy' : ''}: sin participacion`)}</title></circle>`;
     }).join('');
@@ -1024,19 +1153,141 @@
     }).join('');
     const bridgesSvg = bridges.map((points) => `<polyline class="chartBridge" points="${points}"></polyline>`).join('');
     const linesSvg = segments.map((points) => `<polyline class="chartLine" points="${points}"></polyline>`).join('');
-    return `<div class="chartCard"><div class="chartMeta"><span>Todos los torneos</span><strong>Sabados marcados para fantasy</strong></div><svg class="chartSvg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Grafica de puntos por torneo">${gridSvg}<line class="chartAxis" x1="${padX}" y1="${axisY.toFixed(2)}" x2="${width - padX}" y2="${axisY.toFixed(2)}"></line>${bridgesSvg}${linesSvg}${pointsSvg}${labelsSvg}</svg></div>`;
+    return `<div class="chartCard"><div class="chartMeta"><span>Sabados fantasy</span><strong>Solo jornadas que puntuan</strong></div><svg class="chartSvg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Grafica de puntos de sabados fantasy">${gridSvg}<line class="chartAxis" x1="${padX}" y1="${axisY.toFixed(2)}" x2="${width - padX}" y2="${axisY.toFixed(2)}"></line>${bridgesSvg}${linesSvg}${pointsSvg}${labelsSvg}</svg></div>`;
   }
 
-  function tournamentScoreMeta(values){
-    const positives = (values || []).map((value) => Number(value || 0)).filter((value) => Number.isFinite(value) && value > 0).sort((a, b) => a - b);
-    const minPositive = positives[0] || 0;
-    const maxRaw = positives[positives.length - 1] || 0;
-    const fiveWinCount = positives.filter((value) => value >= 25000 && value % 5000 === 0).length;
-    const isTier1 = minPositive >= 10000;
-    const winPoints = isTier1 ? 10000 : 5000;
-    const rounds = maxRaw > 31000 || fiveWinCount > 1 ? 6 : 5;
-    const winnerExtra = isTier1 ? 8000 : 6000;
-    return { isTier1, winPoints, rounds, maxRaw, winnerExtra };
+  function renderFantasyScoringLegend(){
+    return `<div class="fantasyScoringLegend"><div><span>Victoria</span><strong>+3 pts</strong></div><div><span>Derrota</span><strong>-1 pt</strong></div><div><span>4+ victorias</span><strong>+2 pts</strong></div><div><span>Ganador</span><strong>+5 pts</strong></div><p>Si gana el torneo, solo recibe el bonus de ganador; no se suma tambien el bonus de 4 victorias.</p></div>`;
+  }
+
+  function renderPlayerTournamentHistory(player){
+    const rows = (Array.isArray(player?.history) ? player.history : [])
+      .filter((entry) => entry?.counts_for_fantasy === true && Number.isFinite(Number(entry?.raw_points)) && Number(entry.raw_points) > 0)
+      .slice()
+      .sort((a, b) => Number(b.round_order || 0) - Number(a.round_order || 0));
+    if (!rows.length){
+      return `<div class="playerTournamentHistory"><div class="historyTitle">Historial fantasy</div><div class="empty compactEmpty">Aun no ha jugado ningun sabado fantasy.</div></div>`;
+    }
+    const items = rows.map((entry) => {
+      const label = String(entry.round_label || entry.round_key || '').trim();
+      const result = String(entry.result_label || `${Number(entry.wins || 0)}-${Number(entry.losses || 0)}`).trim();
+      const points = Number(entry.fantasy_points || 0);
+      return `<div class="playerTournamentRow"><span>${escapeHtml(label)}</span><strong>${escapeHtml(result)}</strong><em>${formatPointsLabel(points)}</em></div>`;
+    }).join('');
+    return `<div class="playerTournamentHistory"><div class="historyTitle">Historial fantasy</div><div class="playerTournamentRows">${items}</div></div>`;
+  }
+
+  const TIER_WIN_POINTS = {
+    1: [4000, 6000, 8000, 10000],
+    2: [2000, 3000, 4000, 5000],
+    3: [1000, 2000, 3000, 4000]
+  };
+
+  function hintedWinPointsForEvent(meta){
+    const tier = Number(meta?.tier || 0);
+    const players = Number(meta?.players || 0);
+    if (![1, 2, 3].includes(tier)) return 5000;
+    if (tier === 1){
+      if (players <= 8) return 4000;
+      if (players <= 16) return 6000;
+      if (players <= 24) return 8000;
+      return 10000;
+    }
+    if (tier === 2){
+      if (players <= 8) return 2000;
+      if (players <= 16) return 3000;
+      if (players <= 24) return 4000;
+      return 5000;
+    }
+    if (players <= 8) return 1000;
+    if (players <= 16) return 2000;
+    if (players <= 24) return 3000;
+    return 4000;
+  }
+
+  function winPointCandidatesForEvent(meta){
+    const tier = Number(meta?.tier || 0);
+    const list = TIER_WIN_POINTS[tier] || TIER_WIN_POINTS[2];
+    const hinted = hintedWinPointsForEvent(meta);
+    return Array.from(new Set([hinted, ...list])).filter(Boolean);
+  }
+
+  function winnerBonusForEvent(meta){
+    const tier = Number(meta?.tier || 0);
+    if (tier === 1) return 8000;
+    if (tier === 2) return 6000;
+    if (tier === 3) return 4000;
+    return 6000;
+  }
+
+  function eventRoundEstimate(scores, winPoints, winnerBonus){
+    const values = (scores || []).filter((value) => Number.isFinite(value) && value > 0);
+    const maxScore = values.length ? Math.max(...values) : 0;
+    const possibleWinnerBase = maxScore - winnerBonus;
+    if (maxScore > 0 && possibleWinnerBase > 0 && possibleWinnerBase % winPoints === 0){
+      return Math.max(4, Math.min(6, possibleWinnerBase / winPoints));
+    }
+    const exactWins = values
+      .filter((score) => score % winPoints === 0)
+      .map((score) => score / winPoints)
+      .filter((wins) => Number.isFinite(wins) && wins > 0);
+    const maxWins = exactWins.length ? Math.max(...exactWins) : 0;
+    if (maxWins >= 4) return Math.max(4, Math.min(6, maxWins));
+    return 4;
+  }
+
+  function parseEventResultWithMeta(score, meta){
+    const raw = Number(score || 0);
+    if (!Number.isFinite(raw) || raw <= 0 || !meta) return null;
+    const winPoints = Number(meta.winPoints || 0);
+    const winnerBonus = Number(meta.winnerBonus || 0);
+    const maxScore = Number(meta.maxScore || 0);
+    const rounds = Number(meta.rounds || 0);
+    if (!winPoints || !rounds) return null;
+    const possibleWinnerBase = raw - winnerBonus;
+    const winnerWins = possibleWinnerBase > 0 && possibleWinnerBase % winPoints === 0 ? possibleWinnerBase / winPoints : 0;
+    if (raw === maxScore && winnerWins > 0 && winnerWins <= rounds){
+      return { wins: winnerWins, losses: Math.max(0, rounds - winnerWins), won: true };
+    }
+    if (raw % winPoints !== 0) return null;
+    const wins = raw / winPoints;
+    if (wins > rounds) return null;
+    return { wins, losses: Math.max(0, rounds - wins), won: false };
+  }
+
+  function tournamentScoreMeta(meta, scores){
+    const winnerBonus = winnerBonusForEvent(meta);
+    const values = (scores || []).filter((value) => Number.isFinite(value) && value > 0);
+    const maxScore = values.length ? Math.max(...values) : 0;
+    let best = null;
+    winPointCandidatesForEvent(meta).forEach((winPoints) => {
+      const candidate = {
+        ...meta,
+        winPoints,
+        winnerBonus,
+        winnerExtra: winnerBonus,
+        rounds: eventRoundEstimate(values, winPoints, winnerBonus),
+        maxScore,
+        maxRaw: maxScore,
+        isTier1: Number(meta?.tier || 0) === 1
+      };
+      const results = values.map((value) => parseEventResultWithMeta(value, candidate));
+      const validCount = results.filter(Boolean).length;
+      const winnerCount = results.filter((result) => result?.won === true).length;
+      const hintedBonus = winPoints === hintedWinPointsForEvent(meta) ? 1 : 0;
+      const score = (validCount * 20) + (winnerCount * 4) + hintedBonus - ((values.length - validCount) * 30);
+      if (!best || score > best.score) best = { ...candidate, score };
+    });
+    return best || {
+      ...meta,
+      winPoints: hintedWinPointsForEvent(meta),
+      winnerBonus,
+      winnerExtra: winnerBonus,
+      rounds: 4,
+      maxScore,
+      maxRaw: maxScore,
+      isTier1: Number(meta?.tier || 0) === 1
+    };
   }
 
   function parseTournamentResult(rawValue, meta){
@@ -1056,8 +1307,8 @@
     }
     const winPoints = Number(meta?.winPoints || 5000);
     const rounds = Number(meta?.rounds || 5);
-    const maxRaw = Number(meta?.maxRaw || 0);
-    const winnerExtra = Number(meta?.winnerExtra || 6000);
+    const maxRaw = Number(meta?.maxRaw || meta?.maxScore || 0);
+    const winnerExtra = Number(meta?.winnerExtra || meta?.winnerBonus || 6000);
     const possibleBase = raw - winnerExtra;
     const hasWinnerExtra = raw === maxRaw && possibleBase > 0 && possibleBase % winPoints === 0;
     const baseRaw = hasWinnerExtra ? possibleBase : raw;
@@ -1065,9 +1316,9 @@
     const losses = Math.max(0, rounds - wins);
     const won = hasWinnerExtra || (raw === maxRaw && wins >= rounds && maxRaw > 0);
     const resultLabel = `${wins}-${losses}`;
-    let fantasyPoints = (wins * 3) - losses;
-    if (wins >= 5 || won) fantasyPoints += 5;
-    else if (wins === 4 && losses === 1) fantasyPoints += 2;
+    const winnerBonus = won ? 5 : 0;
+    const fourWinsBonus = !winnerBonus && wins >= 4 ? 2 : 0;
+    let fantasyPoints = (wins * 3) - losses + winnerBonus + fourWinsBonus;
     let priceModifier = RESULT_PRICE_MODIFIERS[resultLabel];
     if (!Number.isFinite(priceModifier)){
       if (wins >= 5) priceModifier = RESULT_PRICE_MODIFIERS['5-0'];
@@ -1094,8 +1345,11 @@
   function buildPlayerPool(payload){
     const rows = normalizeTable(payload?.rows || []);
     if (!rows.length) return { players: [], currentRound: null, eventLabels: [] };
-    const headerRow = rows[0] || [];
-    const sourceRows = rows.slice(1).filter((row) => String(row[2] || '').trim() !== '');
+    const headers = eventHeaderInfo(rows);
+    const headerRow = headers.dateRow || [];
+    const metaRow = headers.metaRow || [];
+    const colLabels = Array.isArray(payload?.colLabels) ? payload.colLabels : [];
+    const sourceRows = rows.slice(headers.dateRowIndex + 1).filter((row) => String(row[2] || '').trim() !== '');
     const allEventColumns = [];
     const eventColumns = [];
     for (let index = 3; index < headerRow.length; index += 1){
@@ -1120,8 +1374,10 @@
         countsForFantasy: true
       });
     }
-    const allEventMeta = allEventColumns.map((event) => tournamentScoreMeta(sourceRows.map((row) => getNumber(row[event.index]))));
-    const eventMeta = eventColumns.map((event) => tournamentScoreMeta(sourceRows.map((row) => getNumber(row[event.index]))));
+    const allEventHeaders = allEventColumns.map((event) => parseEventMeta(metaRow[event.index] || colLabels[event.index]));
+    const eventHeaders = eventColumns.map((event) => parseEventMeta(metaRow[event.index] || colLabels[event.index]));
+    const allEventMeta = allEventColumns.map((event, eventPos) => tournamentScoreMeta(allEventHeaders[eventPos], sourceRows.map((row) => getNumber(row[event.index]))));
+    const eventMeta = eventColumns.map((event, eventPos) => tournamentScoreMeta(eventHeaders[eventPos], sourceRows.map((row) => getNumber(row[event.index]))));
 
     const players = sourceRows.map((row) => {
       const name = String(row[2] || '').trim();
@@ -1339,10 +1595,10 @@
     return players.length > 0;
   }
 
-  async function fetchPlayerPoolModel(force){
+  async function fetchPlayerPoolModel(force, sourceKey){
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), 12000);
-    const response = await fetch(getSheetUrl(force), { cache: force ? 'no-store' : 'default', signal: controller.signal }).finally(() => window.clearTimeout(timer));
+    const response = await fetch(getSheetUrl(force, sourceKey), { cache: force ? 'no-store' : 'default', signal: controller.signal }).finally(() => window.clearTimeout(timer));
     if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
     return buildPlayerPool(parseGviz(await response.text()));
   }
@@ -1477,10 +1733,12 @@
 
   function refreshPlayerPoolInBackground(force){
     if (playerPoolBackgroundPromise) return playerPoolBackgroundPromise;
+    const sourceKey = currentPlayerPoolSourceKey();
     playerPoolBackgroundPromise = (async () => {
-      const model = await fetchPlayerPoolModel(Boolean(force));
+      const model = await fetchPlayerPoolModel(Boolean(force), sourceKey);
+      if (sourceKey !== currentPlayerPoolSourceKey()) return null;
       applyPlayerPoolModel(model, { fromCache: false });
-      writeCachedPlayerPool(model);
+      writeCachedPlayerPool(model, sourceKey);
       renderAll();
       void startBackgroundHydration();
       return model;
@@ -1497,30 +1755,18 @@
     const opts = options || {};
     const silent = opts.silent === true;
     const allowCache = !force && opts.allowCache === true;
+    const sourceKey = currentPlayerPoolSourceKey();
     if (!silent){
       state.loadingPlayers = true;
       renderHero();
     }
     if (allowCache){
-      const cached = readCachedPlayerPool();
+      const cached = readCachedPlayerPool(sourceKey);
       if (cached && applyPlayerPoolModel(cached, { fromCache: true })){
         state.loadingPlayers = false;
         renderHero();
-        if (opts.refreshInBackground !== false && shouldRefreshPlayerPoolInBackground(false)) void refreshPlayerPoolInBackground(false);
+        if (opts.refreshInBackground !== false && shouldRefreshPlayerPoolInBackground(false, sourceKey)) void refreshPlayerPoolInBackground(false);
         return { fromCache: true };
-      }
-      try{
-        const backendModel = await fetchBackendPlayerPoolModel();
-        if (backendModel && applyPlayerPoolModel(backendModel, { fromCache: true })){
-          const refreshBackendSeed = shouldRefreshBackendSeedInBackground(backendModel);
-          writeCachedPlayerPool(backendModel);
-          state.loadingPlayers = false;
-          renderHero();
-          if (opts.refreshInBackground !== false && refreshBackendSeed) void refreshPlayerPoolInBackground(false);
-          return { fromCache: true, fromBackend: true };
-        }
-      } catch (error){
-        console.debug('fantasy backend player pool seed:', error?.message || error);
       }
     }
     try{
@@ -1528,9 +1774,10 @@
         state.loadingPlayers = true;
         renderHero();
       }
-      const model = await fetchPlayerPoolModel(force);
+      const model = await fetchPlayerPoolModel(force, sourceKey);
+      if (sourceKey !== currentPlayerPoolSourceKey()) return { stale: true };
       applyPlayerPoolModel(model, { fromCache: false });
-      writeCachedPlayerPool(model);
+      writeCachedPlayerPool(model, sourceKey);
       return { fromCache: false };
     } catch (error){
       if (!state.poolPlayers.length){
@@ -1583,6 +1830,7 @@
   }
 
   async function syncPlayerPoolToBackend(){
+    if (currentPlayerPoolSourceKey() !== 'VADE') return false;
     if (!state.currentUser || state.schemaReady === false || !state.sheetRound?.key || !state.poolPlayers.length) return;
     const roundKey = String(state.sheetRound.key || '');
     if (state.poolSyncFailedRoundKey === roundKey && Date.now() - Number(state.poolSyncFailedAt || 0) < 10 * 60 * 1000) return false;
@@ -2784,12 +3032,18 @@
     const directAction = source === 'market' && marketPlayer?.canDirectBuy
       ? `<div class="modalActions"><button class="btn btnPrimary" type="button" data-buy-confirm="${escapeAttr(player.slug || '')}" ${directBlocked ? 'disabled' : ''}>Fichar - ${renderCoinInline(Number(player.price || 0), true)}</button></div>`
       : '';
+    const isCaptain = source === 'team' && String(state.currentTeam?.captain_player_slug || '') === String(rosterEntry?.player_slug || player.slug || '');
+    const captainBlocked = !marketOpenNow() || !config().isOpen;
+    const captainAction = source === 'team'
+      ? `<div class="modalActions captainModalActions"><button class="btn ${isCaptain ? 'btnPrimary' : 'btnGood'}" type="button" data-set-captain="${escapeAttr(rosterEntry?.player_slug || player.slug || '')}" ${isCaptain || captainBlocked ? 'disabled' : ''} title="${escapeAttr(captainBlocked ? 'El mercado esta cerrado' : isCaptain ? 'Capitan actual' : `Hacer capitan a ${player.name || 'jugador'}`)}">${isCaptain ? 'Capit&aacute;n actual' : 'Hacer Capit&aacute;n'}</button><div class="helper compactHelper">El capit&aacute;n punt&uacute;a x${formatPoints(config().captainMultiplier)} en cada cierre fantasy. Solo una ficha puede llevar el bonus.</div></div>`
+      : '';
     const ownersBlock = source === 'market' && ownerRows
       ? `<div class="historyWrap"><div class="historyTitle">Equipos donde juega ahora</div><div class="ownerList">${ownerRows}</div></div>`
       : '';
     const watchAction = source === 'market' ? renderWatchButton(player) : '';
     const insightPanel = renderPlayerInsightPanel(player, marketPlayer, source, rosterEntry);
-    body.innerHTML = `<div class="modalVisual"><article class="playerCard ${frameClass(player.tier)}"><div class="playerHead">${renderPlayerVisual(player, modalOverlay)}</div></article>${watchAction}</div><div class="modalPanel"><div><div class="modalEyebrow">${source === 'team' ? 'Tu plantilla' : 'Pool de jugadores'}</div><h3 class="modalTitle">${escapeHtml(player.name)}</h3><div class="modalSubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div><div class="modalStats"><div class="modalStat"><span>${source === 'team' ? 'Valor actual' : 'Precio mercado'}</span><strong>${renderCoinInline(source === 'team' ? Number(player.price || currentPrice) : currentPrice, false)}</strong></div><div class="modalStat"><span>Clausula</span><strong>${renderCoinInline(clauseValue, false)}</strong></div><div class="modalStat"><span>${source === 'team' ? 'Copias en liga' : 'Cupos usados'}</span><strong>${copiesLabel}</strong></div><div class="modalStat"><span>Ultima jornada fantasy</span><strong>${formatPointsLabel(player.currentFantasyPoints || 0)}</strong></div><div class="modalStat"><span>Victorias</span><strong>${intFmt.format(player.wins || 0)}</strong></div><div class="modalStat"><span>Torneos jugados</span><strong>${intFmt.format(playedCount)}</strong><small>${intFmt.format(saturdayCount)} sabados fantasy</small></div></div>${insightPanel}${marketHint}${ownersBlock}<div class="historyWrap"><div class="historyTitle">Progresion por torneo</div>${renderHistoryChart(player)}</div>${directAction}</div>`;
+    const tournamentHistory = renderPlayerTournamentHistory(player);
+    body.innerHTML = `<div class="modalVisual"><article class="playerCard ${frameClass(player.tier)}"><div class="playerHead">${renderPlayerVisual(player, modalOverlay)}</div></article>${watchAction}${tournamentHistory}</div><div class="modalPanel"><div><div class="modalEyebrow">${source === 'team' ? 'Tu plantilla' : 'Pool de jugadores'}</div><h3 class="modalTitle">${escapeHtml(player.name)}</h3><div class="modalSubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div><div class="modalStats"><div class="modalStat"><span>${source === 'team' ? 'Valor actual' : 'Precio mercado'}</span><strong>${renderCoinInline(source === 'team' ? Number(player.price || currentPrice) : currentPrice, false)}</strong></div><div class="modalStat"><span>Clausula</span><strong>${renderCoinInline(clauseValue, false)}</strong></div><div class="modalStat"><span>${source === 'team' ? 'Copias en liga' : 'Cupos usados'}</span><strong>${copiesLabel}</strong></div><div class="modalStat"><span>Ultima jornada fantasy</span><strong>${formatPointsLabel(player.currentFantasyPoints || 0)}</strong></div><div class="modalStat"><span>Victorias</span><strong>${intFmt.format(player.wins || 0)}</strong></div><div class="modalStat"><span>Torneos jugados</span><strong>${intFmt.format(playedCount)}</strong><small>${intFmt.format(saturdayCount)} sabados fantasy</small></div></div>${captainAction}${insightPanel}${marketHint}${ownersBlock}<div class="historyWrap"><div class="historyTitle">Progresion de sabados</div>${renderHistoryChart(player)}${renderFantasyScoringLegend()}</div>${directAction}</div>`;
     wrap.classList.remove('hidden');
     wrap.setAttribute('aria-hidden', 'false');
     lockPageScroll();
@@ -3771,8 +4025,9 @@
   $('reloadPlayersButton')?.addEventListener('click', async () => {
     const button = $('reloadPlayersButton');
     setActionBusy(button, true, 'Refrescando');
-    showPageMsg('Refrescando fantasy desde VBF...', 'ok');
-    showFantasyToast('Refrescando datos', 'Sincronizando mercado y ranking.', 'info');
+    const sourceName = currentPlayerPoolSource().label || currentPlayerPoolSourceKey();
+    showPageMsg(`Refrescando fantasy desde ${sourceName}...`, 'ok');
+    showFantasyToast('Refrescando datos', `Sincronizando mercado y ranking desde ${sourceName}.`, 'info');
     try{
       await refreshAllData({ forceSheet: true, skipSession: true, silent: true, progressive: true });
       showFantasyToast('Datos actualizados', 'Fantasy queda al dia.', 'ok');
@@ -3780,6 +4035,18 @@
       showFantasyToast('No pude refrescar', error?.message || String(error || ''), 'err');
     } finally {
       setActionBusy(button, false);
+    }
+  });
+  syncPlayerPoolSourcePicker();
+  $('fantasySheetSelect')?.addEventListener('change', async () => {
+    const sourceKey = setPlayerPoolSource($('fantasySheetSelect')?.value || DEFAULT_PLAYER_POOL_SOURCE);
+    showPageMsg(`Cargando datos de ${sourceKey}...`, 'ok');
+    showFantasyToast('Fuente de datos', `Fantasy usara ${sourceKey}.`, 'info');
+    try{
+      await refreshAllData({ forceSheet: true, skipSession: true, silent: true, progressive: true });
+      showFantasyToast('Datos cargados', `Datos actualizados desde ${sourceKey}.`, 'ok');
+    } catch (error){
+      showFantasyToast('No pude cambiar la fuente', error?.message || String(error || ''), 'err');
     }
   });
   $('marketSearch')?.addEventListener('input', () => { state.marketSearch = $('marketSearch')?.value || ''; renderMarket(); });
@@ -3858,6 +4125,11 @@
     const watchTrigger = event.target.closest('[data-toggle-watchlist]');
     if (watchTrigger){
       toggleWatchlist(watchTrigger.getAttribute('data-toggle-watchlist') || '');
+      return;
+    }
+    const captainTrigger = event.target.closest('[data-set-captain]');
+    if (captainTrigger){
+      await saveCaptain(captainTrigger.getAttribute('data-set-captain') || '', captainTrigger);
       return;
     }
     const actionButton = event.target.closest('[data-modal-action]');
