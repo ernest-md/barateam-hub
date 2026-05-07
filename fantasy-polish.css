@@ -3336,6 +3336,17 @@ body[data-fantasy-view] .modalCard{
 
 body[data-fantasy-view] .modalClose{
   z-index:6;
+  border-color:rgba(15,23,42,.12);
+  background:#fff;
+  color:#0f172a;
+  box-shadow:0 10px 24px rgba(15,23,42,.08);
+}
+
+body[data-fantasy-view] .modalClose:hover,
+body[data-fantasy-view] .modalClose:focus-visible{
+  border-color:rgba(37,99,235,.24);
+  background:#f8fafc;
+  color:#0f172a;
 }
 
 body[data-fantasy-view] .modalGrid{
@@ -4884,6 +4895,111 @@ body[data-fantasy-view] #playerModalBody .ownerCard .clauseBtnLabel{
   body[data-fantasy-view] #playerModalBody .fantasyScoringLegend,
   body[data-fantasy-view] #playerModalBody .ownerGrid{
     grid-template-columns:1fr 1fr;
+  }
+}
+
+/* Requested fantasy layout fixes */
+body[data-fantasy-view] .playerVisual.has-photo .playerPhotoShade{
+  background:linear-gradient(180deg,rgba(15,23,42,0),rgba(15,23,42,.04) 46%,rgba(15,23,42,.24) 68%,rgba(15,23,42,.78));
+}
+
+body[data-fantasy-view] .playerVisual.has-photo::after{
+  display:none;
+}
+
+body[data-fantasy-view] .playerVisual.has-photo .playerArtFallback{
+  background:linear-gradient(180deg,transparent 34%,rgba(15,23,42,.08) 58%,rgba(15,23,42,.44));
+}
+
+.pulseCard.hasPlayerBg::before{
+  inset:0;
+  background-image:linear-gradient(90deg,rgba(255,255,255,.78),rgba(255,255,255,.54)),var(--pulse-bg);
+  filter:saturate(1.12);
+  opacity:.96;
+  transform:none;
+}
+
+body[data-fantasy-view="team"] .stack > .teamScoutingFull{
+  margin-top:0;
+}
+
+body[data-fantasy-view="team"] .stack > .teamScoutingFull .scoutGrid{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+
+.marketMetaBox{
+  min-width:0;
+}
+
+body[data-fantasy-view="market"] .marketBudgetBox{
+  min-height:44px;
+  padding:8px 12px;
+  gap:10px;
+}
+
+body[data-fantasy-view="market"] .marketBudgetBox .teamBudgetIcon{
+  width:24px;
+  height:24px;
+}
+
+body[data-fantasy-view="market"] .marketBudgetBox strong.teamBudgetAmount{
+  font-size:34px !important;
+}
+
+.marketCardHead > .watchButton.iconOnly{
+  position:absolute;
+  top:10px;
+  right:auto;
+  left:10px;
+  z-index:4;
+  margin:0;
+}
+
+body[data-fantasy-view] .marketCardMinimal{
+  display:grid;
+  gap:8px;
+  align-content:start;
+}
+
+body[data-fantasy-view] .marketCardMinimal .playerHead{
+  min-height:0;
+}
+
+.modalDealStack{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+  align-items:stretch;
+  margin-top:0;
+}
+
+body[data-fantasy-view] #playerModalBody .modalDealStack .modalActions{
+  margin:0;
+}
+
+body[data-fantasy-view] #playerModalBody .modalDealStack .modalBuyActions .btn{
+  width:100%;
+  min-height:48px;
+}
+
+body[data-fantasy-view] #playerModalBody .modalDealStack .modalDealLead{
+  display:grid;
+  gap:0;
+}
+
+body[data-fantasy-view] #playerModalBody .modalDealStack .modalMarketHint,
+body[data-fantasy-view] #playerModalBody .modalDealStack .historyWrap{
+  margin:0;
+}
+
+body[data-fantasy-view] #playerModalBody .modalDealStack .ownerGrid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+
+@media (max-width:640px){
+  body[data-fantasy-view="team"] .stack > .teamScoutingFull .scoutGrid,
+  body[data-fantasy-view] #playerModalBody .modalDealStack .ownerGrid{
+    grid-template-columns:1fr;
   }
 }
 

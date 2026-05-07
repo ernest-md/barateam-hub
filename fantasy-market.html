@@ -267,7 +267,7 @@
     @media (max-width:560px){.wrap{padding:10px}.hero{padding:16px 14px;border-radius:20px}.card{border-radius:18px;padding:12px}.heroStats,.factGrid,.playerGrid{grid-template-columns:1fr 1fr}.actionRow .btn{flex:1 1 calc(50% - 4px)}.loadingCard{padding:14px 16px;border-radius:18px}.overlayNamePlain{font-size:15px}.overlaySubtitle{font-size:9px}.modalCard{padding:14px}.modalTitle{font-size:22px}.standingRow{grid-template-columns:1fr}.standingRoster{grid-template-columns:repeat(3,minmax(0,1fr))}#squadGrid{grid-template-columns:1fr}}
     @media (max-width:420px){.playerGrid{grid-template-columns:1fr}}
   </style>
-  <link rel="stylesheet" href="fantasy-polish.css?v=20260506l" />
+  <link rel="stylesheet" href="fantasy-polish.css?v=20260507b" />
 </head>
 <body data-requires-fantasy="1" data-fantasy-view="market">
   <div class="topbar">
@@ -382,10 +382,10 @@
         <section class="card">
           <div class="sectionHead">
             <div>
-                <h2>Mercado OP15</h2>
+                <h2 id="marketTitle">Mercado OP15</h2>
                 <p>Explora a todos los jugadores, busca por nombre o tier y revisa que copias siguen libres y cuales ya estan en manos de otros managers.</p>
             </div>
-            <div class="inlineMeta"><span class="pill hidden" id="marketMeta"></span></div>
+            <div class="inlineMeta"><div class="marketMetaBox hidden" id="marketMeta"></div></div>
           </div>
           <div class="toolbar">
             <div class="marketFilters">
@@ -397,26 +397,10 @@
           <div class="empty hidden" id="marketEmpty">No hay jugadores que coincidan con este filtro.</div>
           <div class="playerGrid" id="marketGrid"></div>
         </section>
-        <section class="card">
-          <div class="sectionHead">
-            <div>
-              <h2 id="teamCardTitle">Fantasy oficial OP15</h2>
-              <p id="teamCardSubtitle">Un solo equipo por manager, 3 jugadores por plantilla y cupo maximo de 3 equipos por jugador.</p>
-            </div>
-            <div class="inlineMeta" id="teamCardMeta"></div>
-          </div>
-          <div class="factGrid" id="seasonFacts"></div>
-          <div class="subPanel" id="teamSetupPanel"><div class="empty">Cargando estado de la liga...</div></div>
-          <div class="helper" id="authHint">Necesitas sesion para crear tu equipo, recibir tu starter pack y entrar al mercado.</div>
-          <div class="actionRow">
-            <a class="btn" href="fantasy.html">Volver al inicio</a>
-            <a class="btn" href="fantasy-team.html">Organizar equipo</a>
-          </div>
-        </section>
       </div>
     </div>
   </div>
   <script src="fantasy-player-portraits.js?v=20260504a"></script>
-  <script src="fantasy.js?v=20260506o"></script>
+  <script src="fantasy.js?v=20260507b"></script>
 </body>
 </html>

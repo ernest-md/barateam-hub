@@ -3137,7 +3137,7 @@
     const fullHistory = Array.isArray(player.history) ? player.history : [];
     const playedCount = fullHistory.filter((item) => Number.isFinite(Number(item?.raw_points)) && Number(item.raw_points) > 0).length;
     const saturdayCount = fullHistory.filter((item) => item?.counts_for_fantasy === true && Number.isFinite(Number(item?.raw_points)) && Number(item.raw_points) > 0).length;
-    const ownerRows = (marketPlayer?.owners || []).map((owner) => {
+    const ownerRows = (marketPlayer?.owners || []).slice(0, config().maxPlayerCopies).map((owner) => {
       const disabled = owner.isMine || !marketOpenNow() || Number(state.currentTeam?.coins || 0) < Number(owner.clausePrice || 0);
       const title = owner.isMine ? 'Ya tienes esta copia' : (!marketOpenNow() ? 'Mercado cerrado' : (Number(state.currentTeam?.coins || 0) < Number(owner.clausePrice || 0) ? 'Sin berries suficientes' : `Pagar clausula a ${owner.teamName}`));
       return `<div class="ownerCard"><div class="ownerMeta"><strong>${escapeHtml(owner.teamName || 'Equipo')}</strong><span>${escapeHtml(owner.coachName || 'Manager')}</span><span class="ownerHint">${owner.isMine ? 'Tu copia actual' : 'Copia en juego'}</span></div><button class="btn btnPrimary compactBtn" type="button" data-buy-confirm="${escapeAttr(player.slug || '')}" data-buy-target-team="${escapeAttr(owner.teamId || '')}" ${disabled ? 'disabled' : ''} title="${escapeAttr(title)}"><span class="clauseBtnLabel">Clausula</span>${renderCoinInline(owner.clausePrice || 0, true)}</button></div>`;
@@ -3149,7 +3149,7 @@
       : `<div class="modalMarketHint">Tu copia actual tiene un valor de mercado de ${renderCoinInline(Number(player.price || currentPrice), false)} y una clausula vigente de ${renderCoinInline(clauseValue, false)}.</div>`;
     const directBlocked = source === 'market' ? buyBlockReason(marketPlayer, roster) : '';
     const directAction = source === 'market' && marketPlayer?.canDirectBuy
-      ? `<div class="modalActions"><button class="btn btnPrimary" type="button" data-buy-confirm="${escapeAttr(player.slug || '')}" ${directBlocked ? 'disabled' : ''}>Fichar - ${renderCoinInline(Number(player.price || 0), true)}</button></div>`
+      ? `<div class="modalActions modalBuyActions"><button class="btn btnPrimary" type="button" data-buy-confirm="${escapeAttr(player.slug || '')}" ${directBlocked ? 'disabled' : ''}>Fichar - ${renderCoinInline(Number(player.price || 0), true)}</button></div>`
       : '';
     const isCaptain = source === 'team' && String(state.currentTeam?.captain_player_slug || '') === String(rosterEntry?.player_slug || player.slug || '');
     const captainBlocked = !marketOpenNow() || !config().isOpen;
@@ -3164,7 +3164,7 @@
     const tournamentHistory = renderPlayerTournamentHistory(player);
     const teamOwnershipBlock = source === 'team' ? `<div class="modalOwnershipBlock">${marketHint}</div>` : '';
     const marketOwnershipBlock = source === 'market'
-      ? `<div class="modalOwnershipBlock modalDealStrip ${ownersBlock ? 'hasOwners' : ''} ${directAction ? 'hasDirectAction' : ''}"><div class="modalDealLead">${marketHint}${directAction}</div>${ownersBlock}</div>`
+      ? `<div class="modalOwnershipBlock modalDealStack ${ownersBlock ? 'hasOwners' : ''} ${directAction ? 'hasDirectAction' : ''}">${directAction}<div class="modalDealLead">${marketHint}</div>${ownersBlock}</div>`
       : '';
     body.innerHTML = `<div class="modalVisual"><article class="playerCard ${frameClass(player.tier)}"><div class="playerHead">${renderPlayerVisual(player, modalOverlay)}</div></article>${watchAction}${tournamentHistory}${teamOwnershipBlock}</div><div class="modalPanel"><div><div class="modalEyebrow">${source === 'team' ? 'Tu plantilla' : 'Pool de jugadores'}</div><h3 class="modalTitle">${escapeHtml(player.name)}</h3><div class="modalSubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div><div class="modalStats"><div class="modalStat"><span>${source === 'team' ? 'Valor actual' : 'Precio mercado'}</span><strong>${renderCoinInline(source === 'team' ? Number(player.price || currentPrice) : currentPrice, false)}</strong></div><div class="modalStat"><span>Clausula</span><strong>${renderCoinInline(clauseValue, false)}</strong></div><div class="modalStat"><span>${source === 'team' ? 'Copias en liga' : 'Cupos usados'}</span><strong>${copiesLabel}</strong></div><div class="modalStat"><span>Ultima jornada fantasy</span><strong>${formatPointsLabel(player.currentFantasyPoints || 0)}</strong></div><div class="modalStat"><span>Victorias</span><strong>${intFmt.format(player.wins || 0)}</strong></div><div class="modalStat"><span>Torneos jugados</span><strong>${intFmt.format(playedCount)}</strong><small>${intFmt.format(saturdayCount)} sabados fantasy</small></div></div>${captainAction}${insightPanel}<div class="historyWrap"><div class="historyTitle">Progresion de sabados</div>${renderHistoryChart(player)}</div>${marketOwnershipBlock}</div>`;
     wrap.classList.remove('hidden');
@@ -3595,8 +3595,7 @@
       ['free', 'Libres'],
       ['clause', 'Clausulables'],
       ['hot', 'En racha'],
-      ['bargain', 'Gangas'],
-      ['vadefantasy', 'VaDeFantasy']
+      ['bargain', 'Gangas']
     ];
     host.innerHTML = items.map(([value, label]) => `<button class="marketFilterChip ${String(state.marketFilter || 'all') === value ? 'active' : ''}" type="button" data-market-filter="${escapeAttr(value)}">${escapeHtml(label)}</button>`).join('');
   }
@@ -3716,7 +3715,18 @@
     if (!grid || !empty || !meta) return;
     renderMarketQuickFilters();
     const derived = leagueDerived();
-    meta.textContent = `${marketFilterLabel()} · ${intFmt.format(derived.marketPlayers.length)} visibles`;
+    const title = $('marketTitle');
+    if (title){
+      const teamName = String(state.currentTeam?.team_name || '').trim();
+      title.textContent = teamName ? `Mercado OP15 - ${teamName}` : 'Mercado OP15';
+    }
+    if (state.currentTeam){
+      meta.className = 'marketMetaBox teamBudgetBox marketBudgetBox';
+      meta.innerHTML = `<img class="teamBudgetIcon" src="${escapeAttr(COIN_ICON)}" alt="" aria-hidden="true" /><strong class="teamBudgetAmount">${intFmt.format(Math.round(Number(state.currentTeam.coins || 0)))}</strong>`;
+    } else {
+      meta.className = 'marketMetaBox pill';
+      meta.textContent = `${marketFilterLabel()} · ${intFmt.format(derived.marketPlayers.length)} visibles`;
+    }
     meta.classList.remove('hidden');
     if (meta.parentElement) meta.parentElement.classList.remove('hidden');
     if (!derived.marketPlayers.length){ grid.innerHTML = ''; empty.classList.remove('hidden'); empty.textContent = state.poolPlayers.length ? 'No hay jugadores que coincidan con este filtro.' : 'Todavia no se ha cargado el pool de jugadores.'; return; }
