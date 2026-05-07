@@ -173,9 +173,11 @@
     marketSearch: '',
     marketSort: 'vbf_full_rank',
     marketFilter: 'all',
+    teamPanelTab: 'trend',
     watchlistSlugs: new Set(),
     modalPlayerSlug: '',
     modalSource: '',
+    modalPlayerTab: 'summary',
     modalTeamId: '',
     modalMarketPanel: '',
     renameTeamOpen: false,
@@ -2497,7 +2499,6 @@
     if (mode === 'clause') return !direct;
     if (mode === 'hot') return fantasyTrendDelta(player) >= 4 || Number(player.currentFantasyPoints || 0) >= 16 || player.currentWon === true;
     if (mode === 'bargain') return direct && fantasyValueScore(player, player.price || 0) >= 1.25;
-    if (mode === 'vadefantasy') return true;
     return true;
   }
 
@@ -2508,8 +2509,7 @@
       free: 'Libres',
       clause: 'Clausulables',
       hot: 'En racha',
-      bargain: 'Gangas',
-      vadefantasy: 'VaDeFantasy'
+      bargain: 'Gangas'
     };
     return map[String(state.marketFilter || 'all')] || map.all;
   }
@@ -2613,7 +2613,7 @@
       const query = state.marketSearch.trim().toLowerCase();
       const textMatch = !query || player.name.toLowerCase().includes(query) || String(player.tier || '').toLowerCase().includes(query);
       return textMatch && marketFilterAllows(player, { count: player.copiesUsed || 0 });
-    }).sort((a, b) => sortPlayers(a, b, String(state.marketFilter || '') === 'vadefantasy' ? 'vadefantasy_desc' : state.marketSort)).slice(0, MAX_MARKET_CARDS);
+    }).sort((a, b) => sortPlayers(a, b, state.marketSort)).slice(0, MAX_MARKET_CARDS);
 
     return { standings, squadCards, marketPlayers, myRoster, ownershipBySlug };
   }
@@ -2973,12 +2973,14 @@
   function openPlayerModal(slug, source){
     state.modalPlayerSlug = String(slug || '').trim();
     state.modalSource = String(source || '').trim();
+    state.modalPlayerTab = 'summary';
     renderPlayerModal();
   }
 
   function closePlayerModal(){
     state.modalPlayerSlug = '';
     state.modalSource = '';
+    state.modalPlayerTab = 'summary';
     renderPlayerModal();
   }
 
@@ -3164,9 +3166,17 @@
     const tournamentHistory = renderPlayerTournamentHistory(player);
     const teamOwnershipBlock = source === 'team' ? `<div class="modalOwnershipBlock">${marketHint}</div>` : '';
     const marketOwnershipBlock = source === 'market'
-      ? `<div class="modalOwnershipBlock modalDealStack ${ownersBlock ? 'hasOwners' : ''} ${directAction ? 'hasDirectAction' : ''}">${directAction}<div class="modalDealLead">${marketHint}</div>${ownersBlock}</div>`
+      ? `<div class="modalOwnershipBlock modalDealStack ${ownersBlock ? 'hasOwners' : ''}"><div class="modalDealLead">${marketHint}</div>${ownersBlock}</div>`
       : '';
-    body.innerHTML = `<div class="modalVisual"><article class="playerCard ${frameClass(player.tier)}"><div class="playerHead">${renderPlayerVisual(player, modalOverlay)}</div></article>${watchAction}${tournamentHistory}${teamOwnershipBlock}</div><div class="modalPanel"><div><div class="modalEyebrow">${source === 'team' ? 'Tu plantilla' : 'Pool de jugadores'}</div><h3 class="modalTitle">${escapeHtml(player.name)}</h3><div class="modalSubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div><div class="modalStats"><div class="modalStat"><span>${source === 'team' ? 'Valor actual' : 'Precio mercado'}</span><strong>${renderCoinInline(source === 'team' ? Number(player.price || currentPrice) : currentPrice, false)}</strong></div><div class="modalStat"><span>Clausula</span><strong>${renderCoinInline(clauseValue, false)}</strong></div><div class="modalStat"><span>${source === 'team' ? 'Copias en liga' : 'Cupos usados'}</span><strong>${copiesLabel}</strong></div><div class="modalStat"><span>Ultima jornada fantasy</span><strong>${formatPointsLabel(player.currentFantasyPoints || 0)}</strong></div><div class="modalStat"><span>Victorias</span><strong>${intFmt.format(player.wins || 0)}</strong></div><div class="modalStat"><span>Torneos jugados</span><strong>${intFmt.format(playedCount)}</strong><small>${intFmt.format(saturdayCount)} sabados fantasy</small></div></div>${captainAction}${insightPanel}<div class="historyWrap"><div class="historyTitle">Progresion de sabados</div>${renderHistoryChart(player)}</div>${marketOwnershipBlock}</div>`;
+    const summaryContent = `<div class="modalStats"><div class="modalStat"><span>${source === 'team' ? 'Valor actual' : 'Precio mercado'}</span><strong>${renderCoinInline(source === 'team' ? Number(player.price || currentPrice) : currentPrice, false)}</strong></div><div class="modalStat"><span>Clausula</span><strong>${renderCoinInline(clauseValue, false)}</strong></div><div class="modalStat"><span>${source === 'team' ? 'Copias en liga' : 'Cupos usados'}</span><strong>${copiesLabel}</strong></div><div class="modalStat"><span>Ultima jornada fantasy</span><strong>${formatPointsLabel(player.currentFantasyPoints || 0)}</strong></div><div class="modalStat"><span>Victorias</span><strong>${intFmt.format(player.wins || 0)}</strong></div><div class="modalStat"><span>Torneos jugados</span><strong>${intFmt.format(playedCount)}</strong><small>${intFmt.format(saturdayCount)} sabados fantasy</small></div></div>${insightPanel}`;
+    const historyContent = `<div class="historyWrap"><div class="historyTitle">Progresion de sabados</div>${renderHistoryChart(player)}</div>${tournamentHistory}`;
+    const marketContent = source === 'market' ? marketOwnershipBlock : teamOwnershipBlock;
+    const footerActions = source === 'market' ? directAction : captainAction;
+    const activeTab = new Set(['summary', 'history', 'market']).has(String(state.modalPlayerTab || '')) ? String(state.modalPlayerTab) : 'summary';
+    state.modalPlayerTab = activeTab;
+    const tabButton = (id, label) => `<button class="${activeTab === id ? 'active' : ''}" type="button" data-player-modal-tab="${escapeAttr(id)}" aria-pressed="${activeTab === id ? 'true' : 'false'}">${escapeHtml(label)}</button>`;
+    const panel = (id, html) => `<div class="playerModalTabPanel ${activeTab === id ? 'active' : ''}" data-player-modal-panel="${escapeAttr(id)}">${html}</div>`;
+    body.innerHTML = `<div class="modalVisual modalVisualSticky"><article class="playerCard ${frameClass(player.tier)}"><div class="playerHead">${renderPlayerVisual(player, modalOverlay)}</div></article>${watchAction}</div><div class="modalPanel playerModalPanel"><div class="playerModalHeader"><div><div class="modalEyebrow">${source === 'team' ? 'Tu plantilla' : 'Pool de jugadores'}</div><h3 class="modalTitle">${escapeHtml(player.name)}</h3><div class="modalSubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div></div><div class="playerModalTabs">${tabButton('summary', 'Resumen')}${tabButton('history', 'Historial')}${tabButton('market', source === 'team' ? 'Plantilla' : 'Mercado')}</div><div class="playerModalTabPanels">${panel('summary', summaryContent)}${panel('history', historyContent)}${panel('market', marketContent)}</div>${footerActions ? `<div class="playerModalActionRail">${footerActions}</div>` : ''}</div>`;
     wrap.classList.remove('hidden');
     wrap.setAttribute('aria-hidden', 'false');
     lockPageScroll();
@@ -3527,6 +3537,20 @@
     }).join('')}</div>`;
   }
 
+  function renderTeamPanelTabs(){
+    const allowed = new Set(['trend', 'breakdown', 'radar']);
+    const active = allowed.has(String(state.teamPanelTab || '')) ? String(state.teamPanelTab) : 'trend';
+    state.teamPanelTab = active;
+    document.querySelectorAll('[data-team-panel-tab]').forEach((button) => {
+      const isActive = button.getAttribute('data-team-panel-tab') === active;
+      button.classList.toggle('active', isActive);
+      button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+    document.querySelectorAll('[data-team-panel-view]').forEach((panel) => {
+      panel.classList.toggle('active', panel.getAttribute('data-team-panel-view') === active);
+    });
+  }
+
   function watchlistPlayers(limit){
     const slugs = Array.from(state.watchlistSlugs || []);
     const derived = leagueDerived();
@@ -3697,10 +3721,15 @@
     }
     empty.classList.add('hidden');
     grid.classList.remove('hidden');
-    grid.innerHTML = derived.squadCards.map((entry) => {
+    const rosterSlots = Array.from({ length: config().squadSize }, (_, index) => derived.squadCards[index] || null);
+    grid.innerHTML = rosterSlots.map((entry, index) => {
+      if (!entry){
+        return `<article class="playerCard squadCard squadSlotEmpty"><div class="squadSlotPlaceholder"><span>${intFmt.format(index + 1)}</span><strong>Hueco libre</strong><small>Listo para fichar desde mercado.</small></div></article>`;
+      }
       const player = entry.player;
+      const isCaptain = String(state.currentTeam?.captain_player_slug || '') === String(entry.player_slug || player.slug || '');
       const overlay = `<div class="playerOverlayBottom"><div class="overlayNamePlain">${escapeHtml(player.name)}</div><div class="overlaySubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div>`;
-      return `<article class="playerCard squadCard isInteractive ${frameClass(player.tier)}" data-open-player="${escapeAttr(entry.player_slug)}" data-player-source="team"><div class="playerHead">${renderPlayerVisual(player, overlay)}</div></article>`;
+      return `<article class="playerCard squadCard isInteractive ${isCaptain ? 'isCaptainSlot' : ''} ${frameClass(player.tier)}" data-open-player="${escapeAttr(entry.player_slug)}" data-player-source="team">${isCaptain ? '<span class="squadSlotBadge">Capitan</span>' : `<span class="squadSlotIndex">${intFmt.format(index + 1)}</span>`}<div class="playerHead">${renderPlayerVisual(player, overlay)}</div></article>`;
     }).join('');
     if (table){
       table.innerHTML = PAGE_VIEW === 'team' ? renderRosterTable(derived.squadCards) : '';
@@ -3862,6 +3891,7 @@
     renderManagerTrend();
     renderTeamBreakdown();
     renderScoutingPanel();
+    renderTeamPanelTabs();
     renderWatchlistPanel();
     renderMarketActivity();
     renderMarket();
@@ -4373,6 +4403,12 @@
   $('topPlayersList')?.addEventListener('click', handleOpenPlayerClick);
   $('surprisePlayersList')?.addEventListener('click', handleOpenPlayerClick);
   $('scoutingPanel')?.addEventListener('click', handleOpenPlayerClick);
+  document.querySelector('[data-team-panel-tabs]')?.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-team-panel-tab]');
+    if (!trigger) return;
+    state.teamPanelTab = trigger.getAttribute('data-team-panel-tab') || 'trend';
+    renderTeamPanelTabs();
+  });
   document.addEventListener('click', (event) => {
     if (event.target.closest('[data-open-rename-team]')) openRenameTeamModal();
   });
@@ -4394,6 +4430,12 @@
   $('playerModalWrap')?.addEventListener('click', async (event) => {
     const closeTrigger = event.target.closest('[data-close-player-modal]');
     if (closeTrigger){ closePlayerModal(); return; }
+    const tabTrigger = event.target.closest('[data-player-modal-tab]');
+    if (tabTrigger){
+      state.modalPlayerTab = tabTrigger.getAttribute('data-player-modal-tab') || 'summary';
+      renderPlayerModal();
+      return;
+    }
     const confirmTrigger = event.target.closest('[data-buy-confirm]');
     if (confirmTrigger){
       openBuyConfirm(confirmTrigger.getAttribute('data-buy-confirm') || '', confirmTrigger.getAttribute('data-buy-target-team') || '');

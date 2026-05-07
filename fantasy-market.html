@@ -267,7 +267,7 @@
     @media (max-width:560px){.wrap{padding:10px}.hero{padding:16px 14px;border-radius:20px}.card{border-radius:18px;padding:12px}.heroStats,.factGrid,.playerGrid{grid-template-columns:1fr 1fr}.actionRow .btn{flex:1 1 calc(50% - 4px)}.loadingCard{padding:14px 16px;border-radius:18px}.overlayNamePlain{font-size:15px}.overlaySubtitle{font-size:9px}.modalCard{padding:14px}.modalTitle{font-size:22px}.standingRow{grid-template-columns:1fr}.standingRoster{grid-template-columns:repeat(3,minmax(0,1fr))}#squadGrid{grid-template-columns:1fr}}
     @media (max-width:420px){.playerGrid{grid-template-columns:1fr}}
   </style>
-  <link rel="stylesheet" href="fantasy-polish.css?v=20260507b" />
+  <link rel="stylesheet" href="fantasy-polish.css?v=20260507c" />
 </head>
 <body data-requires-fantasy="1" data-fantasy-view="market">
   <div class="topbar">
@@ -387,13 +387,15 @@
             </div>
             <div class="inlineMeta"><div class="marketMetaBox hidden" id="marketMeta"></div></div>
           </div>
-          <div class="toolbar">
-            <div class="marketFilters">
-              <label class="control"><span>Buscar</span><input id="marketSearch" type="search" placeholder="Jugador o tier" autocomplete="off" /></label>
-              <label class="control"><span>Orden</span><select id="marketSort"><option value="vbf_full_rank">VadeBack (Completa)</option><option value="vadefantasy_desc">VaDeFantasy</option><option value="weekly_desc">Mejor jornada anterior</option><option value="price_desc">Precio mas alto</option><option value="price_asc">Precio mas bajo</option><option value="wins_desc">Mas ganados</option><option value="name_asc">Nombre A-Z</option></select></label>
+          <div class="marketControlDock">
+            <div class="toolbar">
+              <div class="marketFilters">
+                <label class="control"><span>Buscar</span><input id="marketSearch" type="search" placeholder="Jugador o tier" autocomplete="off" /></label>
+                <label class="control"><span>Orden</span><select id="marketSort"><option value="vbf_full_rank">VadeBack (Completa)</option><option value="vadefantasy_desc">VaDeFantasy</option><option value="weekly_desc">Mejor jornada anterior</option><option value="price_desc">Precio mas alto</option><option value="price_asc">Precio mas bajo</option><option value="wins_desc">Mas ganados</option><option value="name_asc">Nombre A-Z</option></select></label>
+              </div>
             </div>
+            <div class="marketQuickFilters" id="marketQuickFilters"></div>
           </div>
-          <div class="marketQuickFilters" id="marketQuickFilters"></div>
           <div class="empty hidden" id="marketEmpty">No hay jugadores que coincidan con este filtro.</div>
           <div class="playerGrid" id="marketGrid"></div>
         </section>
@@ -401,6 +403,6 @@
     </div>
   </div>
   <script src="fantasy-player-portraits.js?v=20260504a"></script>
-  <script src="fantasy.js?v=20260507b"></script>
+  <script src="fantasy.js?v=20260507c"></script>
 </body>
 </html>

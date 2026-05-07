@@ -4996,10 +4996,379 @@ body[data-fantasy-view] #playerModalBody .modalDealStack .ownerGrid{
   grid-template-columns:repeat(3,minmax(0,1fr));
 }
 
+/* Six-step visual refresh */
+body[data-fantasy-view] .hero{
+  min-height:0;
+  padding:16px 18px;
+  gap:12px;
+  border-radius:10px;
+  background:
+    linear-gradient(105deg,rgba(2,6,23,.78),rgba(18,40,78,.42) 50%,rgba(154,24,24,.28)),
+    url("VDF_Background.png");
+  background-size:cover;
+  background-position:center 42%;
+}
+
+body[data-fantasy-view] .heroTop{
+  align-items:center;
+  gap:14px;
+}
+
+body[data-fantasy-view] .hero h1{
+  font-size:30px;
+  line-height:1.04;
+}
+
+body[data-fantasy-view] .hero p{
+  margin-top:6px;
+  max-width:66ch;
+  font-size:13px;
+  line-height:1.45;
+}
+
+body[data-fantasy-view] .heroStats{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:0;
+}
+
+body[data-fantasy-view] .heroStat{
+  flex:1 1 180px;
+  min-height:52px;
+  padding:9px 12px;
+  border-radius:8px;
+  background:rgba(255,255,255,.1);
+}
+
+body[data-fantasy-view] .heroStat::before{
+  inset:10px auto 10px 0;
+}
+
+body[data-fantasy-view] .heroStat b{
+  font-size:22px;
+}
+
+body[data-fantasy-view] .heroStat span{
+  margin-top:3px;
+  font-size:11px;
+}
+
+body[data-fantasy-view] .card{
+  box-shadow:0 12px 30px rgba(15,23,42,.12);
+}
+
+body[data-fantasy-view="market"] .stack > .card{
+  overflow:visible;
+}
+
+.marketControlDock{
+  position:sticky;
+  top:104px;
+  z-index:30;
+  display:grid;
+  gap:10px;
+  margin:0 0 16px;
+  padding:10px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:8px;
+  background:rgba(248,250,252,.98);
+  box-shadow:0 12px 30px rgba(15,23,42,.12);
+}
+
+.marketControlDock .toolbar{
+  margin:0;
+}
+
+.marketControlDock .marketFilters{
+  padding:0;
+  border:0;
+  background:transparent;
+  box-shadow:none;
+}
+
+.marketControlDock .marketQuickFilters{
+  margin:0;
+}
+
+body[data-fantasy-view="market"] #marketGrid{
+  gap:12px;
+  align-items:stretch;
+  grid-template-columns:repeat(auto-fill,minmax(166px,1fr));
+}
+
+body[data-fantasy-view] .marketCardMinimal{
+  grid-template-rows:auto 30px 40px;
+  height:100%;
+  gap:8px;
+}
+
+body[data-fantasy-view] .marketCardMinimal .playerVisual{
+  aspect-ratio:5/6.55;
+}
+
+body[data-fantasy-view] .marketCardMinimal .buyFullBtn{
+  min-height:40px;
+}
+
+body[data-fantasy-view="team"] #squadGrid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+
+body[data-fantasy-view="team"] #squadGrid .squadCard{
+  position:relative;
+  min-height:0;
+  padding:8px;
+}
+
+body[data-fantasy-view="team"] #squadGrid .squadCard .playerVisual{
+  aspect-ratio:5/6.25;
+}
+
+.squadSlotBadge,
+.squadSlotIndex{
+  position:absolute;
+  top:14px;
+  left:14px;
+  z-index:5;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:26px;
+  min-width:26px;
+  padding:5px 8px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.82);
+  background:rgba(15,23,42,.78);
+  color:#fff;
+  font-size:10px;
+  font-weight:1000;
+}
+
+.squadSlotBadge{
+  background:linear-gradient(135deg,#dc2626,#2563eb);
+}
+
+.squadSlotEmpty{
+  display:grid;
+  aspect-ratio:5/6.25;
+  align-content:center;
+  justify-items:center;
+  border-style:dashed;
+  border-color:rgba(37,99,235,.18);
+  background:linear-gradient(180deg,rgba(239,246,255,.72),rgba(248,250,252,.95));
+  box-shadow:none !important;
+}
+
+.squadSlotPlaceholder{
+  display:grid;
+  justify-items:center;
+  gap:6px;
+  padding:16px;
+  text-align:center;
+}
+
+.squadSlotPlaceholder span{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:34px;
+  height:34px;
+  border-radius:999px;
+  background:#dbeafe;
+  color:#1d4ed8;
+  font-weight:1000;
+}
+
+.squadSlotPlaceholder strong{
+  color:#0f172a;
+  font-size:14px;
+  font-weight:1000;
+}
+
+.squadSlotPlaceholder small{
+  color:#64748b;
+  font-size:12px;
+  line-height:1.35;
+}
+
+.managerConsoleCard{
+  min-height:100%;
+}
+
+.managerConsoleHead{
+  align-items:flex-start;
+}
+
+.managerPanelTabs,
+.playerModalTabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  padding:5px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:8px;
+  background:rgba(241,245,249,.92);
+}
+
+.managerPanelTabs button,
+.playerModalTabs button{
+  min-height:34px;
+  padding:7px 11px;
+  border:0;
+  border-radius:6px;
+  background:transparent;
+  color:#475569;
+  font:inherit;
+  font-size:12px;
+  font-weight:1000;
+  cursor:pointer;
+}
+
+.managerPanelTabs button.active,
+.playerModalTabs button.active{
+  background:#fff;
+  color:#1d4ed8;
+  box-shadow:0 6px 16px rgba(15,23,42,.08);
+}
+
+.teamPanelView,
+.playerModalTabPanel{
+  display:none;
+}
+
+.teamPanelView.active,
+.playerModalTabPanel.active{
+  display:grid;
+  gap:12px;
+}
+
+.managerPanelViews{
+  min-height:0;
+}
+
+body[data-fantasy-view] #playerModalBody{
+  grid-template-columns:minmax(240px,300px) minmax(0,1fr);
+}
+
+.modalVisualSticky{
+  position:sticky;
+  top:0;
+}
+
+.playerModalPanel{
+  grid-template-rows:auto auto minmax(0,1fr) auto;
+}
+
+.playerModalHeader{
+  padding-right:54px;
+}
+
+.playerModalTabPanels{
+  min-height:0;
+}
+
+.playerModalActionRail{
+  position:sticky;
+  bottom:0;
+  z-index:5;
+  padding-top:10px;
+  border-top:1px solid rgba(15,23,42,.08);
+  background:linear-gradient(180deg,rgba(248,250,252,.82),rgba(248,250,252,1) 42%);
+}
+
+.playerModalActionRail .modalActions{
+  margin:0;
+}
+
+.playerModalActionRail .modalActions .btn{
+  width:100%;
+  min-height:48px;
+}
+
+body[data-fantasy-view="overview"] .overviewGrid{
+  grid-template-columns:minmax(0,1.05fr) minmax(360px,.78fr);
+}
+
+body[data-fantasy-view="overview"] .pulseGrid{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+
+body[data-fantasy-view="overview"] .pulseCard{
+  min-height:132px;
+  align-content:end;
+  border-color:rgba(15,23,42,.08);
+  background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(248,250,252,.94));
+}
+
+body[data-fantasy-view="overview"] .overviewList{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+
+body[data-fantasy-view="overview"] .overviewPlayerTile{
+  min-height:0;
+}
+
+body[data-fantasy-view="overview"] .standingRow{
+  min-height:0;
+  padding:14px;
+}
+
+body[data-fantasy-view="overview"] .standingRoster{
+  grid-template-columns:repeat(3,minmax(84px,96px));
+}
+
 @media (max-width:640px){
   body[data-fantasy-view="team"] .stack > .teamScoutingFull .scoutGrid,
   body[data-fantasy-view] #playerModalBody .modalDealStack .ownerGrid{
     grid-template-columns:1fr;
+  }
+}
+
+@media (max-width:920px){
+  body[data-fantasy-view] .heroTop{
+    display:grid;
+  }
+
+  .marketControlDock{
+    top:12px;
+  }
+
+  body[data-fantasy-view] #playerModalBody,
+  body[data-fantasy-view="overview"] .overviewGrid{
+    grid-template-columns:1fr;
+  }
+
+  .modalVisualSticky{
+    position:relative;
+  }
+}
+
+@media (max-width:700px){
+  body[data-fantasy-view] .hero h1{
+    font-size:25px;
+  }
+
+  body[data-fantasy-view] .heroStats,
+  body[data-fantasy-view="team"] #squadGrid,
+  body[data-fantasy-view="overview"] .pulseGrid,
+  body[data-fantasy-view="overview"] .overviewList{
+    grid-template-columns:1fr;
+  }
+
+  body[data-fantasy-view] .heroStat{
+    flex-basis:100%;
+  }
+
+  .managerPanelTabs,
+  .playerModalTabs{
+    width:100%;
+  }
+
+  .managerPanelTabs button,
+  .playerModalTabs button{
+    flex:1 1 0;
   }
 }
 

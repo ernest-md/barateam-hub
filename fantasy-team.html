@@ -267,7 +267,7 @@
     @media (max-width:560px){.wrap{padding:10px}.hero{padding:16px 14px;border-radius:20px}.card{border-radius:18px;padding:12px}.heroStats,.factGrid,.playerGrid{grid-template-columns:1fr 1fr}.actionRow .btn{flex:1 1 calc(50% - 4px)}.loadingCard{padding:14px 16px;border-radius:18px}.overlayNamePlain{font-size:15px}.overlaySubtitle{font-size:9px}.modalCard{padding:14px}.modalTitle{font-size:22px}.standingRow{grid-template-columns:1fr}.standingRoster{grid-template-columns:repeat(3,minmax(0,1fr))}#squadGrid{grid-template-columns:1fr}}
     @media (max-width:420px){.playerGrid{grid-template-columns:1fr}}
   </style>
-  <link rel="stylesheet" href="fantasy-polish.css?v=20260507b" />
+  <link rel="stylesheet" href="fantasy-polish.css?v=20260507c" />
 </head>
 <body data-requires-fantasy="1" data-fantasy-view="team">
   <div class="topbar">
@@ -403,40 +403,37 @@
           </div>
           <div class="helper" id="authHint">Necesitas sesion para crear tu equipo, recibir tu starter pack y entrar al mercado.</div>
         </section>
-        <section class="card teamScoutingFull">
-          <div class="sectionHead">
-            <div>
-                <h2>Radar de fichajes</h2>
-                <p>Objetivos que mejor encajan por forma, valor y posibilidad real de mejorar tu plantilla.</p>
-            </div>
-          </div>
-          <div id="scoutingPanel"><div class="empty">Cargando objetivos de mercado...</div></div>
-        </section>
       </div>
 
       <div class="stack">
-        <section class="card">
-          <div class="sectionHead">
+        <section class="card managerConsoleCard">
+          <div class="sectionHead managerConsoleHead">
             <div>
-                <h2>Tu evolucion como manager</h2>
-                <p>Lee como se va construyendo tu puntuacion jornada a jornada y cuanto te ha aportado cada cierre semanal.</p>
+                <h2>Consola del manager</h2>
+                <p>Evolucion, desglose y radar en el mismo panel para decidir el siguiente movimiento.</p>
+            </div>
+            <div class="managerPanelTabs" data-team-panel-tabs>
+              <button type="button" data-team-panel-tab="trend">Evolucion</button>
+              <button type="button" data-team-panel-tab="breakdown">Desglose</button>
+              <button type="button" data-team-panel-tab="radar">Radar</button>
             </div>
           </div>
-          <div id="managerTrendPanel"><div class="empty">Cargando evolucion del manager...</div></div>
-        </section>
-        <section class="card">
-          <div class="sectionHead">
-            <div>
-                <h2>Lectura de la jornada</h2>
-                <p>De donde salen tus puntos ahora mismo y que piezas estan tirando del equipo.</p>
+          <div class="managerPanelViews">
+            <div class="teamPanelView active" data-team-panel-view="trend">
+              <div id="managerTrendPanel"><div class="empty">Cargando evolucion del manager...</div></div>
+            </div>
+            <div class="teamPanelView" data-team-panel-view="breakdown">
+              <div id="teamBreakdownPanel"><div class="empty">Cargando desglose fantasy...</div></div>
+            </div>
+            <div class="teamPanelView" data-team-panel-view="radar">
+              <div id="scoutingPanel"><div class="empty">Cargando objetivos de mercado...</div></div>
             </div>
           </div>
-          <div id="teamBreakdownPanel"><div class="empty">Cargando desglose fantasy...</div></div>
         </section>
       </div>
     </div>
   </div>
   <script src="fantasy-player-portraits.js?v=20260504a"></script>
-  <script src="fantasy.js?v=20260507b"></script>
+  <script src="fantasy.js?v=20260507c"></script>
 </body>
 </html>
