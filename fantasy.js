@@ -3342,7 +3342,8 @@
       closeTeamModal();
       return;
     }
-    const slots = Array.from({ length: config().squadSize }, (_, index) => team.players[index] || null);
+    const squadSize = config().squadSize;
+    const slots = Array.from({ length: squadSize }, (_, index) => team.players[index] || null);
     const closedRound = latestClosedRound();
     const contributionRows = closedRound
       ? contributionRowsForTeamRound(team.id, closedRound.round_key, team.players || [])
@@ -3351,44 +3352,61 @@
     const clauseValue = contributionRows.reduce((sum, row) => sum + Number(row.clause || 0), 0);
     const avgRank = contributionRows.length ? Math.round(contributionRows.reduce((sum, row) => sum + Number(row.rank || 0), 0) / contributionRows.length) : 0;
     const bestAsset = contributionRows.slice().sort((a, b) => b.price - a.price || collator.compare(a.name, b.name))[0] || null;
+    const filledCount = slots.filter(Boolean).length;
+    const sourceTeam = state.seasonTeams.find((item) => String(item.id || '') === String(team.id || '')) || {};
+    const captainSlug = String(sourceTeam.captain_player_slug || '');
+    const captain = contributionRows.find((row) => row.isCaptain || String(row.slug || '') === captainSlug) || null;
+    const topContributor = contributionRows[0] || null;
+    const lowClause = contributionRows.filter((row) => Number(row.clause || 0) > 0).slice().sort((a, b) => Number(a.clause || 0) - Number(b.clause || 0) || collator.compare(a.name, b.name))[0] || null;
     const roster = slots.map((entry) => {
       if (!entry){
-        return `<div class="standingRosterCard empty" aria-hidden="true"><div class="standingRosterVisual empty"></div><span class="standingRosterName">Hueco libre</span></div>`;
+        return `<div class="teamModalPlayerChip empty" aria-hidden="true"><span class="teamModalPlayerAvatar empty"></span><span class="teamModalPlayerCopy"><strong>Hueco libre</strong><small>Sin jugador</small></span></div>`;
       }
       const portrait = playerPortraitUrl(entry.player);
       const isTemporary = String(entry.snapshot_source || '').toLowerCase() === 'replacement';
-      return `<button class="standingRosterCard ${frameClass(entry.player.tier)} ${isTemporary ? 'temporary' : ''}" type="button" data-open-player="${escapeAttr(entry.player_slug || '')}" data-player-source="market" title="Ver ficha de ${escapeAttr(entry.player.name || entry.player_slug || 'Jugador')}">${isTemporary ? '<span class="temporaryBadge">Temporal</span>' : ''}<div class="standingRosterVisual">${portrait ? `<img src="${escapeAttr(portrait)}" alt="${escapeAttr(entry.player.name || 'Jugador')}" loading="lazy" decoding="async" />` : ''}<div class="standingRosterShade"></div></div><span class="standingRosterName">${escapeHtml(entry.player.name || entry.player_slug || 'Jugador')}</span></button>`;
+      return `<button class="teamModalPlayerChip ${frameClass(entry.player.tier)} ${isTemporary ? 'temporary' : ''}" type="button" data-open-player="${escapeAttr(entry.player_slug || '')}" data-player-source="market" title="Ver ficha de ${escapeAttr(entry.player.name || entry.player_slug || 'Jugador')}"><span class="teamModalPlayerAvatar">${portrait ? `<img src="${escapeAttr(portrait)}" alt="${escapeAttr(entry.player.name || 'Jugador')}" loading="lazy" decoding="async" />` : ''}</span><span class="teamModalPlayerCopy"><strong>${escapeHtml(entry.player.name || entry.player_slug || 'Jugador')}</strong><small>#${intFmt.format(entry.player.rank || 0)} · ${escapeHtml(tierLabel(entry.player.tier))}${isTemporary ? ' · Temporal' : ''}</small></span></button>`;
     }).join('');
-    body.innerHTML = `<div class="teamModalShell">
-      <div class="teamModalHero">
-        <div>
+    const impactRows = contributionRows.length
+      ? `<div class="teamModalImpactList">${contributionRows.map((row) => {
+        const portrait = playerPortraitUrl(row.player);
+        const weeklyLabel = Number.isFinite(Number(row.weeklyPoints)) && row.weeklyPoints !== 0 ? formatPointsLabel(row.weeklyPoints) : 'Sin puntos';
+        const deltaLabel = row.delta > 0 ? `+${formatPoints(row.delta)} vs previo` : row.delta < 0 ? `-${formatPoints(Math.abs(row.delta))} vs previo` : 'Mismo ritmo';
+        const deltaTone = row.delta > 0 ? 'good' : row.delta < 0 ? 'bad' : 'flat';
+        const relativePct = Math.max(8, Math.round((row.share || 0) * 100));
+        return `<button class="teamModalImpactRow ${frameClass(row.tier)}" type="button" data-open-player="${escapeAttr(row.slug || '')}" data-player-source="market"><span class="teamModalImpactAvatar">${portrait ? `<img src="${escapeAttr(portrait)}" alt="${escapeAttr(row.name)}" loading="lazy" decoding="async" />` : ''}</span><span class="teamModalImpactCopy"><strong>${escapeHtml(row.name)}</strong><small>#${intFmt.format(row.rank || 0)} · ${escapeHtml(tierLabel(row.tier))}${row.isCaptain ? ' · Capitan' : ''}${row.isReplacement ? ` · Temporal x${formatPoints(row.pointsMultiplier || 0.5)}` : ''}</small><span class="teamModalImpactRail"><span style="width:${relativePct}%"></span></span></span><span class="teamModalImpactScore"><strong>${weeklyLabel}</strong><small class="${deltaTone}">${escapeHtml(deltaLabel)}</small></span></button>`;
+      }).join('')}</div>`
+      : '<div class="empty teamModalEmpty">Aun no hay datos suficientes para ordenar el impacto del roster.</div>';
+    body.innerHTML = `<div class="teamModalShell teamModalShellCompact">
+      <div class="teamModalHero teamModalHeroCompact">
+        <div class="teamModalTitleBlock">
           <div class="modalEyebrow">Equipo fantasy</div>
           <h3 class="modalTitle">${escapeHtml(team.teamName)}</h3>
           <div class="modalSubtitle">${escapeHtml(team.coachName || 'Manager')} · ${formatPointsLabel(team.generalPoints)} acumulados</div>
         </div>
-        <div class="pillRow">
-          <span class="pill strong">${renderCoinInline(team.rewardCoins || 0, false)} esta semana</span>
-          <span class="pill">Jornada ${formatPointsLabel(team.weeklyPoints)}</span>
+        <div class="teamModalScoreStrip" aria-label="Resumen semanal del equipo">
+          <div class="teamModalScoreItem"><small>Semana</small><strong>#${intFmt.format(team.displayRank || team.rank || 0)}</strong></div>
+          <div class="teamModalScoreItem"><small>Jornada</small><strong>${formatPointsLabel(team.weeklyPoints)}</strong></div>
+          <div class="teamModalScoreItem"><small>Premio</small><strong>${renderCoinInline(team.rewardCoins || 0, false)}</strong></div>
+          <div class="teamModalScoreItem"><small>Roster</small><strong>${filledCount}/${squadSize}</strong></div>
         </div>
       </div>
-      <div class="modalStats teamModalStatsWide">
-        <div class="modalStat"><span>Puesto semanal</span><strong>#${intFmt.format(team.displayRank || team.rank || 0)}</strong></div>
-        <div class="modalStat"><span>Valor del roster</span><strong>${renderCoinInline(marketValue, false)}</strong></div>
-        <div class="modalStat"><span>Clausulas vivas</span><strong>${renderCoinInline(clauseValue, false)}</strong></div>
-        <div class="modalStat"><span>Ranking medio</span><strong>#${intFmt.format(avgRank || 0)}</strong></div>
-        <div class="modalStat"><span>Mejor activo</span><strong>${escapeHtml(bestAsset?.name || 'Sin datos')}</strong></div>
-        <div class="modalStat"><span>Pieza mas caliente</span><strong>${escapeHtml(contributionRows[0]?.name || 'Sin datos')}</strong></div>
+      <div class="teamModalIntelGrid">
+        <article class="teamModalIntelCard"><small>Caja disponible</small><strong>${renderCoinInline(team.coins || 0, false)}</strong><span>Margen para mercado y clausulas</span></article>
+        <article class="teamModalIntelCard"><small>Valor roster</small><strong>${renderCoinInline(marketValue, false)}</strong><span>${escapeHtml(bestAsset?.name || 'Sin activo claro')} lidera el valor</span></article>
+        <article class="teamModalIntelCard"><small>Clausulas vivas</small><strong>${renderCoinInline(clauseValue, false)}</strong><span>Total a pagar por toda la plantilla</span></article>
+        <article class="teamModalIntelCard"><small>Top cierre</small><strong>${escapeHtml(topContributor?.name || 'Sin datos')}</strong><span>${topContributor ? formatPointsLabel(topContributor.weeklyPoints || 0) : 'Sin jornada cerrada'}</span></article>
+        <article class="teamModalIntelCard"><small>Capitan</small><strong>${escapeHtml(captain?.name || 'Sin capitan')}</strong><span>${captain ? `${formatPointsLabel(captain.weeklyPoints || 0)} en este cierre` : 'No detectado en snapshot'}</span></article>
+        <article class="teamModalIntelCard"><small>Clausula mas baja</small><strong>${escapeHtml(lowClause?.name || 'Sin datos')}</strong><span>${lowClause ? renderCoinInline(lowClause.clause || 0, false) : 'Sin clausulas activas'}</span></article>
       </div>
-      <div class="teamModalSplit">
-        <div class="historyWrap">
+      <div class="teamModalCompactGrid">
+        <section class="teamModalBlock">
           <div class="historyTitle">Plantilla actual</div>
-          <div class="standingRoster modalTeamRoster">${roster}</div>
-          <div class="helper">Pulsa una ficha para ver su rendimiento, sus copias en liga y, si procede, entrar por clausula.</div>
-        </div>
-        <div class="historyWrap">
+          <div class="teamModalPlayerList">${roster}</div>
+        </section>
+        <section class="teamModalBlock">
           <div class="historyTitle">${closedRound ? `Impacto del cierre ${escapeHtml(closedRound.round_label || '')}` : 'Impacto de la jornada'}</div>
-          ${renderContributionList(contributionRows, { compact: true })}
-        </div>
+          ${impactRows}
+        </section>
       </div>
     </div>`;
     wrap.classList.remove('hidden');
@@ -3818,7 +3836,7 @@
         return `<button class="standingRosterCard ${frameClass(entry.player.tier)} ${isTemporary ? 'temporary' : ''}" type="button" data-open-player="${escapeAttr(entry.player_slug || '')}" data-player-source="market" title="Ver ficha de ${escapeAttr(entry.player.name || entry.player_slug || 'Jugador')}">${isTemporary ? '<span class="temporaryBadge">Temporal</span>' : ''}<div class="standingRosterVisual">${portrait ? `<img src="${escapeAttr(portrait)}" alt="${escapeAttr(entry.player.name || 'Jugador')}" loading="lazy" decoding="async" />` : ''}<div class="standingRosterShade"></div></div><span class="standingRosterName">${escapeHtml(entry.player.name || entry.player_slug || 'Jugador')}</span></button>`;
       }).join('');
       const secondary = PAGE_VIEW === 'overview'
-        ? `${formatPointsLabel(row.weeklyPoints)} en la ultima jornada`
+        ? `Ultima ${formatPointsLabel(row.weeklyPoints)}`
         : `Jornada ${formatPointsLabel(row.weeklyPoints)}`;
       return `<article class="standingRow ${mine ? 'isMine' : ''}" data-open-team="${escapeAttr(row.id)}">
         <div><span class="rankBadge ${rankClass}">#${row.displayRank}</span></div>
