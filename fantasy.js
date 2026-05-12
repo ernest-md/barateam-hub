@@ -1586,19 +1586,30 @@
       player.isTop10 = index < 10;
     });
 
+    const latestScoredEventPos = (() => {
+      for (let index = eventColumns.length - 1; index >= 0; index -= 1){
+        const event = eventColumns[index];
+        const hasScores = sourceRows.some((row) => {
+          const value = getNumber(row[event.index]);
+          return Number.isFinite(value) && value > 0;
+        });
+        if (hasScores) return index;
+      }
+      return eventColumns.length ? eventColumns.length - 1 : -1;
+    })();
+
     let currentRound = null;
-    if (eventColumns.length){
-      const roundIndex = eventColumns.length - 1;
-      const event = eventColumns[roundIndex];
-      currentRound = { key: `${CURRENT_SEASON}:${event.key}`, label: event.label || `T${roundIndex + 1}`, order: event.order };
+    if (latestScoredEventPos >= 0){
+      const event = eventColumns[latestScoredEventPos];
+      currentRound = { key: `${CURRENT_SEASON}:${event.key}`, label: event.label || `T${latestScoredEventPos + 1}`, order: event.order };
       const ranking = players.map((player) => ({
         slug: player.slug,
-        raw: Number.isFinite(player.points[roundIndex]) ? player.points[roundIndex] : 0
+        raw: Number.isFinite(player.points[latestScoredEventPos]) ? player.points[latestScoredEventPos] : 0
       })).sort((a, b) => b.raw - a.raw || collator.compare(a.slug, b.slug));
       const roundRankBySlug = new Map(ranking.map((entry, index) => [entry.slug, index + 1]));
       players.forEach((player) => {
-        const rawPoints = player.points[roundIndex];
-        const result = parseTournamentResult(rawPoints, eventMeta[roundIndex]);
+        const rawPoints = player.points[latestScoredEventPos];
+        const result = parseTournamentResult(rawPoints, eventMeta[latestScoredEventPos]);
         player.currentRawPoints = result.raw;
         player.currentWon = result.won;
         player.currentFantasyPoints = result.fantasyPoints;
@@ -2264,8 +2275,12 @@
   }
 
   function closedRounds(){
+    const currentOrder = Number(state.currentRound?.order || 0);
     return state.seasonRounds
-      .filter((row) => row?.rewards_applied === true)
+      .filter((row) =>
+        row?.rewards_applied === true
+        && (!currentOrder || Number(row.round_order || 0) <= currentOrder)
+      )
       .slice()
       .sort((a, b) => Number(a.round_order || 0) - Number(b.round_order || 0));
   }
@@ -2354,13 +2369,19 @@
 
   function latestFantasyEntry(player){
     const history = Array.isArray(player?.history) ? player.history : [];
-    const rows = history.filter((entry) => entry?.counts_for_fantasy === true);
+    const rows = history.filter((entry) =>
+      entry?.counts_for_fantasy === true
+      && Number.isFinite(Number(entry?.fantasy_points))
+    );
     return rows.length ? rows[rows.length - 1] : null;
   }
 
   function previousFantasyEntry(player){
     const history = Array.isArray(player?.history) ? player.history : [];
-    const rows = history.filter((entry) => entry?.counts_for_fantasy === true);
+    const rows = history.filter((entry) =>
+      entry?.counts_for_fantasy === true
+      && Number.isFinite(Number(entry?.fantasy_points))
+    );
     return rows.length > 1 ? rows[rows.length - 2] : null;
   }
 
