@@ -3558,11 +3558,6 @@
             <p>Si un jugador ya esta en equipos rivales, puedes pagar la clausula de una copia concreta. La clausula cuesta mas que su precio normal, ahora x1,5 por defecto. El vendedor recibe esas berries y tu nuevo jugador queda protegido 24 horas.</p>
           </article>
           <article class="fantasyInfoCard">
-            <span>Puntuacion</span>
-            <strong>Resultados Vade Back Fight</strong>
-            ${renderFantasyScoringTable()}
-          </article>
-          <article class="fantasyInfoCard">
             <span>Mercado</span>
             <strong>Cierre semanal</strong>
             <p>El mercado se cierra los viernes a las 23:59. En ese momento se captura una foto de todas las plantillas. Esa foto es la que puntua, aunque luego fiches o pierdas jugadores.</p>
@@ -3606,6 +3601,14 @@
             <p>En cada cierre, tu equipo gana berries multiplicando sus puntos fantasy de jornada por ${escapeHtml(formatCoins(WEEKLY_REWARD_PER_POINT))}. Hay un minimo garantizado de ${escapeHtml(formatCoins(MIN_WEEKLY_REWARD))}.</p>
           </div>
           <div class="fantasyInfoFormula"><strong>Puntos fantasy de jornada</strong><span>x</span><strong>${escapeHtml(formatCoins(WEEKLY_REWARD_PER_POINT))}</strong><span>=</span><strong>Berries ganadas</strong></div>
+        </section>
+        <section class="fantasyInfoSection">
+          <div class="fantasyInfoSectionHead">
+            <span>Puntuacion</span>
+            <strong>Resultados Vade Back Fight</strong>
+            <p>Estos son los puntos fantasy que genera cada resultado detectado en los torneos VBF.</p>
+          </div>
+          ${renderFantasyScoringTable()}
         </section>
       </div>`;
   }
