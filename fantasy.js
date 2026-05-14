@@ -3518,6 +3518,17 @@
     }).join('')}</tbody></table>`;
   }
 
+  function renderFantasyScoringTable(){
+    const rows = [
+      ['Victoria', '+3 pts'],
+      ['Derrota', '-1 pt'],
+      ['Ganar torneo', '+5 pts'],
+      ['4 victorias sin ganar', '+2 pts'],
+      ['No participa', '0 pts']
+    ];
+    return `<table class="fantasyInfoTable compact scoring"><thead><tr><th>Accion</th><th>Puntos</th></tr></thead><tbody>${rows.map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`).join('')}</tbody></table>`;
+  }
+
   function renderFantasyInfoHtml(){
     return `
       <div class="fantasyInfoPanel">
@@ -3549,7 +3560,7 @@
           <article class="fantasyInfoCard">
             <span>Puntuacion</span>
             <strong>Resultados Vade Back Fight</strong>
-            <p>Cuenta el rendimiento detectado en los torneos fantasy del Excel VBF. Cada victoria suma 3, cada derrota resta 1, ganar el torneo da +5 y hacer 4 victorias sin ganar da +2. Si un jugador no juega esa semana, no resta: simplemente suma 0.</p>
+            ${renderFantasyScoringTable()}
           </article>
           <article class="fantasyInfoCard">
             <span>Mercado</span>
@@ -3557,24 +3568,9 @@
             <p>El mercado se cierra los viernes a las 23:59. En ese momento se captura una foto de todas las plantillas. Esa foto es la que puntua, aunque luego fiches o pierdas jugadores.</p>
           </article>
           <article class="fantasyInfoCard">
-            <span>Precio de fichas</span>
-            <strong>Tier + resultados</strong>
-            <p>Cada ficha parte de un precio base por tier. Despues sube o baja segun el resultado y la exigencia de su rango: a los top se les pide mas y los Piratilla tienen mas premio por sorprender.</p>
-          </article>
-          <article class="fantasyInfoCard">
-            <span>Variacion</span>
-            <strong>Jugar importa</strong>
-            <p>El precio se recalcula con el historico fantasy. No jugar no corta rachas ni penaliza: solo las jornadas jugadas pueden activar bonus por remontar una mala racha o castigo por caer tras venir fuerte.</p>
-          </article>
-          <article class="fantasyInfoCard">
             <span>Jugadores de oficio</span>
-            <strong>Parche si falta plantilla</strong>
-            <p>Si al cerrar mercado un equipo no llega a 3 jugadores, el sistema completa la foto de esa jornada con jugadores de oficio. En la medida de lo posible, se priorizan jugadores que ya estuvieron en la jornada anterior.</p>
-          </article>
-          <article class="fantasyInfoCard">
-            <span>Impacto de oficio</span>
-            <strong>Puntuan a medio gas</strong>
-            <p>Un jugador de oficio puntua con multiplicador reducido, ahora x0,5. No cuenta como capitan, no tiene clausula real para tu plantilla y desaparece despues del calculo de la jornada.</p>
+            <strong>Jugadores de oficio</strong>
+            <p>Si al cerrar mercado un equipo no llega a 3 jugadores, el sistema completa la foto de esa jornada con jugadores de oficio. En la medida de lo posible, se priorizan jugadores que ya estuvieron en la jornada anterior. No pueden ser capitanes y puntuan a la mitad.</p>
           </article>
         </div>
         <section class="fantasyInfoFlow">
