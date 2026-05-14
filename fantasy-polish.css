@@ -2902,16 +2902,16 @@ body[data-fantasy-view] .chartPointGroup:focus-within .chartTooltip{
 
 body[data-fantasy-view] .chartTooltipBox{
   display:grid;
-  gap:5px;
+  gap:6px;
   width:100%;
-  padding:9px 10px;
+  padding:10px 11px;
   border:1px solid rgba(15,23,42,.16);
   border-radius:8px;
   background:rgba(255,255,255,.98);
   box-shadow:0 18px 42px rgba(15,23,42,.22);
   color:#0f172a;
-  font-size:11px;
-  line-height:1.15;
+  font-size:12px;
+  line-height:1.18;
 }
 
 body[data-fantasy-view] .chartTooltipBox > div{
@@ -2939,7 +2939,7 @@ body[data-fantasy-view] .chartTooltipHead{
 
 body[data-fantasy-view] .chartTooltipHead span{
   color:#0f172a;
-  font-size:12px;
+  font-size:13px;
 }
 
 body[data-fantasy-view] .chartTooltipHead strong{

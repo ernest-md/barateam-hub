@@ -1259,8 +1259,8 @@
       const x = xFor(index);
       const y = yFor(item.fantasy);
       const breakdown = fantasyPointBreakdown(item);
-      const tooltipWidth = 190;
-      const tooltipHeight = item.won ? 132 : (breakdown.fourWinsBonus ? 132 : 108);
+      const tooltipWidth = 214;
+      const tooltipHeight = item.won ? 148 : (breakdown.fourWinsBonus ? 148 : 122);
       const tooltipX = Math.max(2, Math.min(width - tooltipWidth - 2, x - (tooltipWidth / 2)));
       const tooltipY = Math.max(2, y - tooltipHeight - 16);
       const radius = item.countsForFantasy ? 8.5 : 6;
@@ -1329,8 +1329,8 @@
     const tooltipsSvg = series.rows.map((item, index) => {
       const x = xFor(index);
       const y = yFor(item.value);
-      const tooltipWidth = 210;
-      const tooltipHeight = 94;
+      const tooltipWidth = 228;
+      const tooltipHeight = 104;
       const tooltipX = Math.max(2, Math.min(width - tooltipWidth - 2, x - (tooltipWidth / 2)));
       const tooltipY = Math.max(2, y - tooltipHeight - 16);
       const sourceLabel = item.estimated ? 'Estimado' : 'Directo';
