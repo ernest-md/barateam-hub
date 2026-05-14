@@ -3595,6 +3595,10 @@ body[data-fantasy-view] .modalVisual > .watchButton{
   line-height:1.45;
 }
 
+.fantasyInfoCard .fantasyInfoTable{
+  margin-top:2px;
+}
+
 .fantasyInfoFlow{
   display:grid;
   gap:8px;
