@@ -3472,6 +3472,52 @@
     renderMarketPanelModal();
   }
 
+  function signedNumberLabel(value){
+    const number = Math.round(Number(value || 0));
+    if (number === 0) return '0';
+    return `${number > 0 ? '+' : '-'}${intFmt.format(Math.abs(number))}`;
+  }
+
+  function renderFantasyBasePriceTable(){
+    const rows = [
+      ['Pirate King', TIER_BASE_PRICES['pirate king']],
+      ['Yonkou', TIER_BASE_PRICES.yonkou],
+      ['Shichibukai', TIER_BASE_PRICES.shichibukai],
+      ['Supernova', TIER_BASE_PRICES.supernova],
+      ['Piratilla', TIER_BASE_PRICES.piratilla]
+    ];
+    return `<table class="fantasyInfoTable compact"><thead><tr><th>Rango</th><th>Precio base</th></tr></thead><tbody>${rows.map(([tier, price]) => `<tr><td>${escapeHtml(tier)}</td><td>${escapeHtml(formatCoins(price))}</td></tr>`).join('')}</tbody></table>`;
+  }
+
+  function renderFantasyPriceModifierTable(){
+    const tiers = [
+      ['Pirate King', RESULT_PRICE_MODIFIERS_BY_TIER['pirate king']],
+      ['Yonkou', RESULT_PRICE_MODIFIERS_BY_TIER.yonkou],
+      ['Shichibukai', RESULT_PRICE_MODIFIERS_BY_TIER.shichibukai],
+      ['Supernova', RESULT_PRICE_MODIFIERS_BY_TIER.supernova],
+      ['Piratilla', RESULT_PRICE_MODIFIERS_BY_TIER.piratilla]
+    ];
+    const results = ['5-0', '4-1', '3-2', '2-3', '1-4', '0-5'];
+    return `<table class="fantasyInfoTable priceMatrix"><thead><tr><th>Rango</th>${results.map((result) => `<th>${escapeHtml(result)}</th>`).join('')}</tr></thead><tbody>${tiers.map(([tier, table]) => `<tr><td>${escapeHtml(tier)}</td>${results.map((result) => {
+      const value = Number(table[result] || 0);
+      const tone = value > 0 ? 'good' : value < 0 ? 'bad' : '';
+      return `<td class="${tone}">${escapeHtml(signedNumberLabel(value))}</td>`;
+    }).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+
+  function renderFantasyStreakRules(){
+    const rows = [
+      ['2 malas + buena jornada', STREAK_PRICE_ADJUSTMENTS.comeback2],
+      ['3+ malas + buena jornada', STREAK_PRICE_ADJUSTMENTS.comeback3],
+      ['2 buenas + mala jornada', STREAK_PRICE_ADJUSTMENTS.comedown2],
+      ['3+ buenas + mala jornada', STREAK_PRICE_ADJUSTMENTS.comedown3]
+    ];
+    return `<table class="fantasyInfoTable compact"><thead><tr><th>Racha previa</th><th>Ajuste</th></tr></thead><tbody>${rows.map(([label, value]) => {
+      const tone = Number(value) > 0 ? 'good' : 'bad';
+      return `<tr><td>${escapeHtml(label)}</td><td class="${tone}">${escapeHtml(signedNumberLabel(value))}</td></tr>`;
+    }).join('')}</tbody></table>`;
+  }
+
   function renderFantasyInfoHtml(){
     return `
       <div class="fantasyInfoPanel">
@@ -3536,6 +3582,34 @@
           <div><span>2</span><p>Revisa el mercado, ficha desde el pool o prueba clausulazos sobre equipos rivales.</p></div>
           <div><span>3</span><p>El viernes a las 23:59 se cierra el mercado con el equipo que tengas en ese momento.</p></div>
           <div><span>4</span><p>Cuando se actualice VDBF, se reparten puntos, berries y se vuelve a abrir el mercado manualmente.</p></div>
+        </section>
+        <section class="fantasyInfoSection">
+          <div class="fantasyInfoSectionHead">
+            <span>Precios</span>
+            <strong>Como funciona el precio de los jugadores</strong>
+            <p>El precio parte del rango actual del jugador y despues se mueve por resultados fantasy. A los rangos altos se les exige mas; los rangos bajos reciben mas premio por resultados buenos.</p>
+          </div>
+          <div class="fantasyInfoTables">
+            ${renderFantasyBasePriceTable()}
+            ${renderFantasyPriceModifierTable()}
+          </div>
+          <div class="fantasyInfoNote">Las variaciones se aplican solo en jornadas fantasy jugadas. Si un jugador no participa, no sube, no baja y no corta rachas.</div>
+        </section>
+        <section class="fantasyInfoSection">
+          <div class="fantasyInfoSectionHead">
+            <span>Rachas</span>
+            <strong>Bonus y castigos de tendencia</strong>
+            <p>El sistema mira las jornadas jugadas anteriores. Una ausencia queda invisible para la racha: si gana dos sabados, no va al siguiente y luego vuelve a ganar, sigue contando como racha positiva.</p>
+          </div>
+          ${renderFantasyStreakRules()}
+        </section>
+        <section class="fantasyInfoSection">
+          <div class="fantasyInfoSectionHead">
+            <span>Berries</span>
+            <strong>Como ganar berries por jornada</strong>
+            <p>En cada cierre, tu equipo gana berries multiplicando sus puntos fantasy de jornada por ${escapeHtml(formatCoins(WEEKLY_REWARD_PER_POINT))}. Hay un minimo garantizado de ${escapeHtml(formatCoins(MIN_WEEKLY_REWARD))}.</p>
+          </div>
+          <div class="fantasyInfoFormula"><strong>Puntos fantasy de jornada</strong><span>x</span><strong>${escapeHtml(formatCoins(WEEKLY_REWARD_PER_POINT))}</strong><span>=</span><strong>Berries ganadas</strong></div>
         </section>
       </div>`;
   }
