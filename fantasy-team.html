@@ -362,6 +362,7 @@
           <p>Revisa tu plantilla, el valor bloqueado en clausulas y el rendimiento que esta explicando cada cierre fantasy.</p>
         </div>
         <div class="pillRow">
+          <button class="btn btnInfo" id="openFantasyInfoButton" type="button">INFORMACI&Oacute;N</button>
           <a class="btn btnGhost" href="fantasy-market.html">Ir al mercado</a>
           <button class="btn btnPrimary" id="reloadPlayersButton" type="button">Refrescar datos</button>
         </div>
@@ -431,6 +432,20 @@
           </div>
         </section>
       </div>
+    </div>
+  </div>
+  <div class="modalWrap hidden" id="marketPanelModalWrap" aria-hidden="true">
+    <div class="modalBackdrop" data-close-market-panel-modal="1"></div>
+    <div class="modalCard marketPanelModalCard">
+      <button class="btn modalClose" type="button" data-close-market-panel-modal="1" aria-label="Cerrar panel">&#10005;</button>
+      <div class="marketPanelModalHead">
+        <div>
+          <div class="modalEyebrow">VadeFantasy OP15</div>
+          <h3 class="modalTitle" id="marketPanelModalTitle">Panel fantasy</h3>
+          <p id="marketPanelModalSubtitle"></p>
+        </div>
+      </div>
+      <div class="marketPanelModalBody" id="marketPanelModalBody"></div>
     </div>
   </div>
   <script src="fantasy-player-portraits.js?v=20260504a"></script>

@@ -31,7 +31,7 @@
   const PORTRAITS = window.BarateamFantasyPortraits || {};
   const PORTRAIT_PLACEHOLDER = String(window.BarateamFantasyPortraitPlaceholder || 'fantasy_placeholder.jpeg').trim();
   const COIN_ICON = 'berries.png';
-  const PLAYER_POOL_CACHE_VERSION = '20260512a';
+  const PLAYER_POOL_CACHE_VERSION = '20260514b';
   const PLAYER_POOL_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
   const PLAYER_POOL_BACKGROUND_REFRESH_MS = 45 * 60 * 1000;
   const TEAM_ROUNDS_SELECT = 'season,round_key,round_label,round_order,team_id,weekly_points,reward_coins,transfers_used';
@@ -56,13 +56,53 @@
     supernova: 40000,
     piratilla: 20000
   };
-  const RESULT_PRICE_MODIFIERS = {
-    '0-5': -10000,
-    '1-4': -7500,
-    '2-3': -2500,
-    '3-2': 2500,
-    '4-1': 7500,
-    '5-0': 10000
+  const RESULT_PRICE_MODIFIERS_BY_TIER = {
+    'pirate king': {
+      '0-5': -10000,
+      '1-4': -6000,
+      '2-3': -3000,
+      '3-2': 1000,
+      '4-1': 5500,
+      '5-0': 10000
+    },
+    yonkou: {
+      '0-5': -10000,
+      '1-4': -6000,
+      '2-3': -3000,
+      '3-2': 1000,
+      '4-1': 5500,
+      '5-0': 10000
+    },
+    shichibukai: {
+      '0-5': -7000,
+      '1-4': -3000,
+      '2-3': -1500,
+      '3-2': 3000,
+      '4-1': 7500,
+      '5-0': 12000
+    },
+    supernova: {
+      '0-5': -5000,
+      '1-4': -2500,
+      '2-3': 1000,
+      '3-2': 5000,
+      '4-1': 9500,
+      '5-0': 14000
+    },
+    piratilla: {
+      '0-5': -3000,
+      '1-4': -1000,
+      '2-3': 1000,
+      '3-2': 6000,
+      '4-1': 11500,
+      '5-0': 18000
+    }
+  };
+  const STREAK_PRICE_ADJUSTMENTS = {
+    comeback2: 1000,
+    comeback3: 2000,
+    comedown2: -1000,
+    comedown3: -2000
   };
   let authRpcQueue = Promise.resolve();
   let actionRpcClient = null;
@@ -1010,6 +1050,63 @@
     return TIER_BASE_PRICES[normalizeTierKey(tier)] || TIER_BASE_PRICES.piratilla;
   }
 
+  function resultLabelForWins(wins){
+    const count = clamp(Math.round(Number(wins || 0)), 0, 5);
+    if (count >= 5) return '5-0';
+    if (count === 4) return '4-1';
+    if (count === 3) return '3-2';
+    if (count === 2) return '2-3';
+    if (count === 1) return '1-4';
+    return '0-5';
+  }
+
+  function resultPriceModifier(tier, resultLabel){
+    const key = normalizeTierKey(tier);
+    const table = RESULT_PRICE_MODIFIERS_BY_TIER[key] || RESULT_PRICE_MODIFIERS_BY_TIER.piratilla;
+    return Number(table[String(resultLabel || '').trim()] || 0);
+  }
+
+  function entryWasPlayed(entry){
+    return Number(entry?.raw_points || 0) > 0;
+  }
+
+  function playedFantasyEntries(player){
+    const history = Array.isArray(player?.history) ? player.history : [];
+    return history.filter((entry) => entry?.counts_for_fantasy === true && entryWasPlayed(entry));
+  }
+
+  function streakPriceAdjustment(baseModifier, hotStreak, coldStreak){
+    const modifier = Number(baseModifier || 0);
+    if (modifier > 0 && coldStreak >= 2){
+      return coldStreak >= 3 ? STREAK_PRICE_ADJUSTMENTS.comeback3 : STREAK_PRICE_ADJUSTMENTS.comeback2;
+    }
+    if (modifier < 0 && hotStreak >= 2){
+      return hotStreak >= 3 ? STREAK_PRICE_ADJUSTMENTS.comedown3 : STREAK_PRICE_ADJUSTMENTS.comedown2;
+    }
+    return 0;
+  }
+
+  function applyPriceStreakAdjustments(scoringHistory){
+    let hotStreak = 0;
+    let coldStreak = 0;
+    (Array.isArray(scoringHistory) ? scoringHistory : [])
+      .slice()
+      .sort((a, b) => Number(a.round_order || 0) - Number(b.round_order || 0))
+      .forEach((entry) => {
+        const baseModifier = Number(entry.price_modifier || 0);
+        let adjustment = 0;
+        if (entryWasPlayed(entry)){
+          adjustment = streakPriceAdjustment(baseModifier, hotStreak, coldStreak);
+          if (baseModifier > 0){ hotStreak += 1; coldStreak = 0; }
+          else if (baseModifier < 0){ coldStreak += 1; hotStreak = 0; }
+          else { hotStreak = 0; coldStreak = 0; }
+        }
+        entry.base_price_modifier = baseModifier;
+        entry.streak_modifier = adjustment;
+        entry.price_modifier = baseModifier + adjustment;
+      });
+  }
+
   function isStarterEligibleTier(tier){
     const key = normalizeTierKey(tier);
     return key !== 'pirate king' && key !== 'yonkou';
@@ -1084,20 +1181,22 @@
     }).filter((item) => item.label);
   }
 
-  function priceModifierFromFantasyEntry(entry){
+  function priceModifierFromFantasyEntry(entry, tier){
     const exact = Number(entry?.price_modifier);
     const raw = Number(entry?.raw_points);
     if (Number.isFinite(exact) && exact !== 0) return { value: exact, estimated: false };
     if (!Number.isFinite(raw) || raw <= 0) return { value: 0, estimated: false };
-    if (entry?.won === true) return { value: RESULT_PRICE_MODIFIERS['5-0'], estimated: true };
+    if (entry?.won === true) return { value: resultPriceModifier(tier, '5-0'), estimated: true };
+    const resultLabel = String(entry?.result_label || '').trim();
+    if (resultLabel) return { value: resultPriceModifier(tier, resultLabel), estimated: true };
     const fantasy = Number(entry?.fantasy_points);
     if (!Number.isFinite(fantasy)) return { value: 0, estimated: false };
-    if (fantasy >= 15) return { value: RESULT_PRICE_MODIFIERS['5-0'], estimated: true };
-    if (fantasy >= 13) return { value: RESULT_PRICE_MODIFIERS['4-1'], estimated: true };
-    if (fantasy >= 7) return { value: RESULT_PRICE_MODIFIERS['3-2'], estimated: true };
-    if (fantasy >= 3) return { value: RESULT_PRICE_MODIFIERS['2-3'], estimated: true };
-    if (fantasy >= -1) return { value: RESULT_PRICE_MODIFIERS['1-4'], estimated: true };
-    return { value: RESULT_PRICE_MODIFIERS['0-5'], estimated: true };
+    if (fantasy >= 15) return { value: resultPriceModifier(tier, '5-0'), estimated: true };
+    if (fantasy >= 13) return { value: resultPriceModifier(tier, '4-1'), estimated: true };
+    if (fantasy >= 7) return { value: resultPriceModifier(tier, '3-2'), estimated: true };
+    if (fantasy >= 3) return { value: resultPriceModifier(tier, '2-3'), estimated: true };
+    if (fantasy >= -1) return { value: resultPriceModifier(tier, '1-4'), estimated: true };
+    return { value: resultPriceModifier(tier, '0-5'), estimated: true };
   }
 
   function priceSeries(player){
@@ -1109,7 +1208,7 @@
     let hasMovement = false;
     let usesEstimated = false;
     const rows = history.map((entry, index) => {
-      const modifierMeta = priceModifierFromFantasyEntry(entry);
+      const modifierMeta = priceModifierFromFantasyEntry(entry, player?.tier);
       const modifier = Number(modifierMeta.value || 0);
       if (modifier !== 0) hasMovement = true;
       if (modifierMeta.estimated) usesEstimated = true;
@@ -1227,8 +1326,8 @@
       const x = xFor(index);
       const y = yFor(item.fantasy);
       const breakdown = fantasyPointBreakdown(item);
-      const tooltipWidth = 190;
-      const tooltipHeight = item.won ? 132 : (breakdown.fourWinsBonus ? 132 : 108);
+      const tooltipWidth = 214;
+      const tooltipHeight = item.won ? 148 : (breakdown.fourWinsBonus ? 148 : 122);
       const tooltipX = Math.max(2, Math.min(width - tooltipWidth - 2, x - (tooltipWidth / 2)));
       const tooltipY = Math.max(2, y - tooltipHeight - 16);
       const radius = item.countsForFantasy ? 8.5 : 6;
@@ -1297,8 +1396,8 @@
     const tooltipsSvg = series.rows.map((item, index) => {
       const x = xFor(index);
       const y = yFor(item.value);
-      const tooltipWidth = 210;
-      const tooltipHeight = 94;
+      const tooltipWidth = 228;
+      const tooltipHeight = 104;
       const tooltipX = Math.max(2, Math.min(width - tooltipWidth - 2, x - (tooltipWidth / 2)));
       const tooltipY = Math.max(2, y - tooltipHeight - 16);
       const sourceLabel = item.estimated ? 'Estimado' : 'Directo';
@@ -1443,7 +1542,7 @@
     };
   }
 
-  function parseTournamentResult(rawValue, meta){
+  function parseTournamentResult(rawValue, meta, tier){
     const raw = Number(rawValue || 0);
     if (!Number.isFinite(raw) || raw <= 0){
       return {
@@ -1472,16 +1571,8 @@
     const winnerBonus = won ? 5 : 0;
     const fourWinsBonus = !winnerBonus && wins >= 4 ? 2 : 0;
     let fantasyPoints = (wins * 3) - losses + winnerBonus + fourWinsBonus;
-    let priceModifier = RESULT_PRICE_MODIFIERS[resultLabel];
-    if (!Number.isFinite(priceModifier)){
-      if (wins >= 5) priceModifier = RESULT_PRICE_MODIFIERS['5-0'];
-      else if (wins === 4) priceModifier = RESULT_PRICE_MODIFIERS['4-1'];
-      else if (wins === 3) priceModifier = RESULT_PRICE_MODIFIERS['3-2'];
-      else if (wins === 2) priceModifier = RESULT_PRICE_MODIFIERS['2-3'];
-      else if (wins === 1) priceModifier = RESULT_PRICE_MODIFIERS['1-4'];
-      else priceModifier = RESULT_PRICE_MODIFIERS['0-5'];
-    }
-    if (wins >= 5 || won) priceModifier = RESULT_PRICE_MODIFIERS['5-0'];
+    const priceResultLabel = wins >= 5 || won ? '5-0' : resultLabelForWins(wins);
+    const priceModifier = resultPriceModifier(tier, priceResultLabel);
     return {
       raw: Math.round(raw),
       wins,
@@ -1600,7 +1691,7 @@
     players.forEach((player) => {
       let wins = 0;
       player.allPoints.forEach((value, eventPos) => {
-        const result = parseTournamentResult(value, allEventMeta[eventPos]);
+        const result = parseTournamentResult(value, allEventMeta[eventPos], player.tier);
         wins += Number(result.wins || 0);
       });
       player.wins = wins;
@@ -1629,7 +1720,7 @@
       const roundRankBySlug = new Map(ranking.map((entry, index) => [entry.slug, index + 1]));
       players.forEach((player) => {
         const rawPoints = player.points[roundIndex];
-        const result = parseTournamentResult(rawPoints, eventMeta[roundIndex]);
+        const result = parseTournamentResult(rawPoints, eventMeta[roundIndex], player.tier);
         player.currentRawPoints = result.raw;
         player.currentWon = result.won;
         player.currentFantasyPoints = result.fantasyPoints;
@@ -1641,7 +1732,7 @@
     players.forEach((player) => {
       player.history = allEventColumns.map((event, eventPos) => {
         const raw = getNumber(player.sheetRow?.[event.index]);
-        const result = parseTournamentResult(raw, allEventMeta[eventPos]);
+        const result = parseTournamentResult(raw, allEventMeta[eventPos], player.tier);
         return {
           round_key: `${CURRENT_SEASON}:${event.key}`,
           round_label: event.label,
@@ -1659,7 +1750,8 @@
         };
       });
       const scoringHistory = player.history.filter((entry) => entry.counts_for_fantasy === true);
-      const playedFantasy = scoringHistory.filter((entry) => Number.isFinite(Number(entry.fantasy_points))).length;
+      applyPriceStreakAdjustments(scoringHistory);
+      const playedFantasy = scoringHistory.filter((entry) => entryWasPlayed(entry)).length;
       const totalFantasy = scoringHistory.reduce((sum, entry) => sum + (Number(entry.fantasy_points || 0)), 0);
       player.fantasyPlayed = playedFantasy;
       player.totalFantasyPoints = totalFantasy;
@@ -1827,6 +1919,10 @@
         };
       });
       const scoringHistory = history.filter((entry) => entry.counts_for_fantasy === true);
+      scoringHistory.forEach((entry) => {
+        entry.price_modifier = priceModifierFromFantasyEntry(entry, row.player_tier).value;
+      });
+      applyPriceStreakAdjustments(scoringHistory);
       const played = Number(row.played || history.filter((entry) => Number(entry.raw_points || 0) > 0).length || 0);
       const totalPoints = Number(row.total_points || 0);
       const totalFantasyPoints = scoringHistory.reduce((sum, entry) => sum + Number(entry.fantasy_points || 0), 0);
@@ -1844,7 +1940,7 @@
         avgPoints: played ? totalPoints / played : 0,
         bestStreak: Number(row.best_streak || 0),
         currentStreak: Number(row.current_streak || 0),
-        fantasyPlayed: scoringHistory.filter((entry) => Number.isFinite(Number(entry.fantasy_points))).length,
+        fantasyPlayed: scoringHistory.filter((entry) => entryWasPlayed(entry)).length,
         wins: Number(row.wins || 0),
         rank: Number(row.player_rank || 9999),
         roundRank: Number(row.round_rank || 9999),
@@ -2532,14 +2628,12 @@
   }
 
   function latestFantasyEntry(player){
-    const history = Array.isArray(player?.history) ? player.history : [];
-    const rows = history.filter((entry) => entry?.counts_for_fantasy === true);
+    const rows = playedFantasyEntries(player);
     return rows.length ? rows[rows.length - 1] : null;
   }
 
   function previousFantasyEntry(player){
-    const history = Array.isArray(player?.history) ? player.history : [];
-    const rows = history.filter((entry) => entry?.counts_for_fantasy === true);
+    const rows = playedFantasyEntries(player);
     return rows.length > 1 ? rows[rows.length - 2] : null;
   }
 
@@ -2577,7 +2671,7 @@
     const currentOrder = Number(current?.round_order || roundMetaForKey(roundKey)?.round_order || 0);
     if (!currentOrder) return null;
     const rows = history
-      .filter((entry) => entry?.counts_for_fantasy === true && Number(entry?.round_order || 0) < currentOrder)
+      .filter((entry) => entry?.counts_for_fantasy === true && entryWasPlayed(entry) && Number(entry?.round_order || 0) < currentOrder)
       .sort((a, b) => Number(a.round_order || 0) - Number(b.round_order || 0));
     return rows.length ? rows[rows.length - 1] : null;
   }
@@ -2585,7 +2679,7 @@
   function fantasyTrendDeltaForRound(player, roundKey){
     const latest = historyEntryForRound(player, roundKey);
     const previous = previousFantasyEntryForRound(player, roundKey);
-    if (!latest) return 0;
+    if (!latest || !entryWasPlayed(latest)) return 0;
     if (!previous) return Number(latest.fantasy_points || 0);
     return Number(latest.fantasy_points || 0) - Number(previous.fantasy_points || 0);
   }
@@ -3422,6 +3516,63 @@
     renderMarketPanelModal();
   }
 
+  function signedNumberLabel(value){
+    const number = Math.round(Number(value || 0));
+    if (number === 0) return '0';
+    return `${number > 0 ? '+' : '-'}${intFmt.format(Math.abs(number))}`;
+  }
+
+  function renderFantasyBasePriceTable(){
+    const rows = [
+      ['Pirate King', TIER_BASE_PRICES['pirate king']],
+      ['Yonkou', TIER_BASE_PRICES.yonkou],
+      ['Shichibukai', TIER_BASE_PRICES.shichibukai],
+      ['Supernova', TIER_BASE_PRICES.supernova],
+      ['Piratilla', TIER_BASE_PRICES.piratilla]
+    ];
+    return `<table class="fantasyInfoTable compact"><thead><tr><th>Rango</th><th>Precio base</th></tr></thead><tbody>${rows.map(([tier, price]) => `<tr><td>${escapeHtml(tier)}</td><td>${escapeHtml(formatCoins(price))}</td></tr>`).join('')}</tbody></table>`;
+  }
+
+  function renderFantasyPriceModifierTable(){
+    const tiers = [
+      ['Pirate King', RESULT_PRICE_MODIFIERS_BY_TIER['pirate king']],
+      ['Yonkou', RESULT_PRICE_MODIFIERS_BY_TIER.yonkou],
+      ['Shichibukai', RESULT_PRICE_MODIFIERS_BY_TIER.shichibukai],
+      ['Supernova', RESULT_PRICE_MODIFIERS_BY_TIER.supernova],
+      ['Piratilla', RESULT_PRICE_MODIFIERS_BY_TIER.piratilla]
+    ];
+    const results = ['5-0', '4-1', '3-2', '2-3', '1-4', '0-5'];
+    return `<table class="fantasyInfoTable priceMatrix"><thead><tr><th>Rango</th>${results.map((result) => `<th>${escapeHtml(result)}</th>`).join('')}</tr></thead><tbody>${tiers.map(([tier, table]) => `<tr><td>${escapeHtml(tier)}</td>${results.map((result) => {
+      const value = Number(table[result] || 0);
+      const tone = value > 0 ? 'good' : value < 0 ? 'bad' : '';
+      return `<td class="${tone}">${escapeHtml(signedNumberLabel(value))}</td>`;
+    }).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+
+  function renderFantasyStreakRules(){
+    const rows = [
+      ['2 malas + buena jornada', STREAK_PRICE_ADJUSTMENTS.comeback2],
+      ['3+ malas + buena jornada', STREAK_PRICE_ADJUSTMENTS.comeback3],
+      ['2 buenas + mala jornada', STREAK_PRICE_ADJUSTMENTS.comedown2],
+      ['3+ buenas + mala jornada', STREAK_PRICE_ADJUSTMENTS.comedown3]
+    ];
+    return `<table class="fantasyInfoTable compact"><thead><tr><th>Racha previa</th><th>Ajuste</th></tr></thead><tbody>${rows.map(([label, value]) => {
+      const tone = Number(value) > 0 ? 'good' : 'bad';
+      return `<tr><td>${escapeHtml(label)}</td><td class="${tone}">${escapeHtml(signedNumberLabel(value))}</td></tr>`;
+    }).join('')}</tbody></table>`;
+  }
+
+  function renderFantasyScoringTable(){
+    const rows = [
+      ['Victoria', '+3 pts'],
+      ['Derrota', '-1 pt'],
+      ['Ganar torneo', '+5 pts'],
+      ['4 victorias sin ganar', '+2 pts'],
+      ['No participa', '0 pts']
+    ];
+    return `<table class="fantasyInfoTable compact scoring"><thead><tr><th>Accion</th><th>Puntos</th></tr></thead><tbody>${rows.map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`).join('')}</tbody></table>`;
+  }
+
   function renderFantasyInfoHtml(){
     return `
       <div class="fantasyInfoPanel">
@@ -3451,34 +3602,14 @@
             <p>Si un jugador ya esta en equipos rivales, puedes pagar la clausula de una copia concreta. La clausula cuesta mas que su precio normal, ahora x1,5 por defecto. El vendedor recibe esas berries y tu nuevo jugador queda protegido 24 horas.</p>
           </article>
           <article class="fantasyInfoCard">
-            <span>Puntuacion</span>
-            <strong>Resultados Vade Back Fight</strong>
-            <p>Cuenta el rendimiento detectado en los torneos fantasy del Excel VBF. Cada victoria suma 3, cada derrota resta 1, ganar el torneo da +5 y hacer 4 victorias sin ganar da +2. Si un jugador no juega esa semana, no resta: simplemente suma 0.</p>
-          </article>
-          <article class="fantasyInfoCard">
             <span>Mercado</span>
             <strong>Cierre semanal</strong>
             <p>El mercado se cierra los viernes a las 23:59. En ese momento se captura una foto de todas las plantillas. Esa foto es la que puntua, aunque luego fiches o pierdas jugadores.</p>
           </article>
           <article class="fantasyInfoCard">
-            <span>Precio de fichas</span>
-            <strong>Tier + resultados</strong>
-            <p>Cada ficha parte de un precio base por tier: Pirate King, Yonkou, Shichibukai, Supernova o Piratilla. Despues sube o baja por resultados: 5-0 sube fuerte, 4-1 sube, 3-2 sube poco, 2-3 baja poco, 1-4 baja y 0-5 baja fuerte.</p>
-          </article>
-          <article class="fantasyInfoCard">
-            <span>Variacion</span>
-            <strong>Jugar importa</strong>
-            <p>El precio se recalcula con el historico fantasy. Ganar, hacer buen resultado y ganar torneos empuja el valor hacia arriba. No jugar no penaliza puntos de jornada, pero tampoco genera subida ni aporta berries.</p>
-          </article>
-          <article class="fantasyInfoCard">
             <span>Jugadores de oficio</span>
-            <strong>Parche si falta plantilla</strong>
-            <p>Si al cerrar mercado un equipo no llega a 3 jugadores, el sistema completa la foto de esa jornada con jugadores de oficio. En la medida de lo posible, se priorizan jugadores que ya estuvieron en la jornada anterior.</p>
-          </article>
-          <article class="fantasyInfoCard">
-            <span>Impacto de oficio</span>
-            <strong>Puntuan a medio gas</strong>
-            <p>Un jugador de oficio puntua con multiplicador reducido, ahora x0,5. No cuenta como capitan, no tiene clausula real para tu plantilla y desaparece despues del calculo de la jornada.</p>
+            <strong>Jugadores de oficio</strong>
+            <p>Si al cerrar mercado un equipo no llega a 3 jugadores, el sistema completa la foto de esa jornada con jugadores de oficio. En la medida de lo posible, se priorizan jugadores que ya estuvieron en la jornada anterior. No pueden ser capitanes y puntuan a la mitad.</p>
           </article>
         </div>
         <section class="fantasyInfoFlow">
@@ -3486,6 +3617,42 @@
           <div><span>2</span><p>Revisa el mercado, ficha desde el pool o prueba clausulazos sobre equipos rivales.</p></div>
           <div><span>3</span><p>El viernes a las 23:59 se cierra el mercado con el equipo que tengas en ese momento.</p></div>
           <div><span>4</span><p>Cuando se actualice VDBF, se reparten puntos, berries y se vuelve a abrir el mercado manualmente.</p></div>
+        </section>
+        <section class="fantasyInfoSection">
+          <div class="fantasyInfoSectionHead">
+            <span>Precios</span>
+            <strong>Como funciona el precio de los jugadores</strong>
+            <p>El precio parte del rango actual del jugador y despues se mueve por resultados fantasy. A los rangos altos se les exige mas; los rangos bajos reciben mas premio por resultados buenos.</p>
+          </div>
+          <div class="fantasyInfoTables">
+            ${renderFantasyBasePriceTable()}
+            ${renderFantasyPriceModifierTable()}
+          </div>
+          <div class="fantasyInfoNote">Las variaciones se aplican solo en jornadas fantasy jugadas. Si un jugador no participa, no sube, no baja y no corta rachas.</div>
+        </section>
+        <section class="fantasyInfoSection">
+          <div class="fantasyInfoSectionHead">
+            <span>Rachas</span>
+            <strong>Bonus y castigos de tendencia</strong>
+            <p>El sistema mira las jornadas jugadas anteriores. Una ausencia queda invisible para la racha: si gana dos sabados, no va al siguiente y luego vuelve a ganar, sigue contando como racha positiva.</p>
+          </div>
+          ${renderFantasyStreakRules()}
+        </section>
+        <section class="fantasyInfoSection">
+          <div class="fantasyInfoSectionHead">
+            <span>Berries</span>
+            <strong>Como ganar berries por jornada</strong>
+            <p>En cada cierre, tu equipo gana berries multiplicando sus puntos fantasy de jornada por ${escapeHtml(formatCoins(WEEKLY_REWARD_PER_POINT))}. Hay un minimo garantizado de ${escapeHtml(formatCoins(MIN_WEEKLY_REWARD))}.</p>
+          </div>
+          <div class="fantasyInfoFormula"><strong>Puntos fantasy de jornada</strong><span>x</span><strong>${escapeHtml(formatCoins(WEEKLY_REWARD_PER_POINT))}</strong><span>=</span><strong>Berries ganadas</strong></div>
+        </section>
+        <section class="fantasyInfoSection">
+          <div class="fantasyInfoSectionHead">
+            <span>Puntuacion</span>
+            <strong>Resultados Vade Back Fight</strong>
+            <p>Estos son los puntos fantasy que genera cada resultado detectado en los torneos VBF.</p>
+          </div>
+          ${renderFantasyScoringTable()}
         </section>
       </div>`;
   }
