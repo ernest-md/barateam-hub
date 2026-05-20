@@ -315,7 +315,10 @@ function Write-CapacitorConfig {
 {
   "appId": "$appId",
   "appName": "$appName",
-  "webDir": "web"
+  "webDir": "web",
+  "server": {
+    "androidScheme": "https"
+  }
 }
 "@
   Write-Utf8NoBom -Path (Join-Path $mobileRoot "capacitor.config.json") -Content $config
@@ -441,6 +444,19 @@ function Generate-AndroidAssets {
 
   $androidResPath = Join-Path $androidRoot "app\src\main\res"
 
+  # Los XML de icono adaptativo (mipmap-anydpi-v26) tienen prioridad sobre los PNGs
+  # por densidad en Android 8+. Los eliminamos para que Android use nuestros PNGs.
+  $anydpiDir = Join-Path $androidResPath "mipmap-anydpi-v26"
+  if (Test-Path -LiteralPath $anydpiDir) {
+    foreach ($xmlName in @("ic_launcher.xml", "ic_launcher_round.xml")) {
+      $xmlPath = Join-Path $anydpiDir $xmlName
+      if (Test-Path -LiteralPath $xmlPath) {
+        Remove-Item -LiteralPath $xmlPath -Force
+        Write-Host "Eliminado icono adaptativo: mipmap-anydpi-v26/$xmlName"
+      }
+    }
+  }
+
   Add-Type -AssemblyName System.Drawing
 
   $sizes = [ordered]@{
@@ -451,7 +467,13 @@ function Generate-AndroidAssets {
     "mipmap-xxxhdpi" = 192
   }
 
-  $srcImage = [System.Drawing.Image]::FromFile($iconSource)
+  $srcInfo = Get-Item -LiteralPath $iconSource
+  Write-Host "Icono fuente: $iconSource  ($($srcInfo.Length) bytes, modificado $($srcInfo.LastWriteTime))"
+
+  # ReadAllBytes -> MemoryStream evita que GDI+ cachee el archivo entre ejecuciones
+  $bytes   = [System.IO.File]::ReadAllBytes($iconSource)
+  $ms      = New-Object System.IO.MemoryStream($bytes, 0, $bytes.Length)
+  $srcImage = [System.Drawing.Image]::FromStream($ms)
   try {
     foreach ($entry in $sizes.GetEnumerator()) {
       $dir = Join-Path $androidResPath $entry.Key
@@ -466,12 +488,15 @@ function Generate-AndroidAssets {
       $g.DrawImage($srcImage, 0, 0, $sz, $sz)
       $g.Dispose()
       foreach ($name in @("ic_launcher.png", "ic_launcher_round.png")) {
-        $bmp.Save((Join-Path $dir $name), [System.Drawing.Imaging.ImageFormat]::Png)
+        $destPath = Join-Path $dir $name
+        $bmp.Save($destPath, [System.Drawing.Imaging.ImageFormat]::Png)
+        Write-Host "  -> $($entry.Key)/$name ($((Get-Item -LiteralPath $destPath).Length) bytes)"
       }
       $bmp.Dispose()
     }
   } finally {
     $srcImage.Dispose()
+    $ms.Dispose()
   }
 
   Write-Host "Iconos Android generados desde LOGO_APP_VDF.jpg"
@@ -573,8 +598,8 @@ Ensure-MobileProject
 Write-CapacitorConfig
 Build-FantasyWeb
 Ensure-AndroidProject
-Generate-AndroidAssets
 Sync-Capacitor
+Generate-AndroidAssets
 Write-ImmersiveMainActivity
 Write-LocalProperties
 Build-Apk
