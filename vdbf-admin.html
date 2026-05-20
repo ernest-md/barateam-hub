@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VDBF Admin - Barateam Hub</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <link rel="stylesheet" href="app.css?v=20260505b" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js?v=20260520a"></script>
+  <style>
+    :root{ --bg:#0b1220; --panel:rgba(255,255,255,.94); --line:rgba(15,23,42,.12); --ink:#0f172a; --muted:#64748b; --shadow:0 18px 50px rgba(0,0,0,.34); }
+    *{ box-sizing:border-box; }
+    body{ margin:0; min-height:100vh; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--ink); }
+    body::before{ content:""; position:fixed; inset:0; background:linear-gradient(180deg, rgba(11,18,32,.80), rgba(11,18,32,.80)), url("bg.png"); background-size:cover; background-position:center; z-index:-1; }
+    .brand{ display:flex; flex-direction:column; align-items:center; color:#fff; font-weight:900; letter-spacing:.4px; margin-right:6px; line-height:1.1; }
+    .brand small{ color:rgba(255,255,255,.72); font-weight:700; }
+    .page{ max-width:1280px; margin:16px auto 28px; padding:0 14px; }
+    .hero{ border-radius:22px; padding:18px; color:#fff; border:1px solid rgba(255,255,255,.14); background:linear-gradient(135deg, rgba(15,23,42,.94), rgba(15,23,42,.74)); box-shadow:0 18px 50px rgba(0,0,0,.28); margin-bottom:12px; display:flex; justify-content:space-between; gap:12px; align-items:flex-end; }
+    .hero h1{ margin:0; font-size:28px; font-weight:1000; }
+    .hero p{ margin:8px 0 0; color:rgba(255,255,255,.82); font-size:14px; }
+    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:start; }
+    .panel{ background:var(--panel); border:1px solid rgba(255,255,255,.20); border-radius:18px; box-shadow:var(--shadow); padding:14px; }
+    .panel h2{ margin:0 0 10px; font-size:12px; text-transform:uppercase; letter-spacing:.9px; font-weight:1000; color:#334155; display:flex; align-items:center; gap:8px; }
+    .panel h2::after{ content:""; height:1px; flex:1; background:linear-gradient(90deg, rgba(15,23,42,.20), transparent); }
+    .actions{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .btn2{ appearance:none; border:1px solid rgba(15,23,42,.14); border-radius:8px; padding:9px 12px; background:#fff; color:#0f172a; font:inherit; font-size:13px; font-weight:900; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px; text-decoration:none; }
+    .btn2.primary{ border-color:transparent; color:#fff; background:linear-gradient(135deg, rgba(37,99,235,.96), rgba(14,165,233,.86)); }
+    .btn2.danger{ color:#991b1b; background:#fff5f5; border-color:rgba(239,68,68,.25); }
+    .btn2:disabled{ opacity:.55; cursor:not-allowed; }
+    label{ display:block; font-size:12px; font-weight:1000; color:#334155; margin:0 0 6px; }
+    input, select{ width:100%; border:1px solid rgba(15,23,42,.16); border-radius:8px; background:#fff; color:#0f172a; font:inherit; font-size:14px; padding:10px 11px; outline:none; }
+    .formGrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:end; }
+    .status{ margin-top:10px; border:1px solid var(--line); border-radius:8px; background:rgba(248,250,252,.82); padding:10px; color:#475569; font-size:13px; font-weight:800; white-space:pre-wrap; }
+    .list{ display:grid; gap:8px; margin-top:10px; max-height:62vh; overflow:auto; padding-right:4px; }
+    .linkRow{ display:grid; grid-template-columns:minmax(0,1fr) minmax(170px,220px) auto; gap:8px; align-items:center; border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,.78); padding:8px; }
+    .profileName{ font-weight:1000; }
+    .profileName span{ display:block; color:#64748b; font-size:12px; font-weight:800; margin-top:2px; }
+    .muted{ color:#64748b; font-size:12px; font-weight:800; }
+    @media (max-width:900px){ .grid{ grid-template-columns:1fr; } .linkRow{ grid-template-columns:1fr; } }
+  </style>
+</head>
+<body data-requires-admin="1">
+  <div class="topbar">
+    <div class="bar with-auth-corner">
+      <a class="brandLink" href="index.html" aria-label="Ir a la home">
+        <div class="brand"><img class="brandLogo" src="BT_LOGO.png" alt="BARATEAM HUB" /><small>vdbf admin</small></div>
+      </a>
+      <div class="nav hubNavFlow">
+        <a class="navInlineLink" href="index.html">Home</a>
+        <a class="navInlineLink" href="vade-back-fight.html">VDBF</a>
+      </div>
+    </div>
+  </div>
+  <div class="authCorner">
+    <a class="btn" id="navLogin" href="login.html">Login</a>
+    <div class="userwrap" id="navUser" style="display:none;">
+      <button class="btn userbtn" id="userBtn" type="button">
+        <img id="navAvatarImg" class="navAvatarImg" alt="avatar" />
+        <span id="navAvatarFallback" class="navAvatarFallback">?</span>
+        <span id="userLabel" style="display:none;">Usuario</span>
+        <span class="chev">v</span>
+      </button>
+      <div class="menu" id="userMenu">
+        <div class="head"><strong id="userEmail">-</strong></div>
+        <a href="profile.html">Configurar perfil</a>
+        <a href="tournament-history.html" data-admin-only="1">Mi historial</a>
+        <div class="sep"></div>
+        <button type="button" id="menuLogout" class="danger">Cerrar sesion</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="page">
+    <section class="hero">
+      <div>
+        <h1>Admin VDBF</h1>
+        <p>Sincroniza la hoja VADE BACK FIGHT y vincula perfiles de la web con jugadores VDBF.</p>
+      </div>
+      <div class="actions">
+        <button class="btn2 primary" id="syncBtn" type="button">Sincronizar VDBF</button>
+        <button class="btn2" id="reloadBtn" type="button">Recargar</button>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <h2>Sincronizacion</h2>
+        <div class="formGrid">
+          <div>
+            <label>Temporada</label>
+            <input id="seasonInput" value="OP15" />
+          </div>
+          <div>
+            <label>Fuente</label>
+            <input value="Google Sheet VDBF" disabled />
+          </div>
+        </div>
+        <div class="status" id="syncStatus">Pendiente de sincronizar.</div>
+      </div>
+
+      <div class="panel">
+        <h2>Resumen</h2>
+        <div class="status" id="summaryStatus">Cargando...</div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:12px;">
+      <h2>Vincular perfiles</h2>
+      <div class="list" id="linksList"></div>
+    </section>
+  </main>
+
+  <script>
+    const SHEET_ID = "1bRu9xDWAO8vBLF2GkzmsGL2M4P3AqczkDCXl6t-coFo";
+    const SHEET_NAME = "OP15";
+    const sb = window.BarateamApp.createClient();
+    const $ = window.BarateamApp.byId;
+    const escapeHtml = window.BarateamApp.escapeHtml;
+    const escapeAttr = window.BarateamApp.escapeAttr;
+    const navController = window.BarateamApp.initUserNav({
+      supabase: sb,
+      onLogout: async () => { await sb.auth.signOut(); location.href = "index.html"; },
+      formatLabel: (user) => (user?.email || "Usuario").split("@")[0] || "Usuario",
+      formatEmail: (user) => user?.email || "user"
+    });
+    window.BarateamApp.bindProtectedNavLinks(sb);
+
+    const state = { profiles: [], players: [], links: [] };
+
+    function normalizeName(value){ return String(value || "").trim().replace(/\s+/g, " ").toLowerCase(); }
+    function getSheetUrl(){ return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`; }
+    function parseGviz(text){
+      const start = text.indexOf("{");
+      const end = text.lastIndexOf("}");
+      const json = JSON.parse(text.slice(start, end + 1));
+      return {
+        colLabels: json.table.cols.map((col) => String(col?.label || "").trim()),
+        rows: json.table.rows.map((r) => (r?.c || []).map((cell) => cell?.v == null ? "" : cell.v))
+      };
+    }
+    function normalizeTable(rows){
+      let maxCols = 0;
+      rows.forEach((r) => { maxCols = Math.max(maxCols, r.length); });
+      const padded = rows.map((r) => Array.from({ length:maxCols }, (_, i) => String(r[i] ?? "").trim()));
+      const nonEmpty = padded.filter((r) => r.some(Boolean));
+      const keep = [];
+      for (let c = 0; c < maxCols; c++) if (nonEmpty.some((r) => r[c])) keep.push(c);
+      return nonEmpty.map((r) => keep.map((c) => r[c]));
+    }
+    function getNumber(value){
+      const n = Number(String(value || "").trim().replace(",", "."));
+      return Number.isFinite(n) ? n : NaN;
+    }
+    function cleanImportedPlayerName(value){ return String(value || "").trim().replace(/\s*\(-\s*10\s*%\)\s*$/i, "").trim(); }
+    function looksLikeEventDateCell(value){
+      const n = Number(value);
+      if (Number.isFinite(n) && n >= 30000) return true;
+      const text = String(value || "").trim().toLowerCase();
+      return /^\d{1,2}\s*[-/]\s*(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic|\d{1,2})/.test(text) || /^\d{4}-\d{2}-\d{2}$/.test(text);
+    }
+    function serialDateToIso(value){
+      const n = Number(value);
+      if (Number.isFinite(n) && n >= 30000){
+        const dt = new Date(Math.round((n - 25569) * 86400 * 1000));
+        return dt.toISOString().slice(0, 10);
+      }
+      const text = String(value || "").trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+      return null;
+    }
+    function serialDateToLabel(value){
+      const iso = serialDateToIso(value);
+      if (!iso) return String(value || "");
+      const dt = new Date(`${iso}T00:00:00Z`);
+      return `${dt.getUTCDate()}-${dt.toLocaleString("es-ES", { month:"short", timeZone:"UTC" }).replace(".", "")}`;
+    }
+    function eventHeaderInfo(rows){
+      const candidates = rows.slice(0, 4);
+      let dateRowIndex = 0;
+      let bestScore = -1;
+      candidates.forEach((row, index) => {
+        const score = row.slice(3).reduce((sum, cell) => sum + (looksLikeEventDateCell(cell) ? 1 : 0), 0);
+        if (score > bestScore){ bestScore = score; dateRowIndex = index; }
+      });
+      return { dateRowIndex, dateRow: rows[dateRowIndex] || [], metaRow: dateRowIndex > 0 ? rows[dateRowIndex - 1] || [] : [] };
+    }
+    function parseEventMeta(value){
+      const text = String(value || "").trim();
+      const tier = Number(text.match(/tier\s*(\d+)/i)?.[1] || 0);
+      const players = Number(text.match(/\((\d+)\)/)?.[1] || 0);
+      return { label:text, tier:Number.isFinite(tier) ? tier : 0, players:Number.isFinite(players) ? players : 0 };
+    }
+    function hintedWinPointsForEvent(meta){
+      const tier = Number(meta?.tier || 0);
+      const players = Number(meta?.players || 0);
+      if (tier === 1) return players <= 8 ? 4000 : players <= 16 ? 6000 : players <= 24 ? 8000 : 10000;
+      if (tier === 2) return players <= 8 ? 2000 : players <= 16 ? 3000 : players <= 24 ? 4000 : 5000;
+      return players <= 8 ? 1000 : players <= 16 ? 2000 : players <= 24 ? 3000 : 4000;
+    }
+    function winnerBonusForEvent(meta){
+      const tier = Number(meta?.tier || 0);
+      return tier === 1 ? 8000 : tier === 3 ? 4000 : 6000;
+    }
+    function winPointCandidatesForEvent(meta){
+      const tier = Number(meta?.tier || 0);
+      const base = tier === 1 ? [4000, 6000, 8000, 10000] : tier === 3 ? [1000, 2000, 3000, 4000] : [2000, 3000, 4000, 5000];
+      return Array.from(new Set([hintedWinPointsForEvent(meta), ...base])).filter(Boolean);
+    }
+    function eventRoundEstimate(scores, winPoints, winnerBonus){
+      const values = (scores || []).filter((value) => Number.isFinite(value) && value > 0);
+      const maxScore = values.length ? Math.max(...values) : 0;
+      const possibleWinnerBase = maxScore - winnerBonus;
+      if (maxScore > 0 && possibleWinnerBase > 0 && possibleWinnerBase % winPoints === 0){
+        return Math.max(4, Math.min(6, possibleWinnerBase / winPoints));
+      }
+      const exactWins = values
+        .filter((score) => score % winPoints === 0)
+        .map((score) => score / winPoints)
+        .filter((wins) => Number.isFinite(wins) && wins > 0);
+      const maxWins = exactWins.length ? Math.max(...exactWins) : 0;
+      return maxWins >= 4 ? Math.max(4, Math.min(6, maxWins)) : 4;
+    }
+    function parseEventResult(score, meta){
+      const raw = Number(score || 0);
+      if (!Number.isFinite(raw) || raw <= 0 || !meta) return null;
+      const winPoints = Number(meta.winPoints || hintedWinPointsForEvent(meta));
+      const winnerBonus = Number(meta.winnerBonus || winnerBonusForEvent(meta));
+      const rounds = Number(meta.rounds || 4);
+      const maxScore = Number(meta.maxScore || 0);
+      const possibleWinnerBase = raw - winnerBonus;
+      const winnerWins = possibleWinnerBase > 0 && possibleWinnerBase % winPoints === 0 ? possibleWinnerBase / winPoints : 0;
+      if (raw === maxScore && winnerWins > 0 && winnerWins <= rounds) return { wins:winnerWins, losses:Math.max(0, rounds - winnerWins), label:`${winnerWins}-${Math.max(0, rounds - winnerWins)}` };
+      if (raw % winPoints !== 0) return null;
+      const wins = raw / winPoints;
+      if (wins > rounds) return null;
+      return { wins, losses:Math.max(0, rounds - wins), label:`${wins}-${Math.max(0, rounds - wins)}` };
+    }
+    function eventScoreMeta(meta, scores){
+      const winnerBonus = winnerBonusForEvent(meta);
+      const values = (scores || []).filter((value) => Number.isFinite(value) && value > 0);
+      const maxScore = values.length ? Math.max(...values) : 0;
+      let best = null;
+      winPointCandidatesForEvent(meta).forEach((winPoints) => {
+        const candidate = {
+          ...meta,
+          winPoints,
+          winnerBonus,
+          rounds:eventRoundEstimate(values, winPoints, winnerBonus),
+          maxScore
+        };
+        const results = values.map((value) => parseEventResult(value, candidate));
+        const validCount = results.filter(Boolean).length;
+        const winnerCount = results.filter((result) => result?.wins > 0).length;
+        const hintedBonus = winPoints === hintedWinPointsForEvent(meta) ? 1 : 0;
+        const score = (validCount * 20) + (winnerCount * 4) + hintedBonus - ((values.length - validCount) * 30);
+        if (!best || score > best.score) best = { ...candidate, score };
+      });
+      return best || { ...meta, winPoints:hintedWinPointsForEvent(meta), winnerBonus, rounds:4, maxScore };
+    }
+    function buildSyncModel(payload, season){
+      const rows = normalizeTable(payload.rows || []);
+      const headers = eventHeaderInfo(rows);
+      const headerRow = headers.dateRow || [];
+      const metaRow = headers.metaRow || [];
+      const sourceRows = rows.slice(headers.dateRowIndex + 1).filter((r) => String(r[2] || "").trim());
+      const eventIndexes = [];
+      const events = [];
+      for (let i = 3; i < headerRow.length; i++){
+        const meta = parseEventMeta(metaRow[i] || payload.colLabels?.[i]);
+        eventIndexes.push(i);
+        events.push({
+          source:"vdbf",
+          season,
+          event_order:i - 2,
+          event_date:serialDateToIso(headerRow[i]),
+          event_label:serialDateToLabel(headerRow[i]) || `T${i - 2}`,
+          event_meta:meta.label || null,
+          player_count:meta.players || null,
+          _meta:meta
+        });
+      }
+      const importedPlayers = sourceRows.map((row) => ({
+        display_name:cleanImportedPlayerName(row[2]),
+        normalized_name:normalizeName(cleanImportedPlayerName(row[2])),
+        points:eventIndexes.map((idx) => {
+          const n = getNumber(row[idx]);
+          return Number.isFinite(n) ? n : null;
+        })
+      })).filter((p) => p.display_name && p.normalized_name);
+      const playerByName = new Map();
+      importedPlayers.forEach((player) => {
+        if (!playerByName.has(player.normalized_name)) playerByName.set(player.normalized_name, player);
+      });
+      const players = Array.from(playerByName.values());
+      events.forEach((event, eventIndex) => {
+        event._meta = eventScoreMeta(event._meta, players.map((player) => Number(player.points[eventIndex] || 0)));
+      });
+      return { events, players };
+    }
+    async function syncVdbf(){
+      const season = $("seasonInput").value.trim().toUpperCase() || "OP15";
+      $("syncBtn").disabled = true;
+      $("syncStatus").textContent = "Leyendo Google Sheet...";
+      try{
+        const res = await fetch(getSheetUrl(), { cache:"no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const model = buildSyncModel(parseGviz(await res.text()), season);
+        if (!model.players.length || !model.events.length){
+          throw new Error("No se han encontrado jugadores o torneos en la hoja indicada.");
+        }
+        $("syncStatus").textContent = `Importando ${model.players.length} jugadores y ${model.events.length} torneos...`;
+
+        const playerRows = model.players.map((p) => ({ display_name:p.display_name, normalized_name:p.normalized_name, active:true }));
+        const { data: savedPlayers, error: playerError } = await sb
+          .from("vdbf_players")
+          .upsert(playerRows, { onConflict:"normalized_name" })
+          .select("id,display_name,normalized_name");
+        if (playerError) throw playerError;
+        const playerMap = new Map((savedPlayers || []).map((p) => [p.normalized_name, p]));
+
+        const eventRows = model.events.map(({ _meta, ...event }) => event);
+        const { data: savedEvents, error: eventError } = await sb
+          .from("vdbf_events")
+          .upsert(eventRows, { onConflict:"source,season,event_order" })
+          .select("id,event_order,player_count");
+        if (eventError) throw eventError;
+        const eventMap = new Map((savedEvents || []).map((event) => [event.event_order, event]));
+
+        const resultRows = [];
+        model.events.forEach((event, eventIndex) => {
+          const savedEvent = eventMap.get(event.event_order);
+          const values = model.players
+            .map((player) => Number(player.points[eventIndex] || 0))
+            .filter((value) => Number.isFinite(value) && value > 0)
+            .sort((a, b) => b - a);
+          model.players.forEach((player) => {
+            const raw = Number(player.points[eventIndex] || 0);
+            if (!raw) return;
+            const savedPlayer = playerMap.get(player.normalized_name);
+            if (!savedEvent || !savedPlayer) return;
+            const parsed = parseEventResult(raw, event._meta);
+            resultRows.push({
+              event_id:savedEvent.id,
+              vdbf_player_id:savedPlayer.id,
+              raw_points:raw,
+              result_label:parsed?.label || null,
+              wins:parsed?.wins ?? null,
+              losses:parsed?.losses ?? null,
+              final_position:values.indexOf(raw) + 1 || null
+            });
+          });
+        });
+        if (!resultRows.length) throw new Error("No se han encontrado resultados VDBF para importar.");
+        const { error: resultError } = await sb
+          .from("vdbf_event_results")
+          .upsert(resultRows, { onConflict:"event_id,vdbf_player_id" });
+        if (resultError) throw resultError;
+
+        $("syncStatus").textContent = `Sincronizado: ${savedPlayers.length} jugadores, ${savedEvents.length} torneos, ${resultRows.length} resultados.`;
+        await loadAdminData();
+      } catch (err){
+        $("syncStatus").textContent = `Error: ${err?.message || err}`;
+      } finally {
+        $("syncBtn").disabled = false;
+      }
+    }
+    function profileLabel(profile){
+      return profile.display_name || profile.username || String(profile.id || "").slice(0, 8);
+    }
+    function renderLinks(){
+      const playerOptions = ['<option value="">Sin vincular</option>'].concat(state.players.map((player) => (
+        `<option value="${escapeAttr(player.id)}">${escapeHtml(player.display_name)}</option>`
+      ))).join("");
+      const linkMap = new Map(state.links.map((link) => [link.profile_id, link.vdbf_player_id]));
+      $("linksList").innerHTML = state.profiles.map((profile) => {
+        const selected = linkMap.get(profile.id) || "";
+        return `
+          <div class="linkRow" data-profile-id="${escapeAttr(profile.id)}">
+            <div class="profileName">${escapeHtml(profileLabel(profile))}<span>${escapeHtml(profile.username || profile.id)}</span></div>
+            <select data-vdbf-select>${playerOptions}</select>
+            <button class="btn2 primary" type="button" data-save-link>Guardar</button>
+          </div>
+        `;
+      }).join("");
+      document.querySelectorAll(".linkRow").forEach((row) => {
+        const select = row.querySelector("[data-vdbf-select]");
+        select.value = linkMap.get(row.dataset.profileId) || "";
+      });
+    }
+    async function loadAdminData(){
+      const [profilesRes, playersRes, linksRes, eventsRes, resultsRes] = await Promise.all([
+        sb.from("profiles").select("id,username,display_name,app_role").order("username", { ascending:true }),
+        sb.from("vdbf_players").select("id,display_name,normalized_name").order("display_name"),
+        sb.from("profile_vdbf_players").select("profile_id,vdbf_player_id"),
+        sb.from("vdbf_events").select("id").limit(10000),
+        sb.from("vdbf_event_results").select("id").limit(10000)
+      ]);
+      if (profilesRes.error) throw profilesRes.error;
+      if (playersRes.error) throw playersRes.error;
+      if (linksRes.error) throw linksRes.error;
+      state.profiles = profilesRes.data || [];
+      state.players = playersRes.data || [];
+      state.links = linksRes.data || [];
+      $("summaryStatus").textContent = `${state.players.length} jugadores VDBF\n${eventsRes.data?.length || 0} torneos VDBF\n${resultsRes.data?.length || 0} resultados VDBF\n${state.links.length} perfiles vinculados`;
+      renderLinks();
+    }
+    async function saveLink(row){
+      const profileId = row.dataset.profileId;
+      const playerId = row.querySelector("[data-vdbf-select]").value;
+      if (!playerId){
+        const { error } = await sb.from("profile_vdbf_players").delete().eq("profile_id", profileId);
+        if (error) throw error;
+      } else {
+        const { error } = await sb.from("profile_vdbf_players").upsert({ profile_id:profileId, vdbf_player_id:playerId }, { onConflict:"profile_id" });
+        if (error) throw error;
+      }
+      await loadAdminData();
+    }
+    async function init(){
+      const { data:{ session } } = await sb.auth.getSession();
+      navController.setUser(session?.user || null);
+      void window.BarateamApp.syncTopbarAvatar(sb, session?.user || null);
+      try{ await loadAdminData(); }
+      catch (err){ $("summaryStatus").textContent = `Error cargando admin: ${err?.message || err}`; }
+    }
+    $("syncBtn").addEventListener("click", syncVdbf);
+    $("reloadBtn").addEventListener("click", () => { void loadAdminData(); });
+    $("linksList").addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-save-link]");
+      if (!btn) return;
+      btn.disabled = true;
+      saveLink(btn.closest(".linkRow")).catch((err) => alert(err?.message || err)).finally(() => { btn.disabled = false; });
+    });
+    init();
+  </script>
+</body>
+</html>
