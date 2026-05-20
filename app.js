@@ -596,9 +596,36 @@
     }
   }
 
+  function syncAdminHistoryMenuLink(userMenu, accessState){
+    if (!userMenu) return;
+    let link = Array.from(userMenu.querySelectorAll("a")).find((item) => {
+      return /tournament-history\.html/i.test(String(item.getAttribute("href") || ""));
+    });
+    if (!link){
+      link = document.createElement("a");
+      link.href = appPageHref("tournament-history.html");
+      link.textContent = "Mi historial";
+      link.setAttribute("data-admin-only", "1");
+      const publicProfileLink = userMenu.querySelector('[data-public-profile-link="1"]');
+      const profileLink = Array.from(userMenu.querySelectorAll("a")).find((item) => {
+        const href = String(item.getAttribute("href") || "").toLowerCase();
+        return href.endsWith("profile.html") || href.endsWith("../../profile.html");
+      });
+      if (publicProfileLink?.parentNode){
+        publicProfileLink.insertAdjacentElement("afterend", link);
+      } else if (profileLink?.parentNode){
+        profileLink.insertAdjacentElement("afterend", link);
+      } else {
+        userMenu.insertBefore(link, userMenu.firstChild);
+      }
+    }
+    link.style.display = accessState?.isAdmin ? "" : "none";
+  }
+
   async function applyRestrictedNavVisibility(sb){
     const restrictedLinks = Array.from(document.querySelectorAll('a[data-vdbf-only="1"]'));
-    const adminLinks = Array.from(document.querySelectorAll('a[data-admin-only="1"]'));
+    const adminLinks = Array.from(document.querySelectorAll('[data-admin-only="1"]'));
+    const adminHrefLinks = adminLinks.filter((item) => item.tagName === "A");
     const privilegedLinks = Array.from(document.querySelectorAll('a[data-privileged-only="1"]'));
     const fantasyGroups = Array.from(document.querySelectorAll('[data-fantasy-nav="1"]'));
     const fantasyNavLinks = Array.from(new Set(fantasyGroups.flatMap((group) => {
@@ -637,7 +664,11 @@
       const canUseFantasy = accessState.hasFantasy === true || isPrivileged;
       const membersLink = privilegedLinks.find((a) => /members\.html/i.test(String(a.getAttribute("href") || "")));
       const membersHref = membersLink?.getAttribute("href") || appPageHref("members.html");
+      const feedbackLink = adminHrefLinks.find((a) => /feedback\.html/i.test(String(a.getAttribute("href") || "")));
 
+      adminLinks.forEach((item) => {
+        item.style.display = isAdmin ? "" : "none";
+      });
       privilegedLinks.forEach((item) => {
         item.style.display = isPrivileged ? "" : "none";
       });
@@ -657,6 +688,11 @@
             href: restrictedLinks[0]?.getAttribute("href") || appPageHref("vade-back-fight.html"),
             label: "VDBF",
             icon: "V"
+          },
+          {
+            href: appPageHref("vdbf-admin.html"),
+            label: "VDBF Admin",
+            icon: "VA"
           },
           {
             href: appPageHref("fantasy.html"),
@@ -679,7 +715,7 @@
             icon: "L"
           },
           {
-            href: adminLinks[0]?.getAttribute("href") || appPageHref("feedback.html"),
+            href: feedbackLink?.getAttribute("href") || appPageHref("feedback.html"),
             label: "Feedback",
             icon: "F"
           },
@@ -1022,9 +1058,16 @@
       void syncPublicProfileMenuLink(cfg.supabase || window.__barateamLastSupabaseClient || null, userMenu, user || null);
       if (user){
         void resolveAccessState(cfg.supabase || window.__barateamLastSupabaseClient || null)
-          .then((accessState) => syncRoleViewMenu(userMenu, accessState))
-          .catch(() => syncRoleViewMenu(userMenu, null));
+          .then((accessState) => {
+            syncAdminHistoryMenuLink(userMenu, accessState);
+            syncRoleViewMenu(userMenu, accessState);
+          })
+          .catch(() => {
+            syncAdminHistoryMenuLink(userMenu, null);
+            syncRoleViewMenu(userMenu, null);
+          });
       } else {
+        syncAdminHistoryMenuLink(userMenu, null);
         syncRoleViewMenu(userMenu, null);
       }
       if (!user){
