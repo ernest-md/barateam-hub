@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VadeFantasy - VaDeGacha</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <link rel="stylesheet" href="app.css?v=20260514a" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js?v=20260514a"></script>
+  <link rel="stylesheet" href="fantasy-polish.css?v=20260521g" />
+  <style>
+    :root{
+      --gacha-ink:#0f172a;
+      --gacha-muted:#64748b;
+      --gacha-line:rgba(15,23,42,.12);
+      --gacha-card:rgba(255,255,255,.95);
+      --gacha-shadow:0 18px 50px rgba(0,0,0,.34);
+    }
+    body[data-fantasy-view="gacha"]{
+      margin:0;
+      min-height:100vh;
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:#09111f;
+      color:var(--gacha-ink);
+    }
+    body[data-fantasy-view="gacha"]::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-1;
+      background:
+        radial-gradient(900px 560px at 8% 8%, rgba(37,99,235,.28), transparent 62%),
+        radial-gradient(760px 520px at 90% 12%, rgba(248,113,113,.24), transparent 60%),
+        linear-gradient(180deg, rgba(9,17,31,.38), rgba(9,17,31,.66)),
+        url("VDF_BG.png");
+      background-size:cover;
+      background-position:center top;
+    }
+    body[data-fantasy-view="gacha"] .brand{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      color:#fff;
+      font-weight:900;
+      letter-spacing:.4px;
+      margin-right:6px;
+      line-height:1.1;
+    }
+    body[data-fantasy-view="gacha"] .wrap{
+      max-width:1380px;
+      margin:0 auto;
+      padding:14px;
+    }
+    body[data-fantasy-view="gacha"] .hero,
+    body[data-fantasy-view="gacha"] .card{
+      border:1px solid rgba(255,255,255,.18);
+      box-shadow:var(--gacha-shadow);
+    }
+    body[data-fantasy-view="gacha"] .hero{
+      border-radius:24px;
+      padding:18px 16px;
+      color:#fff;
+      background:
+        linear-gradient(135deg, rgba(15,23,42,.96), rgba(15,23,42,.72)),
+        radial-gradient(680px 240px at 18% 8%, rgba(250,204,21,.45), transparent 60%);
+    }
+    body[data-fantasy-view="gacha"] .heroTop,
+    body[data-fantasy-view="gacha"] .sectionHead{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    body[data-fantasy-view="gacha"] .eyebrow{
+      margin:0 0 6px;
+      color:rgba(255,255,255,.72);
+      font-size:12px;
+      font-weight:1000;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    body[data-fantasy-view="gacha"] .hero h1{
+      margin:0;
+      font-size:42px;
+      font-weight:1000;
+      line-height:1.02;
+    }
+    body[data-fantasy-view="gacha"] .hero p{
+      margin:8px 0 0;
+      max-width:76ch;
+      color:rgba(255,255,255,.86);
+      font-size:14px;
+      line-height:1.48;
+    }
+    body[data-fantasy-view="gacha"] .pillRow,
+    body[data-fantasy-view="gacha"] .walletInline,
+    body[data-fantasy-view="gacha"] .pullControls,
+    body[data-fantasy-view="gacha"] .inlineMeta{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    body[data-fantasy-view="gacha"] .walletInline{
+      justify-content:flex-end;
+      min-width:min(100%, 310px);
+      padding:10px 12px;
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:18px;
+      background:rgba(255,255,255,.09);
+    }
+    body[data-fantasy-view="gacha"] .walletInline img{
+      width:28px;
+      height:28px;
+      object-fit:contain;
+    }
+    body[data-fantasy-view="gacha"] .walletInline strong{
+      display:block;
+      font-size:24px;
+      line-height:1;
+    }
+    body[data-fantasy-view="gacha"] .walletInline span{
+      display:block;
+      color:rgba(255,255,255,.78);
+      font-size:12px;
+      font-weight:800;
+    }
+    body[data-fantasy-view="gacha"] .heroStats{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+      margin-top:14px;
+    }
+    body[data-fantasy-view="gacha"] .heroStat{
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.08);
+      border-radius:14px;
+      padding:10px 12px;
+      min-width:0;
+    }
+    body[data-fantasy-view="gacha"] .heroStat b{
+      display:block;
+      font-size:20px;
+      font-weight:1000;
+      line-height:1.05;
+      overflow-wrap:anywhere;
+    }
+    body[data-fantasy-view="gacha"] .heroStat span{
+      color:rgba(255,255,255,.86);
+      font-size:12px;
+      font-weight:800;
+    }
+    body[data-fantasy-view="gacha"] .pageGrid{
+      display:grid;
+      grid-template-columns:minmax(0,1.08fr) minmax(320px,.92fr);
+      gap:14px;
+      margin-top:14px;
+      align-items:start;
+    }
+    body[data-fantasy-view="gacha"] .stack{
+      display:grid;
+      gap:14px;
+      min-width:0;
+    }
+    body[data-fantasy-view="gacha"] .card{
+      background:var(--gacha-card);
+      border-radius:22px;
+      padding:14px;
+      min-width:0;
+    }
+    body[data-fantasy-view="gacha"] .sectionHead h2{
+      margin:0;
+      font-size:20px;
+      font-weight:1000;
+    }
+    body[data-fantasy-view="gacha"] .sectionHead p{
+      margin:5px 0 0;
+      color:var(--gacha-muted);
+      font-size:13px;
+      line-height:1.45;
+      max-width:72ch;
+    }
+    body[data-fantasy-view="gacha"] .bannerTabs{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+      margin:14px 0;
+    }
+    body[data-fantasy-view="gacha"] .bannerTab{
+      appearance:none;
+      border:1px solid rgba(15,23,42,.12);
+      border-radius:14px;
+      background:#fff;
+      color:#0f172a;
+      padding:10px 12px;
+      text-align:left;
+      cursor:pointer;
+      display:grid;
+      gap:3px;
+    }
+    body[data-fantasy-view="gacha"] .bannerTab strong{
+      font-size:14px;
+      font-weight:1000;
+      line-height:1.1;
+    }
+    body[data-fantasy-view="gacha"] .bannerTab span{
+      color:#64748b;
+      font-size:12px;
+      font-weight:800;
+      line-height:1.25;
+    }
+    body[data-fantasy-view="gacha"] .bannerTab.isActive{
+      border-color:rgba(37,99,235,.38);
+      background:linear-gradient(135deg, rgba(219,234,254,.94), rgba(240,249,255,.94));
+      box-shadow:0 10px 26px rgba(37,99,235,.12);
+    }
+    body[data-fantasy-view="gacha"] .gachaStage{
+      position:relative;
+      min-height:326px;
+      overflow:hidden;
+      border-radius:18px;
+      border:1px solid rgba(15,23,42,.12);
+      background:
+        linear-gradient(90deg, rgba(15,23,42,.94), rgba(15,23,42,.10) 18%, rgba(15,23,42,.10) 82%, rgba(15,23,42,.94)),
+        linear-gradient(135deg, rgba(15,23,42,.98), rgba(30,41,59,.94));
+      display:flex;
+      align-items:center;
+    }
+    body[data-fantasy-view="gacha"] .gachaPointer{
+      position:absolute;
+      top:0;
+      bottom:0;
+      left:50%;
+      width:4px;
+      transform:translateX(-50%);
+      background:#facc15;
+      box-shadow:0 0 0 1px rgba(255,255,255,.45), 0 0 22px rgba(250,204,21,.65);
+      z-index:3;
+      pointer-events:none;
+    }
+    body[data-fantasy-view="gacha"] .gachaPointer::before,
+    body[data-fantasy-view="gacha"] .gachaPointer::after{
+      content:"";
+      position:absolute;
+      left:50%;
+      transform:translateX(-50%);
+      border-left:12px solid transparent;
+      border-right:12px solid transparent;
+    }
+    body[data-fantasy-view="gacha"] .gachaPointer::before{top:0;border-top:16px solid #facc15}
+    body[data-fantasy-view="gacha"] .gachaPointer::after{bottom:0;border-bottom:16px solid #facc15}
+    body[data-fantasy-view="gacha"] .gachaTrack{
+      display:flex;
+      gap:16px;
+      padding:28px calc(50% - 92px);
+      will-change:transform;
+      transform:translateX(0);
+    }
+    body[data-fantasy-view="gacha"] .gachaItem{
+      width:184px;
+      flex:0 0 184px;
+      overflow:hidden;
+      border-radius:16px;
+      background:#fff;
+      border:1px solid rgba(255,255,255,.34);
+      box-shadow:0 14px 30px rgba(0,0,0,.28);
+      opacity:.9;
+    }
+    body[data-fantasy-view="gacha"] .gachaItem.isWinner{
+      outline:4px solid #facc15;
+      opacity:1;
+    }
+    body[data-fantasy-view="gacha"] .gachaArt{
+      position:relative;
+      aspect-ratio:5 / 6;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      background:linear-gradient(160deg, #e2e8f0, #f8fafc);
+    }
+    body[data-fantasy-view="gacha"] .gachaArt img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      object-position:center 18%;
+      display:block;
+    }
+    body[data-fantasy-view="gacha"] .gachaArt.isEquip img{
+      width:62%;
+      height:62%;
+      object-fit:contain;
+      filter:drop-shadow(0 10px 16px rgba(15,23,42,.22));
+    }
+    body[data-fantasy-view="gacha"] .rewardFallback{
+      width:86px;
+      height:86px;
+      border-radius:999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      font-size:28px;
+      font-weight:1000;
+      background:linear-gradient(135deg, #1d4ed8, #dc2626);
+      box-shadow:0 16px 30px rgba(15,23,42,.28);
+    }
+    body[data-fantasy-view="gacha"] .rarityBadge{
+      position:absolute;
+      left:10px;
+      top:10px;
+      border-radius:999px;
+      padding:4px 8px;
+      color:#0f172a;
+      background:#e2e8f0;
+      font-size:10px;
+      font-weight:1000;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+    }
+    body[data-fantasy-view="gacha"] .rarityBadge.rare{background:#bae6fd;color:#075985}
+    body[data-fantasy-view="gacha"] .rarityBadge.epic{background:#ddd6fe;color:#5b21b6}
+    body[data-fantasy-view="gacha"] .rarityBadge.legendary{background:#fde68a;color:#92400e}
+    body[data-fantasy-view="gacha"] .rarityBadge.mythic{background:#fecdd3;color:#9f1239}
+    body[data-fantasy-view="gacha"] .gachaName{
+      min-height:82px;
+      padding:12px;
+      display:grid;
+      gap:4px;
+      align-content:start;
+      color:#0f172a;
+      font-weight:1000;
+      font-size:16px;
+      line-height:1.12;
+      background:#fff;
+    }
+    body[data-fantasy-view="gacha"] .gachaName span{
+      color:#64748b;
+      font-size:12px;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    body[data-fantasy-view="gacha"] .pullControls{
+      justify-content:center;
+      padding-top:14px;
+    }
+    body[data-fantasy-view="gacha"] .btnCost{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size:12px;
+      opacity:.92;
+    }
+    body[data-fantasy-view="gacha"] .btnCost img{
+      width:16px;
+      height:16px;
+      object-fit:contain;
+    }
+    body[data-fantasy-view="gacha"] .gachaResult{
+      min-height:42px;
+      margin-top:10px;
+      text-align:center;
+      color:#0f172a;
+      font-weight:1000;
+    }
+    body[data-fantasy-view="gacha"] .gachaResult small{
+      display:block;
+      margin-top:3px;
+      color:#64748b;
+      font-size:12px;
+      font-weight:800;
+    }
+    body[data-fantasy-view="gacha"] .rewardGrid,
+    body[data-fantasy-view="gacha"] .inventoryGrid{
+      display:grid;
+      gap:10px;
+    }
+    body[data-fantasy-view="gacha"] .rewardGrid{
+      grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+      margin-top:14px;
+    }
+    body[data-fantasy-view="gacha"] .rewardTile,
+    body[data-fantasy-view="gacha"] .inventoryTile,
+    body[data-fantasy-view="gacha"] .oddsRow{
+      border:1px solid rgba(15,23,42,.10);
+      border-radius:16px;
+      background:rgba(255,255,255,.84);
+      min-width:0;
+    }
+    body[data-fantasy-view="gacha"] .rewardTile{
+      overflow:hidden;
+    }
+    body[data-fantasy-view="gacha"] .rewardTile .gachaArt{
+      aspect-ratio:4 / 3;
+    }
+    body[data-fantasy-view="gacha"] .rewardTileBody,
+    body[data-fantasy-view="gacha"] .inventoryTile{
+      padding:10px;
+      display:grid;
+      gap:4px;
+    }
+    body[data-fantasy-view="gacha"] .rewardTileBody strong,
+    body[data-fantasy-view="gacha"] .inventoryTile strong{
+      min-width:0;
+      color:#0f172a;
+      font-size:14px;
+      font-weight:1000;
+      line-height:1.15;
+    }
+    body[data-fantasy-view="gacha"] .rewardTileBody span,
+    body[data-fantasy-view="gacha"] .inventoryTile span{
+      color:#64748b;
+      font-size:12px;
+      font-weight:800;
+      line-height:1.3;
+    }
+    body[data-fantasy-view="gacha"] .oddsRow{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+    }
+    body[data-fantasy-view="gacha"] .oddsRow strong{
+      color:#0f172a;
+      font-size:13px;
+      font-weight:1000;
+    }
+    body[data-fantasy-view="gacha"] .oddsRow span{
+      color:#64748b;
+      font-size:12px;
+      font-weight:900;
+    }
+    body[data-fantasy-view="gacha"] .inventoryGrid{
+      grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+      margin-top:14px;
+    }
+    body[data-fantasy-view="gacha"] .inventoryTile{
+      position:relative;
+    }
+    body[data-fantasy-view="gacha"] .inventoryCount{
+      position:absolute;
+      right:10px;
+      top:10px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:28px;
+      min-height:28px;
+      border-radius:999px;
+      background:#0f172a;
+      color:#fff;
+      font-size:12px;
+      font-weight:1000;
+    }
+    body[data-fantasy-view="gacha"] .gachaManagerGrid{
+      display:grid;
+      gap:14px;
+      margin-top:14px;
+    }
+    body[data-fantasy-view="gacha"] .inventoryToolbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+    body[data-fantasy-view="gacha"] .inventoryFilters{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    body[data-fantasy-view="gacha"] .filterButton{
+      appearance:none;
+      border:1px solid rgba(15,23,42,.12);
+      border-radius:999px;
+      background:#fff;
+      color:#0f172a;
+      padding:9px 12px;
+      font-size:12px;
+      font-weight:1000;
+      cursor:pointer;
+    }
+    body[data-fantasy-view="gacha"] .filterButton.isActive{
+      border-color:rgba(37,99,235,.34);
+      background:#dbeafe;
+      color:#1d4ed8;
+    }
+    body[data-fantasy-view="gacha"] .sortControl{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      color:#64748b;
+      font-size:12px;
+      font-weight:1000;
+    }
+    body[data-fantasy-view="gacha"] .sortControl select{
+      min-height:36px;
+      border:1px solid rgba(15,23,42,.14);
+      border-radius:999px;
+      background:#fff;
+      color:#0f172a;
+      padding:0 34px 0 12px;
+      font-weight:900;
+    }
+    body[data-fantasy-view="gacha"] .inventoryTile{
+      appearance:none;
+      width:100%;
+      cursor:pointer;
+      text-align:left;
+      transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    }
+    body[data-fantasy-view="gacha"] .inventoryTile:hover{
+      transform:translateY(-3px);
+      border-color:rgba(250,204,21,.38);
+      box-shadow:0 14px 30px rgba(15,23,42,.14);
+    }
+    body[data-fantasy-view="gacha"] .inventoryTile:disabled{
+      cursor:not-allowed;
+      opacity:.58;
+      transform:none;
+      box-shadow:none;
+    }
+    body[data-fantasy-view="gacha"] .inventoryThumb{
+      width:54px;
+      height:54px;
+      border-radius:14px;
+      background:linear-gradient(160deg,#e2e8f0,#fff);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      margin-bottom:6px;
+    }
+    body[data-fantasy-view="gacha"] .inventoryThumb img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      object-position:center 18%;
+    }
+    body[data-fantasy-view="gacha"] .inventoryThumb.isEquip img{
+      width:68%;
+      height:68%;
+      object-fit:contain;
+    }
+    body[data-fantasy-view="gacha"] .inventoryAction{
+      color:#1d4ed8;
+      font-size:11px;
+      font-weight:1000;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+    body[data-fantasy-view="gacha"] .mockNote{
+      margin-top:12px;
+      border:1px dashed rgba(245,158,11,.34);
+      border-radius:16px;
+      background:rgba(245,158,11,.12);
+      color:#92400e;
+      padding:12px 14px;
+      font-size:13px;
+      font-weight:800;
+      line-height:1.45;
+    }
+    body[data-fantasy-view="gacha"] .empty{
+      border:1px dashed rgba(15,23,42,.14);
+      border-radius:16px;
+      background:rgba(255,255,255,.54);
+      color:#475569;
+      padding:12px 14px;
+      font-size:14px;
+      line-height:1.5;
+    }
+    body[data-fantasy-view="gacha"] .hidden{display:none!important}
+    body[data-fantasy-view="gacha"] .gachaMachineFull{
+      position:relative;
+      width:100vw;
+      min-height:460px;
+      margin:14px 0 0 calc(50% - 50vw);
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-top:1px solid rgba(255,255,255,.18);
+      border-bottom:1px solid rgba(255,255,255,.18);
+      box-shadow:0 26px 70px rgba(0,0,0,.42);
+    }
+    body[data-fantasy-view="gacha"] .gachaMachineFull::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      z-index:2;
+      pointer-events:none;
+      background:
+        linear-gradient(90deg, rgba(9,17,31,.82), rgba(9,17,31,.24) 22%, rgba(9,17,31,.24) 78%, rgba(9,17,31,.82)),
+        linear-gradient(180deg, rgba(9,17,31,.10), rgba(9,17,31,.50));
+    }
+    body[data-fantasy-view="gacha"] .gachaMachineFull .gachaStage{
+      position:absolute;
+      inset:0;
+      min-height:100%;
+      border-radius:0;
+      border-left:0;
+      border-right:0;
+      opacity:.94;
+    }
+    body[data-fantasy-view="gacha"] .gachaMachineFull .gachaPointer{
+      opacity:.78;
+    }
+    body[data-fantasy-view="gacha"] .gachaTrack.isAmbient{
+      animation:gachaAmbientDrift 38s linear infinite;
+    }
+    body[data-fantasy-view="gacha"] .gachaMachineOverlay{
+      position:relative;
+      z-index:4;
+      width:min(560px, calc(100vw - 28px));
+      display:grid;
+      gap:14px;
+      justify-items:center;
+      text-align:center;
+      padding:22px;
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.22);
+      background:rgba(15,23,42,.78);
+      color:#fff;
+      box-shadow:0 24px 60px rgba(0,0,0,.38);
+      backdrop-filter:blur(12px);
+    }
+    body[data-fantasy-view="gacha"] .gachaMachineOverlay h2{
+      margin:0;
+      font-size:30px;
+      line-height:1.05;
+      font-weight:1000;
+    }
+    body[data-fantasy-view="gacha"] .gachaTitleRow{
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      min-width:0;
+    }
+    body[data-fantasy-view="gacha"] .oddsInfoWrap{
+      position:relative;
+      display:inline-flex;
+    }
+    body[data-fantasy-view="gacha"] .oddsInfoButton{
+      appearance:none;
+      width:30px;
+      height:30px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.34);
+      background:rgba(255,255,255,.14);
+      color:#fff;
+      font-size:14px;
+      font-weight:1000;
+      line-height:1;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    body[data-fantasy-view="gacha"] .oddsInfoButton:hover,
+    body[data-fantasy-view="gacha"] .oddsInfoButton:focus-visible{
+      background:#fff;
+      color:#0f172a;
+      outline:0;
+    }
+    body[data-fantasy-view="gacha"] .oddsTooltip{
+      position:absolute;
+      left:50%;
+      top:calc(100% + 10px);
+      width:240px;
+      transform:translateX(-50%) translateY(-4px);
+      opacity:0;
+      visibility:hidden;
+      pointer-events:none;
+      z-index:8;
+      border:1px solid rgba(255,255,255,.22);
+      border-radius:14px;
+      background:rgba(15,23,42,.96);
+      color:#fff;
+      box-shadow:0 18px 44px rgba(0,0,0,.42);
+      padding:10px;
+      text-align:left;
+      transition:opacity .16s ease, transform .16s ease, visibility .16s ease;
+    }
+    body[data-fantasy-view="gacha"] .oddsInfoWrap:hover .oddsTooltip,
+    body[data-fantasy-view="gacha"] .oddsInfoWrap:focus-within .oddsTooltip{
+      opacity:1;
+      visibility:visible;
+      transform:translateX(-50%) translateY(0);
+    }
+    body[data-fantasy-view="gacha"] .oddsTooltip::before{
+      content:"";
+      position:absolute;
+      left:50%;
+      top:-7px;
+      width:12px;
+      height:12px;
+      transform:translateX(-50%) rotate(45deg);
+      background:rgba(15,23,42,.96);
+      border-left:1px solid rgba(255,255,255,.22);
+      border-top:1px solid rgba(255,255,255,.22);
+    }
+    body[data-fantasy-view="gacha"] .oddsTooltip strong{
+      display:block;
+      margin-bottom:8px;
+      font-size:12px;
+      font-weight:1000;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+    }
+    body[data-fantasy-view="gacha"] .oddsTooltipRow{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:10px;
+      align-items:center;
+      padding:6px 0;
+      border-top:1px solid rgba(255,255,255,.10);
+      color:rgba(255,255,255,.84);
+      font-size:12px;
+      font-weight:900;
+    }
+    body[data-fantasy-view="gacha"] .oddsTooltipRow:first-of-type{border-top:0}
+    body[data-fantasy-view="gacha"] .oddsTooltipNote{
+      display:block;
+      margin-top:8px;
+      color:rgba(255,255,255,.64);
+      font-size:11px;
+      line-height:1.35;
+      font-weight:800;
+    }
+    body[data-fantasy-view="gacha"] .gachaMachineOverlay p{
+      margin:0;
+      max-width:46ch;
+      color:rgba(255,255,255,.78);
+      font-size:13px;
+      line-height:1.45;
+      font-weight:800;
+    }
+    body[data-fantasy-view="gacha"] .gachaMachineOverlay .pullControls{
+      padding-top:0;
+    }
+    body[data-fantasy-view="gacha"] .gachaMachineOverlay .gachaResult{
+      margin-top:0;
+      color:#fff;
+    }
+    body[data-fantasy-view="gacha"] .gachaMachineOverlay .gachaResult small{
+      color:rgba(255,255,255,.76);
+    }
+    body[data-fantasy-view="gacha"] .gachaMachineOverlay .btn{
+      min-height:50px;
+      min-width:170px;
+    }
+    body[data-fantasy-view="gacha"] .machineMeta{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+    body[data-fantasy-view="gacha"] .modalWrap{
+      position:fixed;
+      inset:0;
+      z-index:1000;
+      display:grid;
+      place-items:center;
+      padding:18px;
+    }
+    body[data-fantasy-view="gacha"] .modalBackdrop{
+      position:absolute;
+      inset:0;
+      background:rgba(2,6,23,.72);
+      backdrop-filter:blur(6px);
+    }
+    body[data-fantasy-view="gacha"] .gachaPullModalCard{
+      position:relative;
+      z-index:1;
+      width:min(1120px, calc(100vw - 28px));
+      max-height:min(88vh, 860px);
+      overflow:auto;
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.20);
+      background:rgba(255,255,255,.96);
+      box-shadow:0 28px 80px rgba(0,0,0,.46);
+      padding:16px;
+    }
+    body[data-fantasy-view="gacha"] .gachaModalHead{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    body[data-fantasy-view="gacha"] .gachaModalHead h3{
+      margin:0;
+      color:#0f172a;
+      font-size:28px;
+      line-height:1.05;
+      font-weight:1000;
+    }
+    body[data-fantasy-view="gacha"] .gachaModalHead p{
+      margin:5px 0 0;
+      color:#64748b;
+      font-size:13px;
+      line-height:1.4;
+      font-weight:800;
+    }
+    body[data-fantasy-view="gacha"] .gachaPullModalCard .modalClose{
+      flex:0 0 auto;
+      width:40px;
+      height:40px;
+      padding:0;
+      border-radius:999px;
+    }
+    body[data-fantasy-view="gacha"] .gachaModalStage{
+      min-height:330px;
+    }
+    body[data-fantasy-view="gacha"] .multiRevealGrid{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    body[data-fantasy-view="gacha"] .multiRevealGrid .rewardTile{
+      opacity:0;
+      transform:translateY(10px) scale(.98);
+      animation:gachaReveal .34s ease forwards;
+      border-radius:10px;
+      transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    }
+    body[data-fantasy-view="gacha"] .multiRevealGrid .rewardTile:hover{
+      transform:translateY(-4px) scale(1.03);
+      border-color:rgba(250,204,21,.42);
+      box-shadow:0 14px 30px rgba(15,23,42,.18);
+      z-index:2;
+    }
+    body[data-fantasy-view="gacha"] .multiRevealGrid .rewardTile .gachaArt{
+      aspect-ratio:1 / 1;
+    }
+    body[data-fantasy-view="gacha"] .multiRevealGrid .rewardTileBody{
+      padding:8px;
+    }
+    body[data-fantasy-view="gacha"] .multiRevealGrid .rewardTileBody strong{
+      font-size:12px;
+      line-height:1.12;
+    }
+    body[data-fantasy-view="gacha"] .multiRevealGrid .rewardTileBody span{
+      font-size:10px;
+      line-height:1.22;
+    }
+    body[data-fantasy-view="gacha"] .modalActions{
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    body[data-fantasy-view="gacha"] .modalActions .btnPrimary{
+      min-width:138px;
+    }
+    body[data-fantasy-view="gacha"] .catalogSplit{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      margin-top:14px;
+    }
+    body[data-fantasy-view="gacha"] .catalogColumn{
+      display:grid;
+      gap:10px;
+      min-width:0;
+    }
+    body[data-fantasy-view="gacha"] .catalogColumn h3{
+      margin:0;
+      font-size:14px;
+      line-height:1.15;
+      font-weight:1000;
+      color:#0f172a;
+    }
+    @keyframes gachaAmbientDrift{
+      from{transform:translateX(0)}
+      to{transform:translateX(-50%)}
+    }
+    @keyframes gachaReveal{
+      to{opacity:1;transform:translateY(0) scale(1)}
+    }
+    @media (max-width:1080px){
+      body[data-fantasy-view="gacha"] .pageGrid{grid-template-columns:1fr}
+      body[data-fantasy-view="gacha"] .heroStats{grid-template-columns:repeat(2,minmax(0,1fr))}
+      body[data-fantasy-view="gacha"] .multiRevealGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+    @media (max-width:640px){
+      body[data-fantasy-view="gacha"] .wrap{padding:10px}
+      body[data-fantasy-view="gacha"] .hero,
+      body[data-fantasy-view="gacha"] .card{border-radius:18px}
+      body[data-fantasy-view="gacha"] .hero h1{font-size:30px}
+      body[data-fantasy-view="gacha"] .heroStats,
+      body[data-fantasy-view="gacha"] .bannerTabs,
+      body[data-fantasy-view="gacha"] .catalogSplit{grid-template-columns:1fr}
+      body[data-fantasy-view="gacha"] .walletInline{justify-content:flex-start}
+      body[data-fantasy-view="gacha"] .gachaMachineFull{min-height:390px}
+      body[data-fantasy-view="gacha"] .gachaMachineOverlay{padding:16px}
+      body[data-fantasy-view="gacha"] .gachaMachineOverlay h2{font-size:24px}
+      body[data-fantasy-view="gacha"] .gachaStage{min-height:260px}
+      body[data-fantasy-view="gacha"] .gachaTrack{padding:20px calc(50% - 70px);gap:12px}
+      body[data-fantasy-view="gacha"] .gachaItem{width:140px;flex-basis:140px}
+      body[data-fantasy-view="gacha"] .gachaName{min-height:74px;font-size:14px}
+      body[data-fantasy-view="gacha"] .pullControls .btn{flex:1 1 100%}
+      body[data-fantasy-view="gacha"] .gachaTitleRow{align-items:flex-start}
+      body[data-fantasy-view="gacha"] .oddsTooltip{left:auto;right:-8px;transform:translateY(-4px);width:min(250px, calc(100vw - 48px))}
+      body[data-fantasy-view="gacha"] .oddsInfoWrap:hover .oddsTooltip,
+      body[data-fantasy-view="gacha"] .oddsInfoWrap:focus-within .oddsTooltip{transform:translateY(0)}
+      body[data-fantasy-view="gacha"] .oddsTooltip::before{left:auto;right:16px;transform:rotate(45deg)}
+      body[data-fantasy-view="gacha"] .equipSlots{grid-template-columns:1fr}
+      body[data-fantasy-view="gacha"] .multiRevealGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+  </style>
+</head>
+<body data-requires-fantasy="1" data-fantasy-view="gacha">
+  <div class="topbar">
+    <div class="bar with-auth-corner">
+      <nav class="vdfTopNav" aria-label="Navegacion principal VaDeFantasy">
+        <a class="vdfTopNavLink" href="fantasy.html">Liga</a>
+        <a class="vdfTopNavLink" href="fantasy-ranking.html">Ranking equipos</a>
+        <a class="vdfTopNavLink" href="fantasy-team.html">Plantilla</a>
+        <a class="vdfTopNavLink" href="fantasy-market.html">Mercado</a>
+        <a class="vdfTopNavLink is-current" href="fantasy-gacha.html" aria-current="page">VaDeGacha</a>
+        <a class="vdfTopNavLink" href="fantasy-attendance.html" data-privileged-only="1" style="display:none">Asistencia</a>
+        <a class="vdfTopNavLink" href="vade-back-fight.html" data-privileged-only="1" style="display:none">Ranking VBF</a>
+      </nav>
+      <a class="brandLink vdfBrandLink" href="fantasy.html" aria-label="Ir a VaDeFantasy">
+        <div class="brand">
+          <img class="brandLogo" src="VDF.png" alt="VaDeFantasy" />
+        </div>
+      </a>
+      <a class="vdfOriginalLink" href="index.html" aria-label="Volver a Barateam"><img src="favicon.ico" alt="" /> Barateam</a>
+    </div>
+  </div>
+  <div class="authCorner">
+    <a class="btn" id="navLogin" href="login.html">&#128274; Login</a>
+    <div class="userwrap" id="navUser" style="display:none;">
+      <button class="btn userbtn" id="userBtn" type="button">
+        <img id="navAvatarImg" class="navAvatarImg" alt="avatar" />
+        <span id="navAvatarFallback" class="navAvatarFallback">?</span>
+        <span id="userLabel" style="display:none;">Usuario</span>
+        <span class="chev">v</span>
+      </button>
+      <div class="menu" id="userMenu">
+        <div class="head"><strong id="userEmail">-</strong><span>Sesion iniciada</span></div>
+        <a href="profile.html">Configurar perfil</a>
+        <a href="user.html" id="publicProfileLink" style="display:none;">Ver perfil</a>
+        <div class="sep"></div>
+        <button class="danger" id="menuLogout" type="button">Cerrar sesion</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="loadingOverlay hidden" id="loadingOverlay" aria-live="polite" aria-busy="true">
+    <div class="loadingCard">
+      <div class="loadingSpinner" aria-hidden="true"></div>
+      <div class="loadingText">
+        <strong>Cargando VaDeGacha...</strong>
+        <span id="loadingLabel">Preparando ruleta, pool mixto y cartera fantasy.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="hero">
+      <div class="heroTop">
+        <div>
+          <div class="eyebrow">VadeFantasy OP15</div>
+          <h1>VaDeGacha</h1>
+          <p>Ruleta fantasy mixta para desbloquear skins y equipables para tus jugadores.</p>
+        </div>
+        <div class="walletInline" title="Balance fantasy">
+          <img src="berries.png" alt="" aria-hidden="true" />
+          <div>
+            <strong id="mockWalletAmount">120.000</strong>
+            <span id="walletOwner">Balance</span>
+          </div>
+        </div>
+      </div>
+      <div class="heroStats">
+        <div class="heroStat"><b id="activeBannerName">Pool mixto</b><span>Gacha activo</span></div>
+        <div class="heroStat"><b id="singleCostStat">12.000</b><span>Coste x1</span></div>
+        <div class="heroStat"><b id="pityStat">72</b><span>Pity legendario</span></div>
+        <div class="heroStat"><b id="inventoryStat">0</b><span>Inventario</span></div>
+      </div>
+      <div class="pageMsg" id="pageMsg"></div>
+      <div class="schemaNote" id="schemaNote"></div>
+    </section>
+
+    <section class="gachaMachineFull" aria-label="VaDeGacha">
+      <div class="gachaStage" aria-hidden="true">
+        <div class="gachaPointer"></div>
+        <div class="gachaTrack isAmbient" id="gachaAmbientTrack"></div>
+      </div>
+      <div class="gachaMachineOverlay">
+        <div class="machineMeta">
+          <span class="pill strong" id="bannerMeta">Mixto</span>
+          <span class="pill">Skins + equipables</span>
+        </div>
+        <div class="gachaTitleRow">
+          <h2>Tirada de VaDeGacha</h2>
+          <span class="oddsInfoWrap">
+            <button class="oddsInfoButton" type="button" aria-label="Ver probabilidades" aria-describedby="oddsTooltip">i</button>
+            <span class="oddsTooltip" id="oddsTooltip" role="tooltip"></span>
+          </span>
+        </div>
+        <p id="gachaResult">Pool OP15 listo.</p>
+        <div class="pullControls">
+          <button class="btn btnPrimary" id="singlePullButton" type="button">
+            Tirar x1
+            <span class="btnCost"><img src="berries.png" alt="" aria-hidden="true" /><span id="singlePullCost">12.000</span></span>
+          </button>
+          <button class="btn btnPrimary" id="multiPullButton" type="button">
+            Tirar x10
+            <span class="btnCost"><img src="berries.png" alt="" aria-hidden="true" /><span id="multiPullCost">100.000</span></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div class="gachaManagerGrid">
+      <section class="card">
+        <div class="sectionHead">
+          <div>
+            <h2>Inventario</h2>
+            <p>Tus recompensas desbloqueadas. Gestiona skins y equipables desde Mi Plantilla.</p>
+          </div>
+        </div>
+        <div class="inventoryToolbar">
+          <div class="inventoryFilters" id="inventoryFilterTabs" aria-label="Filtro de inventario">
+            <button class="filterButton isActive" type="button" data-inventory-filter="all">Todo</button>
+            <button class="filterButton" type="button" data-inventory-filter="skin">Skins</button>
+            <button class="filterButton" type="button" data-inventory-filter="equipment">Equipables</button>
+          </div>
+          <label class="sortControl" for="inventorySort">
+            Orden
+            <select id="inventorySort">
+              <option value="date">Fecha</option>
+              <option value="rarity">Rareza</option>
+            </select>
+          </label>
+        </div>
+        <div class="inventoryGrid" id="inventoryGrid"></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="modalWrap hidden" id="gachaPullModal" aria-hidden="true">
+    <div class="modalBackdrop" data-close-gacha-modal="1"></div>
+    <div class="gachaPullModalCard" role="dialog" aria-modal="true" aria-labelledby="gachaModalTitle">
+      <div class="gachaModalHead">
+        <div>
+          <div class="eyebrow" style="color:#64748b">VaDeGacha OP15</div>
+          <h3 id="gachaModalTitle">Tirada</h3>
+          <p id="gachaModalSubtitle">Resolviendo recompensa...</p>
+        </div>
+        <button class="btn modalClose" type="button" data-close-gacha-modal="1" aria-label="Cerrar tirada">&#10005;</button>
+      </div>
+      <div class="gachaStage gachaModalStage" id="gachaModalStage">
+        <div class="gachaPointer" aria-hidden="true"></div>
+        <div class="gachaTrack" id="gachaModalTrack"></div>
+      </div>
+      <div class="modalActions">
+        <button class="btn btnPrimary hidden" id="gachaNextButton" type="button">Siguiente</button>
+        <button class="btn hidden" id="gachaSkipButton" type="button">Saltar</button>
+        <button class="btn" type="button" data-close-gacha-modal="1">Cerrar</button>
+      </div>
+      <div class="gachaResult" id="gachaModalResult">Preparando...</div>
+      <div class="multiRevealGrid hidden" id="multiRevealGrid"></div>
+    </div>
+  </div>
+
+  <script src="fantasy-player-portraits.js?v=20260504a"></script>
+  <script src="fantasy.js?v=20260521g"></script>
+  <script>
+    (() => {
+      const App = window.BarateamApp || {};
+      const $ = (id) => document.getElementById(id);
+      const intFmt = new Intl.NumberFormat("es-ES");
+      const STORAGE_KEY = "vadefantasy-gacha-mock-v1";
+      const DEFAULT_BALANCE = 120000;
+      const DEFAULT_PITY = 72;
+      const CURRENT_SEASON = "OP15";
+      const REMOTE_BANNER_CODE = "mixed-op15";
+      const RARITY_ORDER = { common: 1, rare: 2, epic: 3, legendary: 4, mythic: 5 };
+      const RARITY_LABELS = {
+        common: "Comun",
+        rare: "Rara",
+        epic: "Epica",
+        legendary: "Legendaria",
+        mythic: "Mitica"
+      };
+      const INVENTORY_FILTERS = [
+        { code: "all", label: "Todo" },
+        { code: "skin", label: "Skins" },
+        { code: "equipment", label: "Equipables" }
+      ];
+      const BANNERS = {
+        mixed: {
+          code: "mixed",
+          name: "Pool mixto OP15",
+          shortName: "Mixto",
+          copy: "Skins y equipables en la misma ruleta.",
+          singleCost: 12000,
+          multiCost: 100000,
+          pityTarget: "Legendaria",
+          odds: { common: 46, rare: 32, epic: 15, legendary: 6, mythic: 1 },
+          rewards: [
+            { id: "skin-ernest-king", name: "Ernest Rey Carmesi", type: "Skin", rarity: "mythic", target: "Ernest", image: "fantasy/Ernest.png", category: "skin" },
+            { id: "gear-crown", name: "Corona de MVP", type: "Cabeza", rarity: "mythic", target: "Cualquier jugador", image: "fantasy_coin.png", equip: true, category: "equipment", slot: "head" },
+            { id: "skin-yago-neon", name: "Yago Neon", type: "Skin", rarity: "legendary", target: "Yago", image: "fantasy/Yago.png", category: "skin" },
+            { id: "skin-coquito-royal", name: "Coquito Royal", type: "Skin", rarity: "legendary", target: "Coquito", image: "fantasy/Coquito.png", category: "skin" },
+            { id: "gear-cape", name: "Capa de Capitan", type: "Espalda", rarity: "legendary", target: "Capitan", image: "VDJ.png", equip: true, category: "equipment", slot: "back" },
+            { id: "gear-den-den", name: "Den Den Scout", type: "Soporte", rarity: "legendary", target: "Scout", image: "berries.png", equip: true, category: "equipment", slot: "support" },
+            { id: "skin-dilix-cyber", name: "Dilix Cyber", type: "Skin", rarity: "epic", target: "Dilix", image: "fantasy/Dilix.png", category: "skin" },
+            { id: "skin-dr-yemo-galeon", name: "DrYemo Galeon", type: "Skin", rarity: "epic", target: "DrYemo", image: "fantasy/DrYemo.png", category: "skin" },
+            { id: "gear-boots", name: "Botas de Comeback", type: "Piernas", rarity: "epic", target: "Activo", image: "fantasy_coin.png", equip: true, category: "equipment", slot: "legs" },
+            { id: "gear-gloves", name: "Guantes de Clausula", type: "Manos", rarity: "epic", target: "Mercado", image: "berries.png", equip: true, category: "equipment", slot: "hands" },
+            { id: "skin-joselu-wave", name: "Joselu Oleaje", type: "Skin", rarity: "rare", target: "Joselu", image: "fantasy/Joselu.png", category: "skin" },
+            { id: "skin-renku-arcade", name: "Renku Arcade", type: "Skin", rarity: "rare", target: "Renku", image: "fantasy/Renku.png", category: "skin" },
+            { id: "gear-bandana", name: "Bandana Roja", type: "Cabeza", rarity: "rare", target: "Cualquier jugador", image: "inscrito.png", equip: true, category: "equipment", slot: "head" },
+            { id: "gear-logpose", name: "Log Pose", type: "Soporte", rarity: "rare", target: "Banquillo", image: "fantasy_coin.png", equip: true, category: "equipment", slot: "support" },
+            { id: "skin-romo-training", name: "Romo Training", type: "Skin", rarity: "common", target: "Romo", image: "fantasy/Romo.png", category: "skin" },
+            { id: "skin-charko-splash", name: "Charko Splash", type: "Skin", rarity: "common", target: "Charko", image: "fantasy/Charko.png", category: "skin" },
+            { id: "skin-vaina-street", name: "VainaLoca Street", type: "Skin", rarity: "common", target: "VainaLoca", image: "fantasy/VainaLoca.png", category: "skin" },
+            { id: "gear-berry-bag", name: "Bolsa de Berries", type: "Accesorio", rarity: "common", target: "Cualquier jugador", image: "berries.png", equip: true, category: "equipment", slot: "accessory" },
+            { id: "gear-training", name: "Pesas de Training", type: "Soporte", rarity: "common", target: "Training", image: "fantasy_coin.png", equip: true, category: "equipment", slot: "support" },
+            { id: "gear-ticket", name: "Ticket de Arena", type: "Accesorio", rarity: "common", target: "Cualquier jugador", image: "inscrito.png", equip: true, category: "equipment", slot: "accessory" }
+          ]
+        }
+      };
+
+      const state = {
+        activeBanner: "mixed",
+        balance: DEFAULT_BALANCE,
+        initialBalance: DEFAULT_BALANCE,
+        pity: DEFAULT_PITY,
+        inventory: {},
+        lastDrops: [],
+        multiDrops: [],
+        multiRevealIndex: 0,
+        multiAnimating: false,
+        spinning: false,
+        teamName: "",
+        currentUser: null,
+        currentTeam: null,
+        remoteReady: false,
+        remoteRewards: {},
+        inventoryFilter: "all",
+        inventorySort: "date"
+      };
+
+      function escapeHtml(value){
+        if (App.escapeHtml) return App.escapeHtml(value);
+        return String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+      }
+
+      function escapeAttr(value){
+        if (App.escapeAttr) return App.escapeAttr(value);
+        return escapeHtml(value);
+      }
+
+      function formatCoins(value){
+        return intFmt.format(Math.max(0, Math.round(Number(value || 0))));
+      }
+
+      function currentBanner(){
+        return BANNERS[state.activeBanner] || BANNERS.mixed;
+      }
+
+
+
+      function normalizeInventoryEntry(value){
+        if (value && typeof value === "object"){
+          const quantity = Math.max(0, Number(value.quantity || 0));
+          const lastAcquiredAt = Number(value.lastAcquiredAt || value.firstAcquiredAt || 0);
+          const firstAcquiredAt = Number(value.firstAcquiredAt || lastAcquiredAt || 0);
+          return { quantity, firstAcquiredAt, lastAcquiredAt };
+        }
+        const quantity = Math.max(0, Number(value || 0));
+        return { quantity, firstAcquiredAt: 0, lastAcquiredAt: 0 };
+      }
+
+      function inventoryEntry(id){
+        return normalizeInventoryEntry(state.inventory[id]);
+      }
+
+      function loadLocalState(){
+        try{
+          const raw = window.localStorage?.getItem(STORAGE_KEY);
+          if (!raw) return;
+          const saved = JSON.parse(raw);
+          if (!saved || typeof saved !== "object") return;
+          state.activeBanner = BANNERS[saved.activeBanner] ? saved.activeBanner : state.activeBanner;
+          state.balance = Number.isFinite(Number(saved.balance)) ? Number(saved.balance) : state.balance;
+          state.initialBalance = Number.isFinite(Number(saved.initialBalance)) ? Number(saved.initialBalance) : state.initialBalance;
+          state.pity = Number.isFinite(Number(saved.pity)) ? Number(saved.pity) : state.pity;
+          state.inventory = saved.inventory && typeof saved.inventory === "object" ? saved.inventory : {};
+          state.lastDrops = Array.isArray(saved.lastDrops) ? saved.lastDrops.map((id) => findReward(id)).filter(Boolean) : [];
+          state.teamName = String(saved.teamName || "");
+          state.inventoryFilter = INVENTORY_FILTERS.some((filter) => filter.code === saved.inventoryFilter) ? saved.inventoryFilter : state.inventoryFilter;
+          state.inventorySort = saved.inventorySort === "rarity" ? "rarity" : "date";
+        } catch (_error){}
+      }
+
+      function saveLocalState(){
+        try{
+          window.localStorage?.setItem(STORAGE_KEY, JSON.stringify({
+            activeBanner: state.activeBanner,
+            balance: state.balance,
+            initialBalance: state.initialBalance,
+            pity: state.pity,
+            inventory: state.inventory,
+            lastDrops: state.lastDrops.map((drop) => drop.id),
+            teamName: state.teamName,
+            inventoryFilter: state.inventoryFilter,
+            inventorySort: state.inventorySort
+          }));
+        } catch (_error){}
+      }
+
+      function findReward(id){
+        return state.remoteRewards[id] || Object.values(BANNERS).flatMap((banner) => banner.rewards).find((reward) => reward.id === id) || null;
+      }
+
+      function remoteRewardFromItem(item, ownedItemId){
+        if (!item) return null;
+        const kind = String(item.kind || "").trim().toLowerCase();
+        const code = String(item.code || item.id || "").trim();
+        return {
+          id: code,
+          dbItemId: item.id || "",
+          ownedItemId: ownedItemId || "",
+          name: item.name || code || "Item",
+          type: kind === "skin" ? "Skin" : (item.slot || "Equipable"),
+          rarity: item.rarity || "common",
+          target: item.target_player_slug || item.target_rule || "any",
+          image: item.asset_path || "",
+          equip: kind === "equipment",
+          category: kind === "equipment" ? "equipment" : "skin",
+          slot: item.slot || null
+        };
+      }
+
+      function rememberRemoteReward(reward){
+        if (reward?.id) state.remoteRewards[reward.id] = reward;
+      }
+
+      function remoteRewardFromPull(row){
+        if (!row) return null;
+        const reward = {
+          id: String(row.code || row.item_id || "").trim(),
+          dbItemId: row.item_id || "",
+          ownedItemId: row.owned_item_id || "",
+          name: row.name || row.code || "Item",
+          type: row.kind === "skin" ? "Skin" : (row.slot || "Equipable"),
+          rarity: row.rarity || "common",
+          target: row.target_player_slug || row.target_rule || "any",
+          image: row.asset_path || "",
+          equip: row.kind === "equipment",
+          category: row.kind === "equipment" ? "equipment" : "skin",
+          slot: row.slot || null
+        };
+        rememberRemoteReward(reward);
+        return reward;
+      }
+
+      async function loadRemoteInventory(client){
+        if (!client || !state.currentTeam?.id) return;
+        const { data, error } = await client
+          .from("fantasy_vbf_gacha_owned_items")
+          .select("id,item_id,acquired_at,item:fantasy_vbf_gacha_items(id,code,name,kind,rarity,slot,target_player_slug,target_rule,asset_path,effect_summary,active)")
+          .eq("season", CURRENT_SEASON)
+          .eq("team_id", state.currentTeam.id)
+          .order("acquired_at", { ascending: false });
+        if (error) throw error;
+        const inventory = {};
+        (Array.isArray(data) ? data : []).forEach((row) => {
+          const reward = remoteRewardFromItem(row.item, row.id);
+          if (!reward?.id) return;
+          rememberRemoteReward(reward);
+          const current = normalizeInventoryEntry(inventory[reward.id]);
+          const acquiredAt = new Date(row.acquired_at || Date.now()).getTime();
+          inventory[reward.id] = {
+            quantity: current.quantity + 1,
+            firstAcquiredAt: current.firstAcquiredAt || acquiredAt,
+            lastAcquiredAt: Math.max(current.lastAcquiredAt || 0, acquiredAt)
+          };
+        });
+        state.inventory = inventory;
+      }
+
+      function rewardsForRarity(banner, rarity){
+        return banner.rewards.filter((reward) => reward.rarity === rarity);
+      }
+
+      function chooseWeightedRarity(banner){
+        const entries = Object.entries(banner.odds);
+        const total = entries.reduce((sum, item) => sum + Number(item[1] || 0), 0);
+        let roll = Math.random() * total;
+        for (const [rarity, weight] of entries){
+          roll -= Number(weight || 0);
+          if (roll <= 0) return rarity;
+        }
+        return "common";
+      }
+
+      function randomFrom(list){
+        return list[Math.floor(Math.random() * list.length)] || null;
+      }
+
+      function chooseReward(banner, forceHigh){
+        const highRarities = ["legendary", "mythic"];
+        let rarity = forceHigh ? randomFrom(highRarities) : chooseWeightedRarity(banner);
+        let pool = rewardsForRarity(banner, rarity);
+        if (!pool.length){
+          const fallback = Object.keys(RARITY_ORDER).slice().reverse().find((key) => rewardsForRarity(banner, key).length);
+          rarity = fallback || "common";
+          pool = rewardsForRarity(banner, rarity);
+        }
+        return randomFrom(pool) || banner.rewards[0];
+      }
+
+      function applyDropToInventory(drop){
+        const now = Date.now();
+        const current = inventoryEntry(drop.id);
+        state.inventory[drop.id] = {
+          quantity: current.quantity + 1,
+          firstAcquiredAt: current.firstAcquiredAt || now,
+          lastAcquiredAt: now
+        };
+      }
+
+      function resolveDrops(count){
+        const banner = currentBanner();
+        const drops = [];
+        for (let index = 0; index < count; index += 1){
+          const forceHigh = state.pity <= 1;
+          const drop = chooseReward(banner, forceHigh);
+          drops.push(drop);
+          applyDropToInventory(drop);
+          if (RARITY_ORDER[drop.rarity] >= RARITY_ORDER.legendary){
+            state.pity = DEFAULT_PITY;
+          } else {
+            state.pity = Math.max(1, state.pity - 1);
+          }
+        }
+        return drops;
+      }
+
+      function bestDrop(drops){
+        return drops.slice().sort((a, b) => (RARITY_ORDER[b.rarity] || 0) - (RARITY_ORDER[a.rarity] || 0))[0] || drops[0];
+      }
+
+      function shuffle(items){
+        const copy = [...items];
+        for (let index = copy.length - 1; index > 0; index -= 1){
+          const swapIndex = Math.floor(Math.random() * (index + 1));
+          [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+        }
+        return copy;
+      }
+
+      function buildSequence(winner){
+        const banner = currentBanner();
+        const sequence = [];
+        while (sequence.length < 42){
+          sequence.push(...shuffle(banner.rewards));
+        }
+        const winnerIndex = sequence.length;
+        sequence.push(winner);
+        sequence.push(...shuffle(banner.rewards).filter((reward) => reward.id !== winner.id).slice(0, 6));
+        return { sequence, winnerIndex };
+      }
+
+      function rewardArt(reward){
+        const fallback = escapeHtml(String(reward.name || "?").slice(0, 2).toUpperCase());
+        const image = reward.image
+          ? `<img src="${escapeAttr(reward.image)}" alt="${escapeAttr(reward.name)}" onerror="this.onerror=null;this.remove();this.parentNode.innerHTML='&lt;div class=&quot;rewardFallback&quot;&gt;${fallback}&lt;/div&gt;'">`
+          : `<div class="rewardFallback">${fallback}</div>`;
+        return `<div class="gachaArt${reward.equip ? " isEquip" : ""}">${image}<span class="rarityBadge ${escapeAttr(reward.rarity)}">${escapeHtml(RARITY_LABELS[reward.rarity] || reward.rarity)}</span></div>`;
+      }
+
+      function renderTrackItem(reward, isWinner){
+        return `
+          <div class="gachaItem${isWinner ? " isWinner" : ""}">
+            ${rewardArt(reward)}
+            <div class="gachaName">
+              <span>${escapeHtml(reward.type)}</span>
+              ${escapeHtml(reward.name)}
+            </div>
+          </div>
+        `;
+      }
+
+      function renderTrackPreview(){
+        const track = $("gachaAmbientTrack");
+        if (!track) return;
+        const base = shuffle(currentBanner().rewards).concat(shuffle(currentBanner().rewards));
+        const loop = base.concat(base);
+        track.style.transition = "";
+        track.style.transform = "";
+        track.classList.add("isAmbient");
+        track.innerHTML = loop.map((reward) => renderTrackItem(reward, false)).join("");
+      }
+
+      function renderBannerTabs(){
+        const host = $("bannerTabs");
+        if (!host) return;
+        host.innerHTML = Object.values(BANNERS).map((banner) => `
+          <button class="bannerTab${banner.code === state.activeBanner ? " isActive" : ""}" type="button" data-banner="${escapeAttr(banner.code)}">
+            <strong>${escapeHtml(banner.name)}</strong>
+            <span>${escapeHtml(banner.copy)}</span>
+          </button>
+        `).join("");
+      }
+
+      function renderOdds(){
+        const host = $("oddsTooltip");
+        const banner = currentBanner();
+        if (!host) return;
+        const order = ["mythic", "legendary", "epic", "rare", "common"];
+        const rows = order.filter((rarity) => Number(banner.odds[rarity] || 0) > 0).map((rarity) => `
+          <span class="oddsTooltipRow">
+            <span>${escapeHtml(RARITY_LABELS[rarity] || rarity)}</span>
+            <span>${String(banner.odds[rarity]).replace(".", ",")}%</span>
+          </span>
+        `).join("");
+        host.innerHTML = `<strong>Probabilidades</strong>${rows}<span class="oddsTooltipNote">Pity ${escapeHtml(banner.pityTarget)} en ${DEFAULT_PITY} tiradas sin legendaria o superior.</span>`;
+      }
+
+      function itemThumb(reward, className){
+        const fallback = escapeHtml(String(reward?.name || "?").slice(0, 2).toUpperCase());
+        const classes = `${className || "inventoryThumb"}${reward?.equip ? " isEquip" : ""}`;
+        if (reward?.image){
+          return `<span class="${classes}"><img src="${escapeAttr(reward.image)}" alt="${escapeAttr(reward.name)}" onerror="this.onerror=null;this.remove();this.parentNode.innerHTML='&lt;span class=&quot;rewardFallback&quot;&gt;${fallback}&lt;/span&gt;'"></span>`;
+        }
+        return `<span class="${classes}"><span class="rewardFallback">${fallback}</span></span>`;
+      }
+
+      function renderInventoryFilters(){
+        const host = $("inventoryFilterTabs");
+        if (host){
+          host.innerHTML = INVENTORY_FILTERS.map((filter) => `
+            <button class="filterButton${filter.code === state.inventoryFilter ? " isActive" : ""}" type="button" data-inventory-filter="${escapeAttr(filter.code)}">${escapeHtml(filter.label)}</button>
+          `).join("");
+        }
+        const sort = $("inventorySort");
+        if (sort && sort.value !== state.inventorySort) sort.value = state.inventorySort;
+      }
+
+      function inventoryRows(){
+        return Object.entries(state.inventory)
+          .map(([id, value]) => ({ reward: findReward(id), entry: normalizeInventoryEntry(value) }))
+          .filter((row) => row.reward && row.entry.quantity > 0)
+          .map((row) => ({
+            reward: row.reward,
+            quantity: row.entry.quantity,
+            firstAcquiredAt: row.entry.firstAcquiredAt || 0,
+            lastAcquiredAt: row.entry.lastAcquiredAt || row.entry.firstAcquiredAt || 0
+          }));
+      }
+
+      function renderInventory(){
+        renderInventoryFilters();
+        const host = $("inventoryGrid");
+        if (!host) return;
+        let entries = inventoryRows();
+        if (state.inventoryFilter !== "all"){
+          entries = entries.filter(({ reward }) => reward.category === state.inventoryFilter);
+        }
+        entries.sort((a, b) => {
+          if (state.inventorySort === "rarity"){
+            return (RARITY_ORDER[b.reward.rarity] || 0) - (RARITY_ORDER[a.reward.rarity] || 0)
+              || b.lastAcquiredAt - a.lastAcquiredAt
+              || a.reward.name.localeCompare(b.reward.name, "es");
+          }
+          return b.lastAcquiredAt - a.lastAcquiredAt
+            || (RARITY_ORDER[b.reward.rarity] || 0) - (RARITY_ORDER[a.reward.rarity] || 0)
+            || a.reward.name.localeCompare(b.reward.name, "es");
+        });
+        if (!entries.length){
+          host.innerHTML = '<div class="empty">No hay recompensas para este filtro todavia.</div>';
+          return;
+        }
+        host.innerHTML = entries.map(({ reward, quantity }) => `
+          <button class="inventoryTile" type="button" data-inventory-reward="${escapeAttr(reward.id)}" title="Gestionar en Mi Plantilla">
+            <span class="inventoryCount">x${quantity}</span>
+            ${itemThumb(reward, "inventoryThumb")}
+            <strong>${escapeHtml(reward.name)}</strong>
+            <span>${escapeHtml(RARITY_LABELS[reward.rarity] || reward.rarity)} &middot; ${escapeHtml(reward.type)}</span>
+            <span>${escapeHtml(reward.target)}</span>
+            <span class="inventoryAction">Gestionar en Mi Plantilla</span>
+          </button>
+        `).join("");
+      }
+
+      function inventoryTotal(){
+        return Object.values(state.inventory).reduce((sum, value) => sum + normalizeInventoryEntry(value).quantity, 0);
+      }
+
+      function setButtons(){
+        const banner = currentBanner();
+        const disabled = state.spinning;
+        const single = $("singlePullButton");
+        const multi = $("multiPullButton");
+        if (single) single.disabled = disabled || state.balance < banner.singleCost;
+        if (multi) multi.disabled = disabled || state.balance < banner.multiCost;
+      }
+
+      function renderAll(){
+        const banner = currentBanner();
+        $("mockWalletAmount").textContent = formatCoins(state.balance);
+        $("walletOwner").textContent = state.teamName || "Balance";
+        $("activeBannerName").textContent = banner.name;
+        $("singleCostStat").textContent = formatCoins(banner.singleCost);
+        $("pityStat").textContent = String(state.pity);
+        $("inventoryStat").textContent = String(inventoryTotal());
+        $("singlePullCost").textContent = formatCoins(banner.singleCost);
+        $("multiPullCost").textContent = formatCoins(banner.multiCost);
+        $("bannerMeta").textContent = `${banner.shortName} - ${banner.pityTarget}`;
+        renderBannerTabs();
+        renderOdds();
+        renderInventory();
+        setButtons();
+      }
+
+      function openPullModal(count, cost){
+        const modal = $("gachaPullModal");
+        if (!modal) return;
+        $("gachaModalTitle").textContent = count === 10 ? "Tirada x10" : "Tirada x1";
+        $("gachaModalSubtitle").textContent = `${count} recompensa${count === 1 ? "" : "s"} por ${formatCoins(cost)} berries`;
+        $("gachaModalResult").innerHTML = count === 10
+          ? "Preparando reveal..."
+          : "Girando...";
+        $("gachaModalStage")?.classList.remove("hidden");
+        const modalTrack = $("gachaModalTrack");
+        if (modalTrack){
+          const preview = shuffle(currentBanner().rewards).concat(shuffle(currentBanner().rewards)).slice(0, 18);
+          modalTrack.style.transition = "none";
+          modalTrack.style.transform = "translateX(0)";
+          modalTrack.innerHTML = preview.map((reward) => renderTrackItem(reward, false)).join("");
+        }
+        const revealGrid = $("multiRevealGrid");
+        if (revealGrid){
+          revealGrid.classList.add("hidden");
+          revealGrid.innerHTML = "";
+        }
+        setMultiButtons(false, false);
+        modal.classList.remove("hidden");
+        modal.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closePullModal(){
+        if (state.spinning) return;
+        const modal = $("gachaPullModal");
+        if (!modal) return;
+        modal.classList.add("hidden");
+        modal.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+        state.multiDrops = [];
+        state.multiRevealIndex = 0;
+        state.multiAnimating = false;
+      }
+
+      function setMultiButtons(show, done, busy){
+        const next = $("gachaNextButton");
+        const skip = $("gachaSkipButton");
+        if (next){
+          next.classList.toggle("hidden", !show || done);
+          next.disabled = !show || done || busy;
+        }
+        if (skip){
+          skip.classList.toggle("hidden", !show || done);
+          skip.disabled = !show || done || busy;
+        }
+      }
+
+      function renderModalReveal(drops){
+        const grid = $("multiRevealGrid");
+        if (!grid) return;
+        if (!drops.length){
+          grid.innerHTML = "";
+          grid.classList.add("hidden");
+          return;
+        }
+        grid.innerHTML = drops.map((reward, index) => `
+          <article class="rewardTile" style="animation-delay:${index * 35}ms">
+            ${rewardArt(reward)}
+            <div class="rewardTileBody">
+              <strong>${escapeHtml(reward.name)}</strong>
+              <span>${escapeHtml(reward.type)} para ${escapeHtml(reward.target)}</span>
+            </div>
+          </article>
+        `).join("");
+        grid.classList.remove("hidden");
+      }
+
+      function renderStepReveal(){
+        const drops = state.multiDrops;
+        const revealed = drops.slice(0, state.multiRevealIndex);
+        renderModalReveal(revealed);
+        const done = state.multiRevealIndex >= drops.length;
+        $("gachaModalResult").innerHTML = done
+          ? `Tirada x10 completada<small>Estas son las 10 recompensas.</small>`
+          : `Recompensa ${state.multiRevealIndex} de ${drops.length}<small>Pulsa Siguiente para revelar la proxima o Saltar para verlas todas.</small>`;
+        const nextButton = $("gachaNextButton");
+        if (nextButton) nextButton.textContent = `Siguiente (${Math.min(state.multiRevealIndex + 1, drops.length)}/${drops.length})`;
+        setMultiButtons(true, done);
+        if (done) finishPull(drops, bestDrop(drops));
+      }
+
+      function revealNextMulti(){
+        if (!state.spinning || state.multiAnimating || !state.multiDrops.length) return;
+        if (state.multiRevealIndex >= state.multiDrops.length) return;
+        const nextIndex = state.multiRevealIndex;
+        const reward = state.multiDrops[nextIndex];
+        state.multiAnimating = true;
+        $("gachaModalStage")?.classList.remove("hidden");
+        $("gachaModalResult").innerHTML = `Girando recompensa ${nextIndex + 1} de ${state.multiDrops.length}<small>La recompensa se anadira abajo al terminar.</small>`;
+        setMultiButtons(true, false, true);
+        spinReward(reward, {
+          duration: 2400,
+          onDone: () => {
+            state.multiRevealIndex = Math.min(nextIndex + 1, state.multiDrops.length);
+            state.multiAnimating = false;
+            renderStepReveal();
+          }
+        });
+      }
+
+      function skipMulti(){
+        if (!state.spinning || state.multiAnimating || !state.multiDrops.length) return;
+        state.multiRevealIndex = state.multiDrops.length;
+        renderStepReveal();
+      }
+
+      function finishPull(drops, winner){
+        state.spinning = false;
+        state.multiAnimating = false;
+        state.lastDrops = drops;
+        saveLocalState();
+        const result = $("gachaResult");
+        if (result){
+          result.innerHTML = `${escapeHtml(winner.name)}<small>${escapeHtml(RARITY_LABELS[winner.rarity] || winner.rarity)} &middot; ${escapeHtml(winner.type)}</small>`;
+        }
+        setMultiButtons(false, true);
+        const modalResult = $("gachaModalResult");
+        if (modalResult){
+          modalResult.innerHTML = drops.length === 1
+            ? `${escapeHtml(winner.name)}<small>${escapeHtml(RARITY_LABELS[winner.rarity] || winner.rarity)} &middot; ${escapeHtml(winner.type)}</small>`
+            : `Tirada x10 completada<small>Mejor recompensa: ${escapeHtml(winner.name)} (${escapeHtml(RARITY_LABELS[winner.rarity] || winner.rarity)})</small>`;
+        }
+        renderAll();
+      }
+
+      function spinReward(winner, options){
+        const opts = options || {};
+        const { sequence, winnerIndex } = buildSequence(winner);
+        const track = $("gachaModalTrack");
+        const stage = $("gachaModalStage");
+        if (!track || !stage){
+          if (typeof opts.onDone === "function") opts.onDone(winner);
+          return;
+        }
+        const duration = Number(opts.duration || 4000);
+        track.classList.remove("isAmbient");
+        track.style.transition = "none";
+        track.style.transform = "translateX(0)";
+        track.innerHTML = sequence.map((reward) => renderTrackItem(reward, false)).join("");
+        window.requestAnimationFrame(() => {
+          const target = track.children[winnerIndex];
+          if (!target){
+            if (typeof opts.onDone === "function") opts.onDone(winner);
+            return;
+          }
+          const stageCenter = stage.clientWidth / 2;
+          const safeOffset = 12;
+          const minStopOffset = Math.min(safeOffset, target.offsetWidth / 3);
+          const maxStopOffset = Math.max(minStopOffset, target.offsetWidth - safeOffset);
+          const stopOffset = minStopOffset + (Math.random() * (maxStopOffset - minStopOffset));
+          const targetStopPoint = target.offsetLeft + stopOffset;
+          const endTranslate = stageCenter - targetStopPoint;
+          track.style.transition = `transform ${duration}ms cubic-bezier(.08,.82,.18,1)`;
+          track.style.transform = `translateX(${endTranslate}px)`;
+          window.setTimeout(() => {
+            target.classList.add("isWinner");
+            if (typeof opts.onDone === "function") opts.onDone(winner);
+          }, duration + 50);
+        });
+      }
+
+      function spinSingle(drops){
+        const winner = bestDrop(drops);
+        spinReward(winner, {
+          duration: 4000,
+          onDone: () => finishPull(drops, winner)
+        });
+      }
+
+      async function resolveRemotePull(count){
+        if (!App.createClient || !state.currentUser?.id || !state.currentTeam?.id) return null;
+        const client = App.createClient();
+        const fallbackUuid = `00000000-0000-4000-8000-${Math.random().toString(16).slice(2, 14).padEnd(12, "0")}`;
+        const requestId = window.crypto?.randomUUID ? window.crypto.randomUUID() : fallbackUuid;
+        const { data, error } = await client.rpc("fantasy_vbf_gacha_pull", {
+          p_season: CURRENT_SEASON,
+          p_banner_code: REMOTE_BANNER_CODE,
+          p_count: count,
+          p_client_request_id: requestId
+        });
+        if (error) throw error;
+        const payload = data && typeof data === "object" ? data : {};
+        const rewards = Array.isArray(payload.rewards) ? payload.rewards.map(remoteRewardFromPull).filter(Boolean) : [];
+        state.balance = Number.isFinite(Number(payload.balance)) ? Number(payload.balance) : state.balance;
+        state.pity = Number.isFinite(Number(payload.pity)) ? Number(payload.pity) : state.pity;
+        state.remoteReady = true;
+        await loadRemoteInventory(client);
+        return rewards;
+      }
+
+      async function pull(count){
+        if (state.spinning) return;
+        const banner = currentBanner();
+        const cost = count === 10 ? banner.multiCost : banner.singleCost;
+        if (state.balance < cost){
+          const result = $("gachaResult");
+          if (result) result.innerHTML = `Sin berries suficientes.<small>Coste: ${formatCoins(cost)} berries</small>`;
+          setButtons();
+          return;
+        }
+        state.spinning = true;
+        const result = $("gachaResult");
+        if (result) result.innerHTML = `Tirada en curso<small>${count} recompensa${count === 1 ? "" : "s"} por ${formatCoins(cost)} berries</small>`;
+        setButtons();
+        let drops = null;
+        try{
+          if (state.remoteReady && state.currentTeam?.id){
+            if (result) result.innerHTML = `Resolviendo en Supabase<small>Coste y premio se calculan en BBDD.</small>`;
+            drops = await resolveRemotePull(count);
+          }
+        } catch (error){
+          state.spinning = false;
+          setButtons();
+          if (result) result.innerHTML = `No pude completar la tirada<small>${escapeHtml(error?.message || String(error || ""))}</small>`;
+          return;
+        }
+        if (!Array.isArray(drops) || !drops.length){
+          state.balance -= cost;
+          drops = resolveDrops(count);
+        }
+        openPullModal(count, cost);
+        renderAll();
+        if (count === 1){
+          spinSingle(drops);
+        } else {
+          $("gachaModalStage")?.classList.remove("hidden");
+          state.multiDrops = drops;
+          state.multiRevealIndex = 0;
+          state.multiAnimating = false;
+          renderModalReveal([]);
+          $("gachaModalResult").innerHTML = `Tirada x10 preparada<small>Pulsa Siguiente para revelar cada recompensa o Saltar para verlas todas.</small>`;
+          const nextButton = $("gachaNextButton");
+          if (nextButton) nextButton.textContent = "Siguiente (1/10)";
+          setMultiButtons(true, false);
+        }
+      }
+
+      async function hydrateTeamBalance(){
+        if (!App.createClient) return;
+        try{
+          const sb = App.createClient();
+          const sessionRes = await sb.auth.getSession();
+          const user = sessionRes?.data?.session?.user || null;
+          if (!user?.id) return;
+          state.currentUser = user;
+          const { data, error } = await sb
+            .from("fantasy_vbf_teams")
+            .select("team_name,coins")
+            .eq("season", "OP15")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (error || !data) return;
+          const teamRes = await sb
+            .from("fantasy_vbf_teams")
+            .select("id,team_name,coins")
+            .eq("season", CURRENT_SEASON)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (!teamRes.error && teamRes.data){
+            state.currentTeam = teamRes.data;
+            state.balance = Math.max(0, Number(teamRes.data.coins || state.balance));
+            state.initialBalance = state.balance;
+            state.teamName = teamRes.data.team_name || state.teamName;
+          }
+          try{
+            const bannerRes = await sb
+              .from("fantasy_vbf_gacha_banners")
+              .select("id,name,single_cost,multi_cost,pity_limit")
+              .eq("season", CURRENT_SEASON)
+              .eq("code", REMOTE_BANNER_CODE)
+              .eq("active", true)
+              .maybeSingle();
+            if (!bannerRes.error && bannerRes.data){
+              BANNERS.mixed.name = bannerRes.data.name || BANNERS.mixed.name;
+              BANNERS.mixed.singleCost = Number(bannerRes.data.single_cost || BANNERS.mixed.singleCost);
+              BANNERS.mixed.multiCost = Number(bannerRes.data.multi_cost || BANNERS.mixed.multiCost);
+              BANNERS.mixed.pityLimit = Number(bannerRes.data.pity_limit || DEFAULT_PITY);
+              const pityRes = await sb
+                .from("fantasy_vbf_gacha_pity_state")
+                .select("pity_counter")
+                .eq("season", CURRENT_SEASON)
+                .eq("team_id", state.currentTeam?.id || "")
+                .eq("banner_id", bannerRes.data.id)
+                .maybeSingle();
+              if (!pityRes.error && pityRes.data) state.pity = Number(pityRes.data.pity_counter || state.pity);
+              await loadRemoteInventory(sb);
+              state.remoteReady = true;
+            }
+          } catch (gachaError){
+            state.remoteReady = false;
+            console.warn("VaDeGacha remoto no disponible:", gachaError?.message || gachaError);
+          }
+          const hasLocalInventory = inventoryTotal() > 0 || state.lastDrops.length > 0;
+          if (!hasLocalInventory && !state.remoteReady){
+            state.balance = Math.max(0, Number(data.coins || state.balance));
+            state.initialBalance = state.balance;
+          }
+          state.teamName = data.team_name || state.teamName;
+          saveLocalState();
+          renderAll();
+        } catch (_error){}
+      }
+
+      loadLocalState();
+      renderTrackPreview();
+      renderAll();
+      hydrateTeamBalance();
+
+      $("singlePullButton")?.addEventListener("click", () => pull(1));
+      $("multiPullButton")?.addEventListener("click", () => pull(10));
+
+      $("gachaNextButton")?.addEventListener("click", revealNextMulti);
+      $("gachaSkipButton")?.addEventListener("click", skipMulti);
+      $("inventoryFilterTabs")?.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-inventory-filter]");
+        if (!button) return;
+        const nextFilter = button.getAttribute("data-inventory-filter");
+        if (!INVENTORY_FILTERS.some((filter) => filter.code === nextFilter)) return;
+        state.inventoryFilter = nextFilter;
+        saveLocalState();
+        renderInventory();
+      });
+      $("inventorySort")?.addEventListener("change", (event) => {
+        state.inventorySort = event.target.value === "rarity" ? "rarity" : "date";
+        saveLocalState();
+        renderInventory();
+      });
+      $("inventoryGrid")?.addEventListener("click", (event) => {
+        if (!event.target.closest("[data-inventory-reward]")) return;
+        const result = $("gachaResult");
+        if (result) result.innerHTML = 'Inventario guardado.<small>Equipa skins e items desde Mi Plantilla > jugador > Items.</small>';
+      });
+      $("gachaPullModal")?.addEventListener("click", (event) => {
+        if (event.target.closest("[data-close-gacha-modal]")) closePullModal();
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closePullModal();
+      });
+    })();
+  </script>
+</body>
+</html>

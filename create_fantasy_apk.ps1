@@ -67,6 +67,7 @@ function Patch-MobileHtml {
     "fantasy-ranking.html",
     "fantasy-team.html",
     "fantasy-market.html",
+    "fantasy-gacha.html",
     "fantasy-attendance.html",
     "vade-back-fight.html",
     "login.html",
@@ -95,6 +96,7 @@ function Patch-MobileHtml {
     '        <a class="vdfTopNavLink" href="fantasy.html">Liga</a>' + "`r`n" +
     '        <a class="vdfTopNavLink" href="fantasy-team.html">Plantilla</a>' + "`r`n" +
     '        <a class="vdfTopNavLink" href="fantasy-market.html">Mercado</a>' + "`r`n" +
+    '        <a class="vdfTopNavLink" href="fantasy-gacha.html">VaDeGacha</a>' + "`r`n" +
     '        <a class="vdfTopNavLink" href="fantasy-ranking.html">Ranking VaDeFantasy</a>' + "`r`n" +
     '        <a class="vdfTopNavLink" href="vade-back-fight.html">Ranking VaDeBackFight</a>' + "`r`n" +
     '      </nav>'
@@ -108,6 +110,7 @@ function Patch-MobileHtml {
     '            <a class="navInlineMenuLink" href="fantasy.html">Liga</a>' + "`r`n" +
     '            <a class="navInlineMenuLink" href="fantasy-team.html">Plantilla</a>' + "`r`n" +
     '            <a class="navInlineMenuLink" href="fantasy-market.html">Mercado</a>' + "`r`n" +
+    '            <a class="navInlineMenuLink" href="fantasy-gacha.html">VaDeGacha</a>' + "`r`n" +
     '            <a class="navInlineMenuLink" href="fantasy-ranking.html">Ranking VaDeFantasy</a>' + "`r`n" +
     '            <a class="navInlineMenuLink" href="vade-back-fight.html">Ranking VaDeBackFight</a>' + "`r`n" +
     '          </div>'
@@ -242,6 +245,7 @@ function Assert-FantasyOnlyLinks {
     "fantasy-ranking.html",
     "fantasy-team.html",
     "fantasy-market.html",
+    "fantasy-gacha.html",
     "fantasy-attendance.html",
     "vade-back-fight.html",
     "login.html",
@@ -356,6 +360,7 @@ function Build-FantasyWeb {
     "fantasy-ranking.html",
     "fantasy-team.html",
     "fantasy-market.html",
+    "fantasy-gacha.html",
     "fantasy-attendance.html",
     "vade-back-fight.html",
     "login.html",
@@ -401,6 +406,7 @@ function Build-FantasyWeb {
     "fantasy-ranking.html",
     "fantasy-team.html",
     "fantasy-market.html",
+    "fantasy-gacha.html",
     "fantasy-attendance.html",
     "login.html",
     "profile.html",

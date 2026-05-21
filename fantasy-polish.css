@@ -9142,3 +9142,255 @@ body[data-fantasy-view] .teamSparkSvg{
     display:none !important;
   }
 }
+
+body[data-fantasy-view] .gachaLoadoutPanel{
+  display:grid;
+  gap:12px;
+}
+
+body[data-fantasy-view] .gachaLoadoutSummary{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+
+body[data-fantasy-view] .gachaLoadoutSummary span{
+  display:grid;
+  gap:3px;
+  min-width:0;
+  padding:10px 12px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:14px;
+  background:rgba(248,250,252,.94);
+}
+
+body[data-fantasy-view] .gachaLoadoutSummary strong{
+  color:#0f172a;
+  font-size:20px;
+  font-weight:1000;
+  line-height:1;
+}
+
+body[data-fantasy-view] .gachaLoadoutSummary small{
+  color:#64748b;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.08em;
+  line-height:1.1;
+  text-transform:uppercase;
+}
+
+body[data-fantasy-view] .gachaLoadoutGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+
+body[data-fantasy-view] .gachaLoadoutSlot{
+  display:grid;
+  grid-template-columns:56px minmax(0,1fr);
+  gap:10px;
+  align-items:center;
+  min-width:0;
+  min-height:92px;
+  padding:10px;
+  border:1px solid rgba(15,23,42,.10);
+  border-radius:16px;
+  background:rgba(255,255,255,.92);
+}
+
+body[data-fantasy-view] .gachaLoadoutSlot.isEmpty{
+  grid-template-columns:minmax(0,1fr) auto;
+  border-style:dashed;
+  background:rgba(248,250,252,.72);
+}
+
+body[data-fantasy-view] .gachaLoadoutThumb{
+  width:56px;
+  height:56px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  border-radius:14px;
+  background:linear-gradient(160deg,#e2e8f0,#fff);
+  color:#0f172a;
+  font-size:18px;
+  font-weight:1000;
+}
+
+body[data-fantasy-view] .gachaLoadoutThumb img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center 16%;
+}
+
+body[data-fantasy-view] .gachaLoadoutThumb.isEquip img{
+  width:70%;
+  height:70%;
+  object-fit:contain;
+  filter:drop-shadow(0 8px 12px rgba(15,23,42,.18));
+}
+
+body[data-fantasy-view] .gachaLoadoutCopy{
+  min-width:0;
+  display:grid;
+  gap:4px;
+}
+
+body[data-fantasy-view] .gachaLoadoutCopy strong,
+body[data-fantasy-view] .gachaLoadoutSlot > div strong{
+  color:#0f172a;
+  font-size:14px;
+  font-weight:1000;
+  line-height:1.14;
+}
+
+body[data-fantasy-view] .gachaLoadoutCopy span,
+body[data-fantasy-view] .gachaLoadoutSlot > div span{
+  color:#64748b;
+  font-size:12px;
+  font-weight:800;
+  line-height:1.3;
+}
+
+body[data-fantasy-view] .gachaLoadoutActions{
+  grid-column:1/-1;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+body[data-fantasy-view] #gachaItemPickerWrap.hidden{
+  display:none !important;
+}
+
+body[data-fantasy-view] .gachaItemPickerCard{
+  width:min(760px,96vw);
+}
+
+body[data-fantasy-view] .gachaPickerHead{
+  padding-right:46px;
+  margin-bottom:12px;
+}
+
+body[data-fantasy-view] .gachaPickerSort{
+  min-width:170px;
+}
+
+body[data-fantasy-view] .gachaPickerGrid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:10px;
+}
+
+body[data-fantasy-view] .gachaPickerItem{
+  appearance:none;
+  width:100%;
+  display:grid;
+  grid-template-columns:56px minmax(0,1fr);
+  gap:10px;
+  align-items:center;
+  min-width:0;
+  padding:10px;
+  border:1px solid rgba(15,23,42,.10);
+  border-radius:16px;
+  background:#fff;
+  text-align:left;
+  cursor:pointer;
+  transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+
+body[data-fantasy-view] .gachaPickerItem:hover{
+  transform:translateY(-2px);
+  border-color:rgba(37,99,235,.24);
+  box-shadow:0 14px 28px rgba(15,23,42,.12);
+}
+
+body[data-fantasy-view] .gachaPickerItem:disabled{
+  cursor:not-allowed;
+  opacity:.54;
+  transform:none;
+  box-shadow:none;
+}
+
+body[data-fantasy-view] .gachaPickerCopy{
+  min-width:0;
+  display:grid;
+  gap:4px;
+}
+
+body[data-fantasy-view] .gachaPickerCopy strong{
+  color:#0f172a;
+  font-size:14px;
+  font-weight:1000;
+  line-height:1.14;
+}
+
+body[data-fantasy-view] .gachaPickerCopy small{
+  color:#64748b;
+  font-size:12px;
+  font-weight:800;
+  line-height:1.3;
+}
+
+body[data-fantasy-view] .gachaPickerCopy em{
+  color:#1d4ed8;
+  font-size:10px;
+  font-style:normal;
+  font-weight:1000;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+
+body[data-fantasy-view] #playerModalBody .playerVisualBtnWrap{
+  position:relative;
+  display:block;
+}
+body[data-fantasy-view] #playerModalBody .skinEditBtn{
+  position:absolute;
+  top:8px;
+  left:8px;
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  background:rgba(15,23,42,.72);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  color:#fff;
+  border:none;
+  cursor:pointer;
+  font-size:15px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background .16s ease,transform .12s ease;
+  z-index:3;
+}
+body[data-fantasy-view] #playerModalBody .skinEditBtn:hover{
+  background:rgba(37,99,235,.85);
+  transform:scale(1.1);
+}
+body[data-fantasy-view] #playerModalBody .gachaLoadoutActions .btn:not(.btnDanger){
+  background:#f1f5f9;
+  border-color:rgba(15,23,42,.16);
+  color:#334155;
+}
+body[data-fantasy-view] #playerModalBody .gachaLoadoutActions .btn:not(.btnDanger):hover{
+  background:#e2e8f0;
+  border-color:rgba(15,23,42,.22);
+  color:#0f172a;
+}
+
+@media (max-width:640px){
+  body[data-fantasy-view] .gachaLoadoutSummary,
+  body[data-fantasy-view] .gachaLoadoutGrid,
+  body[data-fantasy-view] .gachaPickerGrid{
+    grid-template-columns:1fr;
+  }
+
+  body[data-fantasy-view] .gachaLoadoutSlot.isEmpty{
+    grid-template-columns:1fr;
+  }
+}

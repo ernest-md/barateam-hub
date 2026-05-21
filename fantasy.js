@@ -51,6 +51,15 @@
   const DEFAULT_CAPTAIN_MULTIPLIER = 1.5;
   const WEEKLY_REWARD_PER_POINT = 3000;
   const MIN_WEEKLY_REWARD = 20000;
+  const GACHA_EQUIP_SLOTS = 3;
+  const GACHA_RARITY_ORDER = { common: 1, rare: 2, epic: 3, legendary: 4, mythic: 5 };
+  const GACHA_RARITY_LABELS = {
+    common: 'Comun',
+    rare: 'Rara',
+    epic: 'Epica',
+    legendary: 'Legendaria',
+    mythic: 'Mitica'
+  };
   const TIER_BASE_PRICES = {
     'pirate king': 100000,
     yonkou: 80000,
@@ -221,6 +230,16 @@
     marketFilter: 'all',
     teamPanelTab: 'trend',
     watchlistSlugs: new Set(),
+    gachaReady: null,
+    gachaOwnedItems: [],
+    gachaSkinAssignments: [],
+    gachaEquippedItems: [],
+    gachaPickerOpen: false,
+    gachaPickerKind: 'equipment',
+    gachaPickerPlayerSlug: '',
+    gachaPickerSlotIndex: 1,
+    gachaPickerSort: 'rarity',
+    gachaActionInFlight: false,
     modalPlayerSlug: '',
     modalSource: '',
     modalPlayerTab: 'summary',
@@ -1190,9 +1209,8 @@
     return profile.display_name || profile.username || fallback || 'Mi equipo';
   }
 
-  function renderPlayerVisual(player, overlayHtml){
-    const tier = escapeHtml(player.tier || 'Sin tier');
-    const portraitUrl = playerPortraitUrl(player);
+  function renderPlayerVisual(player, overlayHtml, skinPortraitUrl){
+    const portraitUrl = skinPortraitUrl || playerPortraitUrl(player);
     return `<div class="playerVisual ${tierClass(player.tier)} ${portraitUrl ? 'has-photo' : ''}">${portraitUrl ? `<img class="playerPhoto" src="${escapeAttr(portraitUrl)}" alt="${escapeAttr(player.name || 'Jugador')}" loading="lazy" decoding="async" />` : ''}${portraitUrl ? '<div class="playerPhotoShade"></div>' : ''}<div class="playerArtFallback"></div>${overlayHtml ? `<div class="playerOverlay">${overlayHtml}</div>` : ''}</div>`;
   }
 
@@ -2320,6 +2338,164 @@
     return Array.isArray(data) ? data : [];
   }
 
+  function resetGachaState(){
+    state.gachaOwnedItems = [];
+    state.gachaSkinAssignments = [];
+    state.gachaEquippedItems = [];
+  }
+
+  function normalizeGachaSlug(value){
+    return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+  }
+
+  function gachaItemFromOwned(owned){
+    return owned?.item || owned?.fantasy_vbf_gacha_items || null;
+  }
+
+  function gachaOwnedById(ownedItemId){
+    const id = String(ownedItemId || '');
+    return state.gachaOwnedItems.find((row) => String(row.id || '') === id) || null;
+  }
+
+  function gachaAssignmentForPlayer(playerSlug){
+    const slug = String(playerSlug || '');
+    return state.gachaSkinAssignments.find((row) => String(row.player_slug || '') === slug) || null;
+  }
+
+  function gachaEquippedForPlayer(playerSlug){
+    const slug = String(playerSlug || '');
+    return state.gachaEquippedItems
+      .filter((row) => String(row.player_slug || '') === slug)
+      .sort((a, b) => Number(a.slot_index || 0) - Number(b.slot_index || 0));
+  }
+
+  function gachaEquippedSlot(playerSlug, slotIndex){
+    const slot = Number(slotIndex || 0);
+    return gachaEquippedForPlayer(playerSlug).find((row) => Number(row.slot_index || 0) === slot) || null;
+  }
+
+  function gachaEquippedByOwnedId(ownedItemId){
+    const id = String(ownedItemId || '');
+    return state.gachaEquippedItems.find((row) => String(row.owned_item_id || '') === id) || null;
+  }
+
+  function gachaSkinAssignmentByOwnedId(ownedItemId){
+    const id = String(ownedItemId || '');
+    return state.gachaSkinAssignments.find((row) => String(row.owned_item_id || '') === id) || null;
+  }
+
+  function gachaTargetAllowed(item, playerSlug){
+    if (!item) return false;
+    const rule = String(item.target_rule || 'any').trim().toLowerCase();
+    const slug = String(playerSlug || '').trim();
+    const rosterEntry = teamEntryBySlug(slug);
+    if (rule === 'player'){
+      return normalizeGachaSlug(item.target_player_slug) === normalizeGachaSlug(slug);
+    }
+    if (rule === 'captain'){
+      return String(state.currentTeam?.captain_player_slug || '') === slug;
+    }
+    if (rule === 'active'){
+      return rosterEntry ? !isBenchEntry(rosterEntry) : true;
+    }
+    if (rule === 'bench'){
+      return rosterEntry ? isBenchEntry(rosterEntry) : false;
+    }
+    return true;
+  }
+
+  function gachaOwnedCompatibleWithPlayer(owned, kind, playerSlug){
+    const item = gachaItemFromOwned(owned);
+    if (!item || String(item.kind || '') !== String(kind || '')) return false;
+    return gachaTargetAllowed(item, playerSlug);
+  }
+
+  function gachaItemArt(item){
+    const name = String(item?.name || '?');
+    const fallback = escapeHtml(name.slice(0, 2).toUpperCase());
+    if (item?.asset_path){
+      return `<span class="gachaLoadoutThumb ${String(item.kind || '') === 'equipment' ? 'isEquip' : ''}"><img src="${escapeAttr(item.asset_path)}" alt="${escapeAttr(name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.remove();this.parentNode.innerHTML='${fallback}';" /></span>`;
+    }
+    return `<span class="gachaLoadoutThumb ${String(item?.kind || '') === 'equipment' ? 'isEquip' : ''}">${fallback}</span>`;
+  }
+
+  function gachaRarityLabel(item){
+    const rarity = String(item?.rarity || '').trim().toLowerCase();
+    return GACHA_RARITY_LABELS[rarity] || rarity || 'Item';
+  }
+
+  function gachaOwnedAcquiredTime(owned){
+    const date = new Date(owned?.acquired_at || 0);
+    return Number.isFinite(date.getTime()) ? date.getTime() : 0;
+  }
+
+  function sortGachaOwnedItems(rows){
+    const sort = String(state.gachaPickerSort || 'rarity');
+    return (rows || []).slice().sort((a, b) => {
+      const itemA = gachaItemFromOwned(a) || {};
+      const itemB = gachaItemFromOwned(b) || {};
+      if (sort === 'date'){
+        return gachaOwnedAcquiredTime(b) - gachaOwnedAcquiredTime(a)
+          || collator.compare(String(itemA.name || ''), String(itemB.name || ''));
+      }
+      if (sort === 'name'){
+        return collator.compare(String(itemA.name || ''), String(itemB.name || ''));
+      }
+      return (GACHA_RARITY_ORDER[String(itemB.rarity || '').toLowerCase()] || 0)
+        - (GACHA_RARITY_ORDER[String(itemA.rarity || '').toLowerCase()] || 0)
+        || gachaOwnedAcquiredTime(b) - gachaOwnedAcquiredTime(a)
+        || collator.compare(String(itemA.name || ''), String(itemB.name || ''));
+    });
+  }
+
+  async function loadGachaState(){
+    resetGachaState();
+    if (!state.currentUser?.id || !state.currentTeam?.id){
+      state.gachaReady = null;
+      return;
+    }
+    try{
+      const [ownedRes, skinsRes, equippedRes] = await Promise.all([
+        withTimeout(
+          sb.from('fantasy_vbf_gacha_owned_items')
+            .select('id,season,team_id,user_id,item_id,source_pull_id,acquired_at,item:fantasy_vbf_gacha_items(id,code,name,kind,rarity,slot,target_player_slug,target_rule,asset_path,effect_summary,active)')
+            .eq('season', CURRENT_SEASON)
+            .eq('team_id', state.currentTeam.id)
+            .order('acquired_at', { ascending: false }),
+          'inventario gacha',
+          9000
+        ),
+        withTimeout(
+          sb.from('fantasy_vbf_gacha_skin_assignments')
+            .select('season,team_id,user_id,player_slug,owned_item_id,assigned_at')
+            .eq('season', CURRENT_SEASON)
+            .eq('team_id', state.currentTeam.id),
+          'skins gacha',
+          9000
+        ),
+        withTimeout(
+          sb.from('fantasy_vbf_gacha_equipped_items')
+            .select('season,team_id,user_id,player_slug,slot_index,owned_item_id,equipped_at')
+            .eq('season', CURRENT_SEASON)
+            .eq('team_id', state.currentTeam.id),
+          'equipables gacha',
+          9000
+        )
+      ]);
+      if (ownedRes.error) throw ownedRes.error;
+      if (skinsRes.error) throw skinsRes.error;
+      if (equippedRes.error) throw equippedRes.error;
+      state.gachaOwnedItems = Array.isArray(ownedRes.data) ? ownedRes.data : [];
+      state.gachaSkinAssignments = Array.isArray(skinsRes.data) ? skinsRes.data : [];
+      state.gachaEquippedItems = Array.isArray(equippedRes.data) ? equippedRes.data : [];
+      state.gachaReady = true;
+    } catch (error){
+      resetGachaState();
+      state.gachaReady = false;
+      if (!isSchemaError(error)) console.warn('fantasy gacha:', error?.message || error);
+    }
+  }
+
   function refreshSnapshotsInBackground(){
     if (snapshotsHydrationPromise || state.schemaReady === false) return snapshotsHydrationPromise;
     snapshotsHydrationPromise = (async () => {
@@ -2357,6 +2533,7 @@
     state.transactions = [];
     state.notifications = [];
     state.currentTeam = null;
+    resetGachaState();
     if (state.schemaReady === false){ renderAll(); return; }
     state.loadingLeague = true;
     renderHero();
@@ -2382,6 +2559,7 @@
       state.teamRounds = Array.isArray(roundsRes.data) ? roundsRes.data : [];
       state.transactions = Array.isArray(txRes.data) ? txRes.data : [];
       state.currentTeam = state.currentUser ? state.seasonTeams.find((team) => String(team.user_id) === String(state.currentUser.id)) || null : null;
+      await loadGachaState();
       const profileIds = [
         ...state.seasonTeams.map((team) => team.user_id),
         ...state.transactions.map((tx) => tx.user_id)
@@ -3615,7 +3793,9 @@
     state.modalSource = '';
     state.modalPlayerTab = 'summary';
     state.benchSwapSlug = '';
+    state.gachaPickerOpen = false;
     renderPlayerModal();
+    renderGachaPickerModal();
   }
 
   function openTeamModal(teamId){
@@ -3899,6 +4079,230 @@
     </div>`;
   }
 
+  function renderGachaLoadoutSlot(kind, playerSlug, slotIndex){
+    const isSkin = kind === 'skin';
+    const assignment = isSkin ? gachaAssignmentForPlayer(playerSlug) : gachaEquippedSlot(playerSlug, slotIndex);
+    const owned = assignment ? gachaOwnedById(assignment.owned_item_id) : null;
+    const item = gachaItemFromOwned(owned);
+    const title = isSkin ? 'Skin' : `Hueco ${intFmt.format(slotIndex)}`;
+    if (!item){
+      return `<article class="gachaLoadoutSlot isEmpty">
+        <div>
+          <strong>${escapeHtml(title)}</strong>
+          <span>${isSkin ? 'Sin skin aplicada' : 'Sin equipable'}</span>
+        </div>
+        <button class="btn compactBtn" type="button" data-open-gacha-picker="${escapeAttr(kind)}" data-gacha-player="${escapeAttr(playerSlug)}" data-gacha-slot="${escapeAttr(slotIndex || 0)}">${isSkin ? 'Elegir skin' : 'Elegir item'}</button>
+      </article>`;
+    }
+    return `<article class="gachaLoadoutSlot">
+      ${gachaItemArt(item)}
+      <div class="gachaLoadoutCopy">
+        <strong>${escapeHtml(item.name || title)}</strong>
+        <span>${escapeHtml(gachaRarityLabel(item))}${item.effect_summary ? ` · ${escapeHtml(item.effect_summary)}` : ''}</span>
+      </div>
+      <div class="gachaLoadoutActions">
+        <button class="btn compactBtn" type="button" data-open-gacha-picker="${escapeAttr(kind)}" data-gacha-player="${escapeAttr(playerSlug)}" data-gacha-slot="${escapeAttr(slotIndex || 0)}">Cambiar</button>
+        <button class="btn btnDanger compactBtn" type="button" data-gacha-clear="${escapeAttr(kind)}" data-gacha-player="${escapeAttr(playerSlug)}" data-gacha-slot="${escapeAttr(slotIndex || 0)}">Quitar</button>
+      </div>
+    </article>`;
+  }
+
+  function renderPlayerItemsPanel(player, rosterEntry){
+    const playerSlug = String(rosterEntry?.player_slug || player?.slug || '');
+    if (!state.currentTeam || !state.currentUser){
+      return '<div class="empty">Inicia sesion y crea tu equipo para usar items.</div>';
+    }
+    if (state.gachaReady === false){
+      return '<div class="empty">VaDeGacha aun no esta instalado en Supabase. Ejecuta <code>supabase/sql/fantasy_vbf_gacha_proposal.sql</code> y recarga.</div>';
+    }
+    if (state.gachaReady !== true){
+      return '<div class="empty">Cargando inventario gacha...</div>';
+    }
+    return `<div class="gachaLoadoutPanel">
+      <div class="gachaLoadoutGrid">
+        ${Array.from({ length: GACHA_EQUIP_SLOTS }, (_item, index) => renderGachaLoadoutSlot('equipment', playerSlug, index + 1)).join('')}
+      </div>
+      <div class="helper compactHelper">Cada copia de item solo puede estar equipada en un jugador a la vez. Los slots guardan el cambio al momento mediante RPC.</div>
+    </div>`;
+  }
+
+  function ensureGachaPickerModal(){
+    let wrap = $('gachaItemPickerWrap');
+    if (wrap) return wrap;
+    wrap = document.createElement('div');
+    wrap.id = 'gachaItemPickerWrap';
+    wrap.className = 'modalWrap hidden';
+    wrap.setAttribute('aria-hidden', 'true');
+    wrap.innerHTML = `
+      <div class="modalBackdrop" data-close-gacha-picker="1"></div>
+      <div class="modalCard gachaItemPickerCard" role="dialog" aria-modal="true" aria-labelledby="gachaItemPickerTitle">
+        <button class="btn modalClose" type="button" data-close-gacha-picker="1" aria-label="Cerrar selector">&#10005;</button>
+        <div class="sectionHead gachaPickerHead">
+          <div>
+            <div class="modalEyebrow">VaDeGacha</div>
+            <h3 class="modalTitle" id="gachaItemPickerTitle">Elegir item</h3>
+            <p id="gachaItemPickerSubtitle">Selecciona una recompensa disponible.</p>
+          </div>
+          <label class="control gachaPickerSort">
+            <span>Orden</span>
+            <select id="gachaItemPickerSort">
+              <option value="rarity">Rareza</option>
+              <option value="date">Fecha</option>
+              <option value="name">Nombre</option>
+            </select>
+          </label>
+        </div>
+        <div class="gachaPickerGrid" id="gachaItemPickerBody"></div>
+      </div>
+    `;
+    document.body.appendChild(wrap);
+    wrap.addEventListener('click', async (event) => {
+      if (event.target.closest('[data-close-gacha-picker]')){
+        closeGachaPicker();
+        return;
+      }
+      const selectButton = event.target.closest('[data-select-gacha-owned]');
+      if (selectButton){
+        await applyGachaPickerSelection(selectButton.getAttribute('data-select-gacha-owned') || '', selectButton);
+      }
+    });
+    wrap.querySelector('#gachaItemPickerSort')?.addEventListener('change', (event) => {
+      state.gachaPickerSort = event.target.value || 'rarity';
+      renderGachaPickerModal();
+    });
+    return wrap;
+  }
+
+  function openGachaPicker(kind, playerSlug, slotIndex){
+    state.gachaPickerOpen = true;
+    state.gachaPickerKind = kind === 'skin' ? 'skin' : 'equipment';
+    state.gachaPickerPlayerSlug = String(playerSlug || '').trim();
+    state.gachaPickerSlotIndex = Number(slotIndex || 1) || 1;
+    renderGachaPickerModal();
+  }
+
+  function closeGachaPicker(){
+    state.gachaPickerOpen = false;
+    state.gachaPickerKind = 'equipment';
+    state.gachaPickerPlayerSlug = '';
+    state.gachaPickerSlotIndex = 1;
+    renderGachaPickerModal();
+  }
+
+  function renderGachaPickerModal(){
+    const wrap = ensureGachaPickerModal();
+    const title = wrap.querySelector('#gachaItemPickerTitle');
+    const subtitle = wrap.querySelector('#gachaItemPickerSubtitle');
+    const body = wrap.querySelector('#gachaItemPickerBody');
+    const sort = wrap.querySelector('#gachaItemPickerSort');
+    if (!body || !title || !subtitle) return;
+    if (!state.gachaPickerOpen){
+      wrap.classList.add('hidden');
+      wrap.setAttribute('aria-hidden', 'true');
+      return;
+    }
+    const kind = state.gachaPickerKind === 'skin' ? 'skin' : 'equipment';
+    const player = state.playersBySlug.get(state.gachaPickerPlayerSlug) || {};
+    title.textContent = kind === 'skin' ? 'Elegir skin' : `Elegir item slot ${intFmt.format(state.gachaPickerSlotIndex || 1)}`;
+    subtitle.textContent = `Para ${player.name || state.gachaPickerPlayerSlug || 'jugador'}`;
+    if (sort && sort.value !== state.gachaPickerSort) sort.value = state.gachaPickerSort;
+    const compatible = sortGachaOwnedItems(state.gachaOwnedItems.filter((owned) => gachaOwnedCompatibleWithPlayer(owned, kind, state.gachaPickerPlayerSlug)));
+    if (!compatible.length){
+      body.innerHTML = `<div class="empty">No tienes ${kind === 'skin' ? 'skins compatibles' : 'equipables compatibles'} para este jugador.</div>`;
+    } else {
+      body.innerHTML = compatible.map((owned) => {
+        const item = gachaItemFromOwned(owned) || {};
+        const equipped = kind === 'equipment' ? gachaEquippedByOwnedId(owned.id) : null;
+        const assigned = kind === 'skin' ? gachaSkinAssignmentByOwnedId(owned.id) : null;
+        const usedBy = equipped?.player_slug || assigned?.player_slug || '';
+        const usedElsewhere = usedBy && String(usedBy) !== String(state.gachaPickerPlayerSlug);
+        const currentHere = usedBy && String(usedBy) === String(state.gachaPickerPlayerSlug);
+        const disabled = usedElsewhere || state.gachaActionInFlight;
+        const usedLabel = usedElsewhere
+          ? `Ocupado por ${usedBy}`
+          : currentHere
+            ? 'Ya aplicado aqui'
+            : (kind === 'skin' ? 'Aplicar skin' : 'Equipar item');
+        return `<button class="gachaPickerItem" type="button" data-select-gacha-owned="${escapeAttr(owned.id || '')}" ${disabled ? 'disabled' : ''}>
+          ${gachaItemArt(item)}
+          <span class="gachaPickerCopy">
+            <strong>${escapeHtml(item.name || 'Item')}</strong>
+            <small>${escapeHtml(gachaRarityLabel(item))}${item.effect_summary ? ` · ${escapeHtml(item.effect_summary)}` : ''}</small>
+            <em>${escapeHtml(usedLabel)}</em>
+          </span>
+        </button>`;
+      }).join('');
+    }
+    wrap.classList.remove('hidden');
+    wrap.setAttribute('aria-hidden', 'false');
+  }
+
+  async function applyGachaPickerSelection(ownedItemId, button){
+    if (state.gachaActionInFlight) return;
+    const owned = gachaOwnedById(ownedItemId);
+    const item = gachaItemFromOwned(owned);
+    if (!owned || !item) return;
+    state.gachaActionInFlight = true;
+    if (button) button.disabled = true;
+    try{
+      if (state.gachaPickerKind === 'skin'){
+        const { error } = await rpcWithTimeout('fantasy_vbf_gacha_apply_skin', {
+          p_season: CURRENT_SEASON,
+          p_player_slug: state.gachaPickerPlayerSlug,
+          p_owned_item_id: owned.id
+        }, 'aplicar skin gacha');
+        if (error) throw error;
+      } else {
+        const { error } = await rpcWithTimeout('fantasy_vbf_gacha_equip_item', {
+          p_season: CURRENT_SEASON,
+          p_player_slug: state.gachaPickerPlayerSlug,
+          p_owned_item_id: owned.id,
+          p_slot_index: state.gachaPickerSlotIndex
+        }, 'equipar item gacha');
+        if (error) throw error;
+      }
+      await loadGachaState();
+      closeGachaPicker();
+      renderPlayerModal();
+      showFantasyToast('Item actualizado', `${item.name || 'Item'} guardado en el jugador.`, 'ok');
+    } catch (error){
+      showFantasyToast('No pude guardar el item', error?.message || String(error || ''), 'err');
+      renderGachaPickerModal();
+    } finally {
+      state.gachaActionInFlight = false;
+    }
+  }
+
+  async function clearGachaLoadout(kind, playerSlug, slotIndex, button){
+    if (state.gachaActionInFlight) return;
+    state.gachaActionInFlight = true;
+    if (button) button.disabled = true;
+    try{
+      if (kind === 'skin'){
+        const { error } = await rpcWithTimeout('fantasy_vbf_gacha_remove_skin', {
+          p_season: CURRENT_SEASON,
+          p_player_slug: playerSlug
+        }, 'quitar skin gacha');
+        if (error) throw error;
+      } else {
+        const { error } = await rpcWithTimeout('fantasy_vbf_gacha_unequip_item', {
+          p_season: CURRENT_SEASON,
+          p_player_slug: playerSlug,
+          p_slot_index: Number(slotIndex || 1)
+        }, 'quitar item gacha');
+        if (error) throw error;
+      }
+      await loadGachaState();
+      renderPlayerModal();
+      renderGachaPickerModal();
+      showFantasyToast('Slot actualizado', 'El hueco queda libre.', 'ok');
+    } catch (error){
+      showFantasyToast('No pude limpiar el slot', error?.message || String(error || ''), 'err');
+    } finally {
+      state.gachaActionInFlight = false;
+    }
+  }
+
   function renderPlayerModal(){
     const wrap = $('playerModalWrap');
     const body = $('playerModalBody');
@@ -3921,7 +4325,11 @@
     const roster = derived.myRoster;
     const marketPlayer = source === 'market' ? marketDetailsForPlayer(player, derived) : null;
     const currentPrice = source === 'team' ? Number(rosterEntry?.buy_price || player.price || 0) : Number(player.price || 0);
-    const modalOverlay = `<div class="playerOverlayBottom"><div class="overlayNamePlain">${escapeHtml(player.name)}</div><div class="overlaySubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div>`;
+    const activeSkinItem = source === 'team' ? gachaItemFromOwned(gachaOwnedById(gachaAssignmentForPlayer(player.slug || '')?.owned_item_id)) : null;
+    const activeSkinUrl = activeSkinItem?.asset_path || null;
+    const overlayTopName = activeSkinItem ? escapeHtml(activeSkinItem.name) : escapeHtml(player.name);
+    const modalOverlay = `<div class="playerOverlayBottom"><div class="overlayNamePlain">${overlayTopName}</div><div class="overlaySubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div>`;
+    const skinEditBtn = source === 'team' && state.gachaReady ? `<button class="skinEditBtn" type="button" data-open-gacha-picker="skin" data-gacha-player="${escapeAttr(player.slug || '')}" data-gacha-slot="0" title="${activeSkinItem ? 'Cambiar skin' : 'Elegir skin'}" aria-label="${activeSkinItem ? 'Cambiar skin' : 'Elegir skin'}">&#9998;</button>` : '';
     const clauseValue = source === 'team' ? Number(rosterEntry?.clause_price || player.clausePrice || defaultClauseForPrice(player.price || 0)) : Number(marketPlayer?.minClause || defaultClauseForPrice(player.price || 0));
     const copiesLabel = source === 'market' ? `${intFmt.format(Number(marketPlayer?.copiesUsed || 0))}/${intFmt.format(config().maxPlayerCopies)}` : `${intFmt.format((derived.ownershipBySlug.get(String(player.slug || ''))?.count) || 0)}/${intFmt.format(config().maxPlayerCopies)}`;
     const fullHistory = Array.isArray(player.history) ? player.history : [];
@@ -3982,12 +4390,14 @@
     const summaryContent = `<div class="modalStats"><div class="modalStat"><span>${source === 'team' ? 'Valor actual' : 'Precio mercado'}</span><strong>${renderCoinInline(source === 'team' ? Number(player.price || currentPrice) : currentPrice, false)}</strong></div><div class="modalStat"><span>Clausula</span><strong>${renderCoinInline(clauseValue, false)}</strong></div><div class="modalStat"><span>${source === 'team' ? 'Estado' : 'Cupos usados'}</span><strong>${source === 'team' ? escapeHtml(isBench ? 'Suplente' : 'Activo') : copiesLabel}</strong></div><div class="modalStat"><span>Ultima jornada fantasy</span><strong>${formatPointsLabel(player.currentFantasyPoints || 0)}</strong></div><div class="modalStat"><span>Victorias</span><strong>${intFmt.format(player.wins || 0)}</strong></div><div class="modalStat"><span>Torneos jugados</span><strong>${intFmt.format(playedCount)}</strong><small>${intFmt.format(saturdayCount)} sabados fantasy</small></div></div>${insightPanel}`;
     const historyContent = `<div class="historyWrap"><div class="historyTitle">Progresion de sabados</div>${renderHistoryChart(player)}${renderPriceChart(player)}</div>`;
     const marketContent = source === 'market' ? marketOwnershipBlock : teamOwnershipBlock;
+    const itemsContent = source === 'team' ? renderPlayerItemsPanel(player, rosterEntry) : '';
     const footerActions = source === 'market' ? directAction : captainAction;
-    const activeTab = new Set(['summary', 'history', 'market']).has(String(state.modalPlayerTab || '')) ? String(state.modalPlayerTab) : 'summary';
+    const validTabs = source === 'team' ? ['summary', 'history', 'market', 'items'] : ['summary', 'history', 'market'];
+    const activeTab = new Set(validTabs).has(String(state.modalPlayerTab || '')) ? String(state.modalPlayerTab) : 'summary';
     state.modalPlayerTab = activeTab;
     const tabButton = (id, label) => `<button class="${activeTab === id ? 'active' : ''}" type="button" data-player-modal-tab="${escapeAttr(id)}" aria-pressed="${activeTab === id ? 'true' : 'false'}">${escapeHtml(label)}</button>`;
     const panel = (id, html) => `<div class="playerModalTabPanel ${activeTab === id ? 'active' : ''}" data-player-modal-panel="${escapeAttr(id)}">${html}</div>`;
-    body.innerHTML = `<div class="modalVisual modalVisualSticky"><article class="playerCard ${frameClass(player.tier)} ${isBench ? 'isBenchSlot' : ''}"><div class="playerHead">${isBench ? '<span class="squadSlotBadge bench">Suplente</span>' : ''}${renderPlayerVisual(player, modalOverlay)}</div></article>${tournamentHistory}${watchAction}</div><div class="modalPanel playerModalPanel"><div class="playerModalHeader"><div><div class="modalEyebrow">${source === 'team' ? (isBench ? 'Tu suplente' : 'Tu plantilla') : 'Pool de jugadores'}</div><h3 class="modalTitle">${escapeHtml(player.name)}</h3><div class="modalSubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div></div><div class="playerModalTabs">${tabButton('summary', 'Resumen')}${tabButton('history', 'Historial')}${tabButton('market', source === 'team' ? 'Plantilla' : 'Mercado')}</div><div class="playerModalTabPanels">${panel('summary', summaryContent)}${panel('history', historyContent)}${panel('market', marketContent)}</div>${footerActions ? `<div class="playerModalActionRail">${footerActions}</div>` : ''}</div>`;
+    body.innerHTML = `<div class="modalVisual modalVisualSticky"><article class="playerCard ${frameClass(player.tier)} ${isBench ? 'isBenchSlot' : ''}"><div class="playerHead">${isBench ? '<span class="squadSlotBadge bench">Suplente</span>' : ''}<div class="playerVisualBtnWrap">${renderPlayerVisual(player, modalOverlay, activeSkinUrl)}${skinEditBtn}</div></div></article>${tournamentHistory}${watchAction}</div><div class="modalPanel playerModalPanel"><div class="playerModalHeader"><div><div class="modalEyebrow">${source === 'team' ? (isBench ? 'Tu suplente' : 'Tu plantilla') : 'Pool de jugadores'}</div><h3 class="modalTitle">${escapeHtml(player.name)}</h3><div class="modalSubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div></div><div class="playerModalTabs">${tabButton('summary', 'Resumen')}${tabButton('history', 'Historial')}${tabButton('market', source === 'team' ? 'Plantilla' : 'Mercado')}${source === 'team' ? tabButton('items', 'Items') : ''}</div><div class="playerModalTabPanels">${panel('summary', summaryContent)}${panel('history', historyContent)}${panel('market', marketContent)}${source === 'team' ? panel('items', itemsContent) : ''}</div>${footerActions ? `<div class="playerModalActionRail">${footerActions}</div>` : ''}</div>`;
     wrap.classList.remove('hidden');
     wrap.setAttribute('aria-hidden', 'false');
     wrap.scrollTop = 0;
@@ -5800,6 +6210,25 @@
       }
       return;
     }
+    const openGachaTrigger = event.target.closest('[data-open-gacha-picker]');
+    if (openGachaTrigger){
+      openGachaPicker(
+        openGachaTrigger.getAttribute('data-open-gacha-picker') || 'equipment',
+        openGachaTrigger.getAttribute('data-gacha-player') || state.modalPlayerSlug,
+        Number(openGachaTrigger.getAttribute('data-gacha-slot') || 1)
+      );
+      return;
+    }
+    const clearGachaTrigger = event.target.closest('[data-gacha-clear]');
+    if (clearGachaTrigger){
+      await clearGachaLoadout(
+        clearGachaTrigger.getAttribute('data-gacha-clear') || 'equipment',
+        clearGachaTrigger.getAttribute('data-gacha-player') || state.modalPlayerSlug,
+        Number(clearGachaTrigger.getAttribute('data-gacha-slot') || 1),
+        clearGachaTrigger
+      );
+      return;
+    }
     const actionButton = event.target.closest('[data-modal-action]');
     if (!actionButton) return;
     const slug = actionButton.getAttribute('data-player-slug') || '';
@@ -5842,6 +6271,7 @@
     }
   });
   document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && state.gachaPickerOpen) closeGachaPicker();
     if (event.key === 'Escape' && state.modalPlayerSlug) closePlayerModal();
     if (event.key === 'Escape' && state.modalTeamId) closeTeamModal();
     if (event.key === 'Escape' && state.modalMarketPanel) closeMarketPanelModal();
