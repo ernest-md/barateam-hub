@@ -5314,6 +5314,11 @@
         showFantasyToast('Snapshot capturado', 'Plantillas congeladas para esta jornada.', 'ok');
       } else if (action === 'process'){
         await ensureSelectedRoundIsCurrent();
+        const snapshotRes = await rpcWithTimeout('fantasy_vbf_capture_current_round_snapshot', {
+          p_season: CURRENT_SEASON,
+          p_force: false
+        }, 'asegurar snapshot fantasy', 12000);
+        if (snapshotRes.error) throw snapshotRes.error;
         await loadPlayerPool(true, { silent: true, allowCache: false, refreshInBackground: false });
         const synced = await syncPlayerPoolToBackend({ allowCurrentSource: true });
         if (!synced) throw new Error('No pude sincronizar el pool de jugadores antes de procesar.');
