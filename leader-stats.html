@@ -879,6 +879,7 @@
     let leaderAssetMap = new Map();
     let leaderSort = { key: "matches", dir: "desc" };
     let matchupSort = { key: "games", dir: "desc" };
+    const initialLeaderCode = norm(new URLSearchParams(window.location.search).get("leader") || "");
     const MATCHUP_MODAL_DEFAULT_DECKS = "3";
     const MATCHUP_MODAL_DEFAULT_TECHS = "all";
 
@@ -909,6 +910,26 @@
 
     function norm(v){
       return String(v || "").trim();
+    }
+
+    function findLeaderByCode(code){
+      const wanted = norm(code).toUpperCase();
+      if (!wanted) return null;
+      return leaders.find((leader) => norm(leader.code).toUpperCase() === wanted) || null;
+    }
+
+    function updateLeaderUrl(code){
+      if (!code || !window.history?.replaceState) return;
+      const url = new URL(window.location.href);
+      url.searchParams.set("leader", code);
+      window.history.replaceState(null, "", url);
+    }
+
+    function scrollSelectedLeaderIntoView(){
+      if (!selectedLeaderCode) return;
+      const row = Array.from(leadersBody.querySelectorAll("tr[data-code]"))
+        .find((item) => item.dataset.code === selectedLeaderCode);
+      row?.scrollIntoView({ block: "center" });
     }
 
     function isMobileLayout(){
@@ -1332,11 +1353,16 @@
         }
         await fetchLeaderAssets([...leaderCodes]);
         leaderNameMap = new Map(leaders.map((l) => [l.code, leaderNameByCode(l.code, l.name)]));
+        const requestedLeader = findLeaderByCode(initialLeaderCode);
+        if (requestedLeader){
+          selectedLeaderCode = requestedLeader.code;
+        }
         if (!selectedLeaderCode || !leaders.some((l) => l.code === selectedLeaderCode)){
           selectedLeaderCode = isMobileLayout() ? null : (leaders[0]?.code || null);
         }
         renderLeaders();
         renderDetail();
+        scrollSelectedLeaderIntoView();
         statusText.textContent = `Fuente: ${ymd} · ${leaders.length} leaders`;
       } catch (err){
         leaders = [];
@@ -1355,6 +1381,7 @@
       const code = row?.dataset?.code || "";
       if (!code) return;
       selectedLeaderCode = code;
+      updateLeaderUrl(code);
       renderLeaders();
       renderDetail();
     }
