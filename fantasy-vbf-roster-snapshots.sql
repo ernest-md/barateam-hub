@@ -218,6 +218,7 @@ declare
   v_rewards_applied boolean := false;
   v_snapshot_count integer := 0;
   v_pool_ready integer := 0;
+  v_cfg public.fantasy_vbf_seasons%rowtype;
   v_row record;
   v_reward integer := 0;
 begin
@@ -226,6 +227,15 @@ begin
   end if;
   if v_round_key is null then
     raise exception 'La jornada no tiene week_key valido.';
+  end if;
+
+  select *
+  into v_cfg
+  from public.fantasy_vbf_seasons
+  where season = v_season;
+
+  if not found then
+    raise exception 'La temporada fantasy no existe.';
   end if;
 
   insert into public.fantasy_vbf_rounds (season, round_key, round_label, round_order, rewards_applied)
@@ -311,7 +321,7 @@ begin
       from public.fantasy_vbf_team_rounds
       where season = v_season and round_key = v_round_key
     loop
-      v_reward := greatest(round(coalesce(v_row.weekly_points, 0) * 1000)::integer, 0);
+      v_reward := greatest(round(coalesce(v_row.weekly_points, 0) * 3000)::integer, coalesce(v_cfg.weekly_base_reward, 20000), 0);
 
       update public.fantasy_vbf_teams
       set coins = coins + v_reward
