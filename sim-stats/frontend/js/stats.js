@@ -373,6 +373,23 @@ function formatChartDay(value) {
   return `${raw.slice(8, 10)}/${raw.slice(5, 7)}`
 }
 
+function formatChartFullDay(value) {
+  const raw = String(value || "")
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw
+  return `${raw.slice(8, 10)}/${raw.slice(5, 7)}/${raw.slice(0, 4)}`
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max)
+}
+
+function getChartLabelStep(length) {
+  if (length <= 14) return 1
+  if (length <= 45) return 5
+  if (length <= 90) return 7
+  return 14
+}
+
 function renderEloChart() {
   if (!eloChart || !eloChartPanel) return
 
@@ -396,7 +413,7 @@ function renderEloChart() {
   const left = 60
   const right = 18
   const top = 18
-  const bottom = 36
+  const bottom = 42
   const innerWidth = width - left - right
   const innerHeight = height - top - bottom
   const values = history.map((row) => Number(row.elo_visual || 1000))
@@ -406,6 +423,7 @@ function renderEloChart() {
   const yMax = Math.ceil((maxValue + 100) / 10) * 10
   const yRange = Math.max(1, yMax - yMin)
   const pointCount = Math.max(history.length - 1, 1)
+  const labelStep = getChartLabelStep(history.length)
 
   const xForIndex = (index) => left + (index / pointCount) * innerWidth
   const yForValue = (value) => top + innerHeight - ((value - yMin) / yRange) * innerHeight
@@ -422,18 +440,44 @@ function renderEloChart() {
   }
 
   const xLabels = history.map((row, index) => {
+    const shouldShow = index === 0 || index === history.length - 1 || index % labelStep === 0
+    if (!shouldShow) return ""
     const x = xForIndex(index)
     const label = formatChartDay(row.snapshot_date)
     return `<text x="${x}" y="${height - 12}" text-anchor="middle" font-size="11" font-family="Segoe UI, Arial, sans-serif" fill="#475569">${escapeHtml(label)}</text>`
   }).join("")
 
+  const latestIndex = history.length - 1
   const points = history.map((row, index) => {
     const value = Number(row.elo_visual || 1000)
     const x = xForIndex(index)
     const y = yForValue(value)
+    const previousX = index === 0 ? left : xForIndex(index - 1)
+    const nextX = index === latestIndex ? width - right : xForIndex(index + 1)
+    const hitX = index === 0 ? left : x - ((x - previousX) / 2)
+    const hitWidth = index === latestIndex ? (width - right) - hitX : (x + ((nextX - x) / 2)) - hitX
+    const showDot = history.length <= 70 || index === 0 || index === latestIndex || index % labelStep === 0
+    const tooltipWidth = 138
+    const tooltipHeight = 58
+    const tooltipX = clamp(x - (tooltipWidth / 2), left, width - right - tooltipWidth)
+    const tooltipY = y - tooltipHeight - 18 < top ? y + 18 : y - tooltipHeight - 18
+    const title = `${formatChartFullDay(row.snapshot_date)} - ELO ${value.toFixed(1)}`
+    const games = Number(row.games || 0)
+    const wins = Number(row.wins || 0)
+    const losses = Number(row.losses || Math.max(games - wins, 0))
+    const recordLabel = games > 0 ? `${wins}W-${losses}L - ${games} partidas` : "Sin partidas"
     return `
-      <circle cx="${x}" cy="${y}" r="5" fill="#ffffff" stroke="#2563eb" stroke-width="3" />
-      <text x="${x}" y="${Math.max(14, y - 10)}" text-anchor="middle" font-size="11" font-family="Segoe UI, Arial, sans-serif" fill="#0f172a">${value.toFixed(1)}</text>
+      <g class="eloChartPoint" tabindex="0" aria-label="${escapeHtml(title)}">
+        <title>${escapeHtml(`${title} - ${recordLabel}`)}</title>
+        <rect class="eloChartHitArea" x="${hitX}" y="${top}" width="${hitWidth}" height="${innerHeight}" fill="transparent" />
+        <circle cx="${x}" cy="${y}" r="${showDot ? 3.8 : 2.2}" fill="#ffffff" stroke="#2563eb" stroke-width="${showDot ? 2.6 : 1.8}" />
+        <g class="eloChartTooltip" pointer-events="none">
+          <rect x="${tooltipX}" y="${tooltipY}" width="${tooltipWidth}" height="${tooltipHeight}" rx="8" fill="#0f172a" opacity=".95" />
+          <text x="${tooltipX + 10}" y="${tooltipY + 20}" font-size="12" font-weight="700" font-family="Segoe UI, Arial, sans-serif" fill="#ffffff">${escapeHtml(formatChartFullDay(row.snapshot_date))}</text>
+          <text x="${tooltipX + 10}" y="${tooltipY + 38}" font-size="12" font-family="Segoe UI, Arial, sans-serif" fill="#dbeafe">ELO ${value.toFixed(1)}</text>
+          <text x="${tooltipX + 10}" y="${tooltipY + 52}" font-size="10.5" font-family="Segoe UI, Arial, sans-serif" fill="#cbd5e1">${escapeHtml(recordLabel)}</text>
+        </g>
+      </g>
     `
   }).join("")
 
@@ -444,6 +488,11 @@ function renderEloChart() {
     return `${index === 0 ? "M" : "L"} ${x} ${y}`
   }).join(" ")
 
+  const areaPath = `${linePath} L ${xForIndex(latestIndex)} ${top + innerHeight} L ${xForIndex(0)} ${top + innerHeight} Z`
+  const latestValue = values[latestIndex]
+  const latestX = xForIndex(latestIndex)
+  const latestY = yForValue(latestValue)
+
   eloChart.innerHTML = `
     <defs>
       <linearGradient id="eloLineAreaGradient" x1="0" x2="0" y1="0" y2="1">
@@ -453,7 +502,9 @@ function renderEloChart() {
     </defs>
     ${grid.join("")}
     <line x1="${left}" y1="${top + innerHeight}" x2="${width - right}" y2="${top + innerHeight}" stroke="rgba(15,23,42,.35)" />
+    <path d="${areaPath}" fill="url(#eloLineAreaGradient)" />
     <path d="${linePath}" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+    <text x="${Math.min(width - right - 4, latestX + 8)}" y="${Math.max(top + 14, latestY - 10)}" text-anchor="${latestX > width - right - 80 ? "end" : "start"}" font-size="12" font-weight="800" font-family="Segoe UI, Arial, sans-serif" fill="#1d4ed8">${latestValue.toFixed(1)}</text>
     ${points}
     ${xLabels}
   `
