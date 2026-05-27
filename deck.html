@@ -1069,12 +1069,25 @@
     const formatDate = window.BarateamApp.formatDate;
     const formatDateTime = window.BarateamApp.formatDateTime;
 
-    function setImage(el, url){
+    function setImage(el, url, fallbacks){
+      const fallbackList = Array.isArray(fallbacks) ? fallbacks.filter(Boolean) : [];
       if (url){
         el.src = url;
+        if (fallbackList.length){
+          el.dataset.cardImg = "1";
+          el.dataset.fallbackSrcs = fallbackList.join("|");
+          el.dataset.fallbackIndex = "0";
+        } else {
+          delete el.dataset.cardImg;
+          delete el.dataset.fallbackSrcs;
+          delete el.dataset.fallbackIndex;
+        }
         el.style.display = "block";
       } else {
         el.removeAttribute("src");
+        delete el.dataset.cardImg;
+        delete el.dataset.fallbackSrcs;
+        delete el.dataset.fallbackIndex;
         el.style.display = "none";
       }
     }
@@ -1160,11 +1173,18 @@
       )) || null;
     }
 
-    function deckLeaderImage(deck){
+    function deckLeaderImageSources(deck){
       const byLeader = resolveLeaderForDeck(deck?.leader || "");
-      const fromLeaders = norm(byLeader?.image || "");
-      if (fromLeaders) return fromLeaders;
-      return norm(deck?.leader_image_url);
+      const leaderCode = leaderCodeFromDeck(deck);
+      const fromLeaders = normalizeCardImageUrl(byLeader?.image || "", "", leaderCode);
+      const fromDeck = normalizeCardImageUrl(deck?.leader_image_url || "", "", leaderCode);
+      const dotgg = buildDotggCardImageUrl(leaderCode);
+      const urls = uniqueUrls([fromLeaders, fromDeck, dotgg]);
+      return { primary: urls[0] || "", fallbacks: urls.slice(1) };
+    }
+
+    function deckLeaderImage(deck){
+      return deckLeaderImageSources(deck).primary;
     }
 
     function normalizeCardCode(value){
@@ -1208,6 +1228,29 @@
       return `https://asia-en.onepiece-cardgame.com/images/cardlist/card/${encodeURIComponent(code)}.png`;
     }
 
+    function officialCardImageHost(sourceKey){
+      return String(sourceKey || "").toLowerCase().includes("asia")
+        ? "https://asia-en.onepiece-cardgame.com"
+        : "https://en.onepiece-cardgame.com";
+    }
+
+    function normalizeCardImageUrl(value, sourceKey, fallbackCode){
+      const raw = norm(value);
+      const code = normalizeCardCode(fallbackCode || extractCardCode(raw));
+      const fallback = code ? buildDotggCardImageUrl(code) : "";
+
+      if (!raw) return fallback;
+      if (/^https?:\/\//i.test(raw)) return raw;
+      if (/^\/\//.test(raw)) return `https:${raw}`;
+
+      const cardPath = raw.match(/images\/cardlist\/card\/([^?#]+)([?#].*)?$/i);
+      if (cardPath){
+        return `${officialCardImageHost(sourceKey)}/images/cardlist/card/${cardPath[1]}${cardPath[2] || ""}`;
+      }
+
+      return fallback || raw;
+    }
+
     function uniqueUrls(values){
       const seen = new Set();
       return values.map((value) => norm(value)).filter((value) => {
@@ -1219,7 +1262,7 @@
 
     function cardImageSources(cardOrCode){
       const code = typeof cardOrCode === "string" ? normalizeCardCode(cardOrCode) : normalizeCardCode(cardOrCode?.code);
-      const catalog = typeof cardOrCode === "object" ? norm(cardOrCode?.image) : "";
+      const catalog = typeof cardOrCode === "object" ? normalizeCardImageUrl(cardOrCode?.image, cardOrCode?.sourceKey, code) : "";
       const dotgg = buildDotggCardImageUrl(code);
       const asiaOfficial = buildAsiaOfficialCardImageUrl(code);
       const official = buildOfficialCardImageUrl(code);
@@ -1227,7 +1270,7 @@
       return { primary: urls[0] || "", fallbacks: urls.slice(1) };
     }
 
-    function normalizeCatalogCard(raw){
+    function normalizeCatalogCard(raw, source){
       const code = normalizeCardCode(raw?.id || raw?.card_id || raw?.code || "");
       if (!code) return null;
       const type = norm(raw?.category || raw?.type || "Unknown");
@@ -1245,7 +1288,8 @@
         effect: norm(raw?.effect || raw?.card_text),
         trigger: norm(raw?.trigger),
         colors: colorListFromRaw(raw?.colors || raw?.card_color || raw?.color),
-        image: norm(raw?.img_full_url || raw?.card_image || raw?.img_url) || buildOfficialCardImageUrl(code)
+        sourceKey: source?.key || "",
+        image: normalizeCardImageUrl(raw?.img_full_url || raw?.card_image || raw?.img_url, source?.key, code) || buildOfficialCardImageUrl(code)
       };
     }
 
@@ -1260,7 +1304,7 @@
         for (const result of packResults){
           if (result.status !== "fulfilled") continue;
           for (const raw of normalizeApiArray(result.value)){
-            const card = normalizeCatalogCard(raw);
+            const card = normalizeCatalogCard(raw, source);
             if (card && !next.has(card.code)){
               next.set(card.code, card);
             }
@@ -1325,8 +1369,7 @@
     function leaderCodeFromDeck(deck){
       const byLeader = resolveLeaderForDeck(deck?.leader || "");
       if (byLeader?.code) return normalizeCardCode(byLeader.code);
-      const match = norm(deck?.leader).match(/\b(?:OP|ST|EB|P)-?\d{2,3}-\d{3}\b/i);
-      return match ? normalizeCardCode(match[0]) : "";
+      return extractCardCode(deck?.leader || "");
     }
 
     function mainDeckItems(deck){
@@ -1842,9 +1885,10 @@
       $("deckAuthor").innerHTML = `Autor: ${profileLink(deck.autor, authorLabel)}`;
       $("deckCreated").textContent = `Creado: ${formatDate(deck.created_at)}`;
 
-      const resolvedLeaderImage = deckLeaderImage(deck);
+      const leaderImageSources = deckLeaderImageSources(deck);
+      const resolvedLeaderImage = leaderImageSources.primary;
       $("leaderName").textContent = deck.leader || "-";
-      setImage($("leaderImage"), resolvedLeaderImage || "");
+      setImage($("leaderImage"), resolvedLeaderImage || "", leaderImageSources.fallbacks);
       applyDeckTheme(deck);
 
       renderDescription(deck.description || "-");
