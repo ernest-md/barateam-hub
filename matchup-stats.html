@@ -505,6 +505,186 @@
       border-radius:10px;
       background:rgba(255,255,255,.04);
     }
+    body.modal-open{
+      overflow:hidden;
+    }
+    .cardInfoOverlay{
+      position:fixed;
+      inset:0;
+      z-index:300000;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      background:rgba(2,6,23,.78);
+      backdrop-filter:blur(8px);
+    }
+    .cardInfoOverlay.is-open{
+      display:flex;
+    }
+    .cardInfoModal{
+      width:min(940px, 100%);
+      max-height:calc(100vh - 48px);
+      overflow:auto;
+      border-radius:18px;
+      background:#f8fafc;
+      color:#0f172a;
+      border:1px solid rgba(255,255,255,.5);
+      box-shadow:0 24px 80px rgba(0,0,0,.5);
+    }
+    .cardInfoTop{
+      position:sticky;
+      top:0;
+      z-index:1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:18px 20px;
+      background:#020617;
+      color:#f8fafc;
+    }
+    .cardInfoTop h2{
+      margin:0;
+      font-size:28px;
+      line-height:1.05;
+      font-weight:1000;
+    }
+    .cardInfoTop p{
+      margin:5px 0 0;
+      color:#cbd5e1;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .cardInfoClose{
+      width:40px;
+      height:40px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.22);
+      background:rgba(255,255,255,.08);
+      color:#f8fafc;
+      font-size:24px;
+      line-height:1;
+      cursor:pointer;
+      flex:0 0 auto;
+    }
+    .cardInfoClose:hover{
+      background:rgba(255,255,255,.16);
+    }
+    .cardInfoBody{
+      display:grid;
+      grid-template-columns:minmax(220px, 320px) minmax(0, 1fr);
+      gap:20px;
+      padding:22px;
+    }
+    .cardInfoArt{
+      min-height:320px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+    }
+    .cardInfoArt img{
+      width:100%;
+      max-width:320px;
+      height:auto;
+      border-radius:10px;
+      box-shadow:0 18px 40px rgba(15,23,42,.28);
+      background:#e2e8f0;
+    }
+    .cardInfoArtFallback{
+      width:100%;
+      max-width:320px;
+      aspect-ratio:5/7;
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      text-align:center;
+      font-weight:1000;
+      color:#475569;
+      background:#e2e8f0;
+      border:1px dashed #94a3b8;
+    }
+    .cardInfoPanel{
+      min-width:0;
+    }
+    .cardInfoMetaStrip{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .cardInfoTag{
+      display:inline-flex;
+      align-items:center;
+      min-height:22px;
+      border-radius:999px;
+      padding:4px 9px;
+      background:#eef2ff;
+      color:#1e293b;
+      border:1px solid #dbe4ff;
+      font-size:11px;
+      font-weight:1000;
+    }
+    .cardInfoSpecs{
+      border-top:1px solid #e2e8f0;
+      margin-bottom:14px;
+    }
+    .cardInfoSpecRow{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      border-bottom:1px solid #e2e8f0;
+    }
+    .cardInfoSpec{
+      padding:12px 10px;
+      min-width:0;
+    }
+    .cardInfoSpec span,
+    .cardInfoSectionLabel{
+      display:block;
+      margin-bottom:5px;
+      color:#64748b;
+      font-size:10px;
+      font-weight:1000;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .cardInfoSpec strong,
+    .cardInfoSection strong,
+    .cardInfoSet strong{
+      color:#0f172a;
+      font-size:15px;
+      font-weight:1000;
+      word-break:break-word;
+    }
+    .cardInfoSection{
+      border-bottom:1px solid #e2e8f0;
+      padding:13px 0;
+    }
+    .cardInfoText{
+      white-space:pre-line;
+      color:#334155;
+      font-size:14px;
+      line-height:1.55;
+      font-weight:700;
+    }
+    .cardInfoSet{
+      margin-top:16px;
+      padding:15px;
+      border-radius:10px;
+      background:#f1f5f9;
+      border:1px solid #e2e8f0;
+    }
+    .cardInfoSet small{
+      display:block;
+      margin-top:5px;
+      color:#64748b;
+      font-size:12px;
+      font-weight:900;
+    }
     .emptyState{
       background:rgba(255,255,255,.06);
       border:1px dashed rgba(255,255,255,.18);
@@ -622,6 +802,33 @@
         width:44px;
       }
       .cardPreview{ display:none !important; }
+      .cardInfoOverlay{
+        padding:10px;
+      }
+      .cardInfoModal{
+        max-height:calc(100vh - 20px);
+        border-radius:14px;
+      }
+      .cardInfoTop{
+        padding:14px 16px;
+      }
+      .cardInfoTop h2{
+        font-size:22px;
+      }
+      .cardInfoBody{
+        grid-template-columns:1fr;
+        padding:16px;
+      }
+      .cardInfoArt{
+        min-height:0;
+      }
+      .cardInfoArt img,
+      .cardInfoArtFallback{
+        max-width:240px;
+      }
+      .cardInfoSpecRow{
+        grid-template-columns:1fr;
+      }
     }
     body.embedMode .topbar,
     body.embedMode .authCorner{
@@ -834,7 +1041,7 @@
       <div class="heroTop">
         <div>
           <h1>Matchup Stats</h1>
-          <p class="heroSub">Selecciona el líder del jugador y el líder rival para ver el cruce completo con winrates, potential tech cards, líneas de curva y decklists filtradas por matchup.</p>
+          <p class="heroSub">Selecciona el líder del jugador y el líder rival para ver el cruce completo con winrates, potential tech cards y decklists filtradas por matchup.</p>
         </div>
         <div class="heroControls">
           <label class="filter" id="datasetFilter">Fuente
@@ -910,6 +1117,19 @@
     </section>
   </div>
 
+  <div class="cardInfoOverlay" id="cardInfoOverlay" aria-hidden="true">
+    <div class="cardInfoModal" role="dialog" aria-modal="true" aria-labelledby="cardInfoTitle">
+      <div class="cardInfoTop">
+        <div>
+          <h2 id="cardInfoTitle">Carta</h2>
+          <p id="cardInfoSubtitle">Detalle de la carta seleccionada</p>
+        </div>
+        <button class="cardInfoClose" id="cardInfoClose" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <div id="cardInfoContent"></div>
+    </div>
+  </div>
+
   <script>
     const DATASETS = {
       west_private: {
@@ -938,6 +1158,62 @@
     const wrappedImageInflight = new Map();
     const optcgCardCatalog = new Map();
     let optcgCatalogLoaded = false;
+    const SOURCE_DEFS = [
+      { key: "english", label: "English", basePath: "punkrecords/english" },
+      { key: "english-asia", label: "English Asia", basePath: "punkrecords/english-asia" }
+    ];
+    const HTML_ENTITY_DECODER = document.createElement("textarea");
+    const WINDOWS_1252_OVERRIDES = {
+      8364: 128,
+      8218: 130,
+      402: 131,
+      8222: 132,
+      8230: 133,
+      8224: 134,
+      8225: 135,
+      710: 136,
+      8240: 137,
+      352: 138,
+      8249: 139,
+      338: 140,
+      381: 142,
+      8216: 145,
+      8217: 146,
+      8220: 147,
+      8221: 148,
+      8226: 149,
+      8211: 150,
+      8212: 151,
+      732: 152,
+      8482: 153,
+      353: 154,
+      8250: 155,
+      339: 156,
+      382: 158,
+      376: 159
+    };
+    const PUNK_RARITY_MAP = {
+      Leader: "L",
+      Common: "C",
+      Uncommon: "UC",
+      Rare: "R",
+      SuperRare: "SR",
+      SecretRare: "SEC",
+      Special: "SP",
+      TreasureRare: "TR"
+    };
+    const COLOR_ORDER = ["Red", "Green", "Blue", "Purple", "Black", "Yellow"];
+    const COLOR_LABELS = {
+      Red: "Rojo",
+      Green: "Verde",
+      Blue: "Azul",
+      Purple: "Lila",
+      Black: "Negro",
+      Yellow: "Amarillo"
+    };
+    const DECKLIST_PRIMARY_MIN_GAMES = 10;
+    const DECKLIST_FALLBACK_MIN_GAMES = 3;
+    const DECKLIST_FALLBACK_TRIGGER_COUNT = 3;
 
     const datasetSelect = document.getElementById("datasetSelect");
     const dateInput = document.getElementById("dateInput");
@@ -960,6 +1236,11 @@
     const errorBox = document.getElementById("errorBox");
     const loadingOverlay = document.getElementById("loadingOverlay");
     const loadingText = document.getElementById("loadingText");
+    const cardInfoOverlay = document.getElementById("cardInfoOverlay");
+    const cardInfoTitle = document.getElementById("cardInfoTitle");
+    const cardInfoSubtitle = document.getElementById("cardInfoSubtitle");
+    const cardInfoContent = document.getElementById("cardInfoContent");
+    const cardInfoClose = document.getElementById("cardInfoClose");
     const pageParams = new URLSearchParams(window.location.search);
     const embedMode = ["1", "true", "yes"].includes(String(pageParams.get("embed") || "").toLowerCase());
     const initialPlayerLeader = String(pageParams.get("player") || pageParams.get("leader") || "").trim();
@@ -990,6 +1271,10 @@
       curveByLeader: new Map(),
       leaderAssetMap: new Map(),
       cardAssetMap: new Map(),
+      localCardsByCode: new Map(),
+      localCatalogLoaded: false,
+      localCatalogPromise: null,
+      activeCardCode: "",
       selectedPlayer: initialPlayerLeader,
       selectedOpponent: initialOpponentLeader,
       resolvedDate: ""
@@ -1011,6 +1296,10 @@
 
     function norm(value){
       return String(value || "").trim();
+    }
+
+    function normalize(value){
+      return String(value ?? "").replace(/\s+/g, " ").trim();
     }
 
     function normalizeCardCode(value){
@@ -1048,6 +1337,347 @@
 
     function isPromoCardCode(value){
       return /^P-\d{3}$/.test(normalizeCardCode(value));
+    }
+
+    function sourceFilePath(source, filePath){
+      return `${source.basePath}/${filePath}`;
+    }
+
+    function fetchLocalJson(url){
+      return fetch(url, { cache: "no-store" }).then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      });
+    }
+
+    function decodeHtmlEntities(value){
+      const raw = String(value ?? "");
+      if (!raw) return "";
+      HTML_ENTITY_DECODER.innerHTML = raw;
+      return HTML_ENTITY_DECODER.value;
+    }
+
+    function decodeWindows1252ToUtf8(value){
+      const bytes = Uint8Array.from(Array.from(String(value ?? "")), (char) => {
+        const code = char.charCodeAt(0);
+        if (code <= 0xff) return code;
+        const mapped = WINDOWS_1252_OVERRIDES[code];
+        if (mapped !== undefined) return mapped;
+        throw new Error("Unsupported character");
+      });
+      return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    }
+
+    function normalizePunkText(value){
+      let repaired = String(value ?? "");
+      if (!repaired) return "";
+
+      for (let index = 0; index < 2; index += 1){
+        if (!/[\u00c2\u00c3\u00e2]/.test(repaired)) break;
+        try{
+          const next = decodeWindows1252ToUtf8(repaired);
+          if (!next || next === repaired) break;
+          repaired = next;
+        }catch(_error){
+          break;
+        }
+      }
+
+      return repaired;
+    }
+
+    function punkInlineText(value){
+      return normalize(decodeHtmlEntities(normalizePunkText(value)));
+    }
+
+    function punkMultilineText(value){
+      return decodeHtmlEntities(normalizePunkText(String(value ?? "").replace(/<br\s*\/?>/gi, "\n")))
+        .replace(/\r\n?/g, "\n")
+        .split("\n")
+        .map((line) => normalize(line))
+        .filter((line, index, rows) => line || (index > 0 && rows[index - 1]))
+        .join("\n")
+        .trim();
+    }
+
+    function punkListText(value){
+      if (Array.isArray(value)){
+        return punkInlineText(value.map((entry) => decodeHtmlEntities(normalizePunkText(entry))).join(" / "));
+      }
+      return punkInlineText(value);
+    }
+
+    function punkBaseCardCode(value){
+      return normalizeCardCode(String(value || "").replace(/_(?:p|r)\d+$/i, ""));
+    }
+
+    function punkRarity(value){
+      const normalized = punkInlineText(value);
+      return PUNK_RARITY_MAP[normalized] || normalized.toUpperCase() || "-";
+    }
+
+    function formatUnixDate(value){
+      const seconds = Number(value);
+      if (!Number.isFinite(seconds)) return "";
+      return new Date(seconds * 1000).toISOString().slice(0, 10);
+    }
+
+    function buildPunkText(raw){
+      const effect = punkMultilineText(raw?.effect);
+      const trigger = punkMultilineText(raw?.trigger);
+      return [
+        effect && effect !== "-" ? effect : "",
+        trigger && trigger !== "-" ? (trigger.startsWith("[Trigger]") ? trigger : `[Trigger] ${trigger}`) : ""
+      ].filter(Boolean).join("\n\n");
+    }
+
+    function normalizePunkPackLabel(pack){
+      return punkInlineText(pack?.title_parts?.label || "");
+    }
+
+    function toIntOrNull(value){
+      if (value === null || value === undefined || value === "") return null;
+      const normalized = String(value).replace(/[^\d-]/g, "");
+      if (!normalized) return null;
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function colorListFromRaw(value){
+      const raw = normalize(value);
+      if (!raw) return [];
+      const found = COLOR_ORDER.filter((color) => new RegExp(`\\b${color}\\b`, "i").test(raw));
+      if (found.length) return found;
+      return raw.split(/[\/,&]+|\s{2,}/).map((entry) => normalize(entry)).filter(Boolean);
+    }
+
+    function humanColor(color){
+      return COLOR_LABELS[color] || color;
+    }
+
+    function officialCardImageHost(sourceKey){
+      return String(sourceKey || "").toLowerCase().includes("asia")
+        ? "https://asia-en.onepiece-cardgame.com"
+        : "https://en.onepiece-cardgame.com";
+    }
+
+    function normalizeCardImageUrl(value, sourceKey){
+      const raw = normalize(value);
+      if (!raw) return "";
+      if (/^https?:\/\//i.test(raw)) return raw;
+      if (/^\/\//.test(raw)) return `https:${raw}`;
+
+      const cardPath = raw.match(/images\/cardlist\/card\/([^?#]+)([?#].*)?$/i);
+      if (cardPath){
+        return `${officialCardImageHost(sourceKey)}/images/cardlist/card/${cardPath[1]}${cardPath[2] || ""}`;
+      }
+
+      return raw;
+    }
+
+    function cardFallbackSource(card){
+      return normalize(card?.fallbackImage) || buildDotggCardImageUrl(card?.code);
+    }
+
+    function cardImageSource(card){
+      return normalizeCardImageUrl(card?.image, card?.sourceKey) || cardFallbackSource(card);
+    }
+
+    function buildPunkApiRecord(raw, pack, source, manifest){
+      const rawId = normalize(raw?.id || raw?.card_id || "");
+      const code = punkBaseCardCode(rawId);
+      const category = punkInlineText(raw?.category);
+      const packTitle = punkInlineText(pack?.title_parts?.title || pack?.raw_title || "");
+      const packLabel = normalizePunkPackLabel(pack);
+      const numericCost = toIntOrNull(raw?.cost);
+
+      return {
+        name: punkInlineText(raw?.name),
+        code,
+        id: code,
+        type: category,
+        rarity: punkRarity(raw?.rarity),
+        set_name: packTitle || "Sin expansion",
+        set_id: packLabel,
+        card_color: Array.isArray(raw?.colors) ? raw.colors.join(" / ") : raw?.colors,
+        counter_amount: raw?.counter,
+        card_cost: category === "Leader" ? "" : (numericCost === null ? "" : String(numericCost)),
+        life: category === "Leader" ? (numericCost === null ? "" : String(numericCost)) : "",
+        card_power: raw?.power === null || raw?.power === undefined ? "" : String(raw?.power),
+        attribute: punkListText(raw?.attributes),
+        sub_types: punkListText(raw?.types),
+        card_text: buildPunkText(raw),
+        card_image: normalizeCardImageUrl(raw?.img_full_url || raw?.img_url || "", source?.key),
+        card_image_id: rawId,
+        date_scraped: formatUnixDate(manifest?.generated_at),
+        block_number: raw?.block_number
+      };
+    }
+
+    async function loadPunkSource(source){
+      const [manifest, packs] = await Promise.all([
+        fetchLocalJson(sourceFilePath(source, "manifest.json")),
+        fetchLocalJson(sourceFilePath(source, "packs.json"))
+      ]);
+      const packIds = Object.keys(packs || {});
+      const packResults = await Promise.allSettled(
+        packIds.map(async (packId) => {
+          const data = await fetchLocalJson(sourceFilePath(source, `data/${packId}.json`));
+          return { packId, rows: normalizeApiArray(data) };
+        })
+      );
+      return { source, manifest, packs, packResults };
+    }
+
+    function variantPenaltyForCard(card){
+      const imageId = normalize(card?.imageId).toLowerCase();
+      const text = `${normalize(card?.name)} ${normalize(card?.expansionName)} ${imageId}`.toLowerCase();
+      let penalty = 0;
+      if (/_p\d+/.test(imageId)) penalty += 18;
+      if (/_r\d+/.test(imageId)) penalty += 9;
+      if (/\bparallel\b/.test(text)) penalty += 24;
+      if (/\balternate art\b|\bfull art\b|\bsigned\b/.test(text)) penalty += 26;
+      return penalty;
+    }
+
+    function preferredCardScore(card){
+      let score = 0;
+      if (card.image) score += 40;
+      if (card.imageId) score += 24;
+      if (normalizeCardCode(card.imageId) === card.code) score += 90;
+      score -= card.variantPenalty;
+      score -= Math.min(card.name.length, 60) / 10;
+      return score;
+    }
+
+    function shouldReplacePreferredCard(existing, candidate){
+      if (!existing) return true;
+      if (candidate.preferredScore !== existing.preferredScore){
+        return candidate.preferredScore > existing.preferredScore;
+      }
+      if (candidate.name.length !== existing.name.length){
+        return candidate.name.length < existing.name.length;
+      }
+      return candidate.name.localeCompare(existing.name, "es", { numeric: true, sensitivity: "base" }) < 0;
+    }
+
+    function createLocalCardRecord(raw, source){
+      const code = normalizeCardCode(raw?.code || raw?.id || "");
+      const name = normalize(raw?.name);
+      if (!code || !name) return null;
+
+      const expansionName = normalize(raw?.set_name || "Sin expansion");
+      const expansionCode = normalize(raw?.set_id || "");
+      const card = {
+        sourceKey: source.key,
+        sourceLabel: source.label,
+        name,
+        code,
+        type: normalize(raw?.type || "Unknown"),
+        rarity: normalize(raw?.rarity || "-"),
+        expansionName,
+        expansionCode,
+        expansionLabel: expansionCode && !expansionName.includes(expansionCode) ? `${expansionName} (${expansionCode})` : expansionName,
+        colors: colorListFromRaw(raw?.card_color),
+        counter: toIntOrNull(raw?.counter_amount),
+        cost: normalize(raw?.card_cost),
+        life: normalize(raw?.life),
+        power: normalize(raw?.card_power),
+        attribute: normalize(raw?.attribute),
+        subTypes: normalize(raw?.sub_types),
+        text: normalize(raw?.card_text),
+        imageId: normalize(raw?.card_image_id),
+        image: normalize(raw?.card_image) || buildDotggCardImageUrl(code),
+        fallbackImage: buildDotggCardImageUrl(code),
+        dateScraped: normalize(raw?.date_scraped),
+        blockIcon: normalize(raw?.block_number),
+        variantPenalty: 0,
+        preferredScore: 0
+      };
+      card.variantPenalty = variantPenaltyForCard(card);
+      card.preferredScore = preferredCardScore(card);
+      return card;
+    }
+
+    function mergeLocalSourceVariants(sourceMap){
+      const english = sourceMap.get("english") || null;
+      const englishAsia = sourceMap.get("english-asia") || null;
+      const base = englishAsia || english;
+      if (!base) return null;
+
+      const imageSource = (english && normalize(english.image))
+        ? english
+        : ((englishAsia && normalize(englishAsia.image)) ? englishAsia : base);
+
+      return {
+        ...base,
+        image: imageSource.image || base.image,
+        imageId: imageSource.imageId || base.imageId,
+        fallbackImage: imageSource.fallbackImage || base.fallbackImage,
+        sourceKey: imageSource.sourceKey,
+        sourceLabel: imageSource.sourceLabel,
+        life: base.life || english?.life || "",
+        cost: base.cost || english?.cost || "",
+        power: base.power || english?.power || "",
+        attribute: base.attribute || english?.attribute || "",
+        subTypes: base.subTypes || english?.subTypes || "",
+        text: base.text || english?.text || ""
+      };
+    }
+
+    async function ensureLocalCardCatalog(){
+      if (state.localCatalogLoaded) return state.localCardsByCode;
+      if (state.localCatalogPromise) return state.localCatalogPromise;
+
+      state.localCatalogPromise = (async () => {
+        const results = await Promise.allSettled(SOURCE_DEFS.map(loadPunkSource));
+        const mappedByCode = new Map();
+
+        results.forEach((result) => {
+          if (result.status !== "fulfilled") return;
+          const { source, manifest, packs, packResults } = result.value;
+          packResults.forEach((packResult) => {
+            if (packResult.status !== "fulfilled") return;
+            const { packId, rows } = packResult.value;
+            const pack = packs?.[packId] || null;
+
+            rows.forEach((raw) => {
+              const normalizedRaw = buildPunkApiRecord(raw, pack, source, manifest);
+              const card = createLocalCardRecord(normalizedRaw, source);
+              if (!card) return;
+
+              let sourceMap = mappedByCode.get(card.code);
+              if (!sourceMap){
+                sourceMap = new Map();
+                mappedByCode.set(card.code, sourceMap);
+              }
+
+              const existing = sourceMap.get(card.sourceKey);
+              if (!existing || shouldReplacePreferredCard(existing, card)){
+                sourceMap.set(card.sourceKey, card);
+              }
+            });
+          });
+        });
+
+        const cardsByCode = new Map(
+          Array.from(mappedByCode.values())
+            .map((sourceMap) => mergeLocalSourceVariants(sourceMap))
+            .filter(Boolean)
+            .map((card) => [card.code, card])
+        );
+        if (!cardsByCode.size) throw new Error("No se ha podido cargar el catalogo local");
+
+        state.localCardsByCode = cardsByCode;
+        state.localCatalogLoaded = true;
+        return state.localCardsByCode;
+      })();
+
+      try{
+        return await state.localCatalogPromise;
+      }finally{
+        state.localCatalogPromise = null;
+      }
     }
 
     function buildDotggCardImageUrl(value){
@@ -1425,6 +2055,8 @@
 
       window.addEventListener("scroll", () => { if (activeAnchor) place(activeAnchor); }, true);
       window.addEventListener("resize", () => { if (activeAnchor) place(activeAnchor); });
+      window.addEventListener("blur", hide);
+      document.addEventListener("matchupStats:hidePreview", hide);
     }
 
     function cardAssetByCode(code){
@@ -1463,19 +2095,23 @@
         await Promise.all(missing.map(async (code) => {
           const card = optcgCardCatalog.get(code) || null;
           if (!card){
-            state.cardAssetMap.set(code, { name: code, image_url: buildDotggCardImageUrl(code) });
+            state.cardAssetMap.set(code, { name: code, code, image_url: buildDotggCardImageUrl(code) });
             return;
           }
           const resolvedImage = await resolveWrappedImageForCard({ ...card });
           state.cardAssetMap.set(code, {
             name: card.name || code,
-            image_url: norm(resolvedImage || card.image || buildDotggCardImageUrl(code) || "")
+            code,
+            image_url: norm(resolvedImage || card.image || buildDotggCardImageUrl(code) || ""),
+            image: norm(card.image || ""),
+            set_name: norm(card.set_name || ""),
+            card_type: norm(card.card_type || "")
           });
         }));
       }catch(_err){
         for (const code of missing){
           if (!state.cardAssetMap.has(code)){
-            state.cardAssetMap.set(code, { name: code, image_url: buildDotggCardImageUrl(code) });
+            state.cardAssetMap.set(code, { name: code, code, image_url: buildDotggCardImageUrl(code) });
           }
         }
       }
@@ -1595,13 +2231,18 @@
     function getDecklistsForMatchup(leaderCode, opponentCode, limit){
       const row = state.decklistsByLeader.get(norm(leaderCode)) || null;
       if (!row) return [];
-      return row.best_decklists.map((deck) => {
+      const candidates = row.best_decklists.map((deck) => {
         const matchup = Array.isArray(deck?.matchup_stats) ? deck.matchup_stats.find((item) => norm(item?.oppLeader) === norm(opponentCode)) : null;
         return matchup ? { ...deck, matchup } : null;
-      }).filter((deck) => deck && Number(deck.matchup?.games_played || 0) >= 3).sort((a, b) => {
+      }).filter(Boolean).sort((a, b) => {
         const wrDiff = Number(b.matchup?.win_rate || 0) - Number(a.matchup?.win_rate || 0);
         return wrDiff || (Number(b.matchup?.games_played || 0) - Number(a.matchup?.games_played || 0));
-      }).slice(0, limit);
+      });
+      const primary = candidates.filter((deck) => Number(deck.matchup?.games_played || 0) >= DECKLIST_PRIMARY_MIN_GAMES);
+      const pool = primary.length >= DECKLIST_FALLBACK_TRIGGER_COUNT
+        ? primary
+        : candidates.filter((deck) => Number(deck.matchup?.games_played || 0) >= DECKLIST_FALLBACK_MIN_GAMES);
+      return pool.slice(0, limit);
     }
 
     function collectCardCodesForCurrentView(playerCode, opponentCode){
@@ -1614,9 +2255,6 @@
       }
       for (const deck of [...getDecklistsForMatchup(playerCode, opponentCode, deckLimit), ...getDecklistsForMatchup(opponentCode, playerCode, deckLimit)]){
         for (const item of parseDecklist(deck?.decklist || "")) if (item?.code) codes.add(item.code);
-      }
-      for (const turn of [...getCurveTurns(playerCode, opponentCode, "first"), ...getCurveTurns(playerCode, opponentCode, "second"), ...getCurveTurns(opponentCode, playerCode, "first"), ...getCurveTurns(opponentCode, playerCode, "second")]){
-        for (const code of splitComboCodes(turn.combo)) codes.add(code);
       }
       return [...codes];
     }
@@ -1632,17 +2270,21 @@
     function renderMiniCard(code, badgeText){
       const src = cardImageByCode(code);
       const label = cardAssetByCode(code)?.name || code;
+      const cardCode = normalizeCardCode(code) || norm(code);
+      const actionAttrs = cardCode ? ` data-card-code="${escapeAttr(cardCode)}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(label)}"` : "";
       return src
-        ? `<div class="miniCard cardZoom" title="${escapeAttr(label)}" data-preview-src="${escapeAttr(src)}" data-preview-label="${escapeAttr(label)}"><img src="${escapeAttr(src)}" alt="${escapeAttr(label)}" loading="lazy">${badgeText ? `<div class="miniCardBadge">${escapeHtml(badgeText)}</div>` : ""}</div>`
-        : `<div class="miniCard" title="${escapeAttr(label)}"><div class="miniCardFallback">${escapeHtml(label)}</div>${badgeText ? `<div class="miniCardBadge">${escapeHtml(badgeText)}</div>` : ""}</div>`;
+        ? `<div class="miniCard cardZoom" title="${escapeAttr(label)}" data-preview-src="${escapeAttr(src)}" data-preview-label="${escapeAttr(label)}"${actionAttrs}><img src="${escapeAttr(src)}" alt="${escapeAttr(label)}" loading="lazy">${badgeText ? `<div class="miniCardBadge">${escapeHtml(badgeText)}</div>` : ""}</div>`
+        : `<div class="miniCard cardZoom" title="${escapeAttr(label)}"${actionAttrs}><div class="miniCardFallback">${escapeHtml(label)}</div>${badgeText ? `<div class="miniCardBadge">${escapeHtml(badgeText)}</div>` : ""}</div>`;
     }
 
     function renderDeckCard(code, qty){
       const src = cardImageByCode(code);
       const label = cardAssetByCode(code)?.name || code;
+      const cardCode = normalizeCardCode(code) || norm(code);
+      const actionAttrs = cardCode ? ` data-card-code="${escapeAttr(cardCode)}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(label)}"` : "";
       return src
-        ? `<div class="deckCardItem cardZoom" title="${escapeAttr(label)}" data-preview-src="${escapeAttr(src)}" data-preview-label="${escapeAttr(label)}"><img src="${escapeAttr(src)}" alt="${escapeAttr(label)}" loading="lazy"><span class="qty">${escapeHtml(`${qty}x`)}</span></div>`
-        : `<div class="deckCardItem" title="${escapeAttr(label)}"><div class="deckCardFallback">${escapeHtml(label)}</div><span class="qty">${escapeHtml(`${qty}x`)}</span></div>`;
+        ? `<div class="deckCardItem cardZoom" title="${escapeAttr(label)}" data-preview-src="${escapeAttr(src)}" data-preview-label="${escapeAttr(label)}"${actionAttrs}><img src="${escapeAttr(src)}" alt="${escapeAttr(label)}" loading="lazy"><span class="qty">${escapeHtml(`${qty}x`)}</span></div>`
+        : `<div class="deckCardItem cardZoom" title="${escapeAttr(label)}"${actionAttrs}><div class="deckCardFallback">${escapeHtml(label)}</div><span class="qty">${escapeHtml(`${qty}x`)}</span></div>`;
     }
 
     function renderCurveCard(code){
@@ -1673,6 +2315,159 @@
         const clipboardText = formatDecklistForClipboard(items, leaderCode);
         return `<div class="deckCard"><div class="deckMeta"><div class="deckMetaMain"><strong>#${index + 1} · ${pct(deck.matchup?.win_rate)}</strong><span> (${int(deck.matchup?.games_played)} games)</span></div><div class="deckMetaActions"><span>WR 1st ${pct(firstWr)} · WR 2nd ${pct(secondWr)}</span>${clipboardText ? `<button class="deckCopyBtn" type="button" title="Copiar decklist" aria-label="Copiar decklist" data-copy-decklist="${escapeAttr(encodeURIComponent(clipboardText))}">${deckCopyButtonIcon("copy")}</button>` : ""}</div></div><div class="deckCards">${items.map((item) => renderDeckCard(item.code, item.qty)).join("")}</div></div>`;
       }).join("")}</div>`;
+    }
+
+    function cardInfoValue(value, fallback = "Sin dato"){
+      const text = normalize(value);
+      return text || fallback;
+    }
+
+    function cardInfoSpecMarkup(item){
+      return (
+        `<div class="cardInfoSpec">` +
+          `<span>${escapeHtml(item.label)}</span>` +
+          `<strong>${escapeHtml(cardInfoValue(item.value, item.fallback))}</strong>` +
+        `</div>`
+      );
+    }
+
+    function cardInfoFallbackRecord(code, text){
+      const canonical = normalizeCardCode(code) || norm(code);
+      const asset = cardAssetByCode(canonical) || {};
+      return {
+        code: canonical,
+        name: normalize(asset.name || canonical || "Carta"),
+        type: normalize(asset.card_type || asset.type || ""),
+        rarity: "-",
+        expansionName: normalize(asset.set_name || "Sin expansion"),
+        expansionLabel: normalize(asset.set_name || "Sin expansion"),
+        sourceLabel: "Matchup Stats",
+        colors: [],
+        counter: null,
+        cost: "",
+        life: "",
+        power: "",
+        attribute: "",
+        subTypes: "",
+        text: text || "Cargando datos de la carta...",
+        image: normalize(asset.image_url || asset.image || buildDotggCardImageUrl(canonical)),
+        fallbackImage: buildDotggCardImageUrl(canonical),
+        blockIcon: "",
+        dateScraped: ""
+      };
+    }
+
+    function cardInfoModalMarkup(card){
+      const src = cardImageSource(card);
+      const fallbackSrc = cardFallbackSource(card);
+      const colors = Array.isArray(card.colors) && card.colors.length ? card.colors.map(humanColor).join(" / ") : "";
+      const colorTags = Array.isArray(card.colors) && card.colors.length
+        ? card.colors.map((color) => `<span class="cardInfoTag">${escapeHtml(humanColor(color))}</span>`).join("")
+        : `<span class="cardInfoTag">Sin color</span>`;
+      const art = src
+        ? `<img src="${escapeAttr(src)}" alt="${escapeAttr(card.name)}" loading="lazy" data-card-info-image="1" data-fallback-src="${escapeAttr(fallbackSrc && fallbackSrc !== src ? fallbackSrc : "")}" data-fallback-label="${escapeAttr(card.code)}" />`
+        : `<div class="cardInfoArtFallback">${escapeHtml(card.code || "Sin imagen")}</div>`;
+      const counterText = card.counter === null || card.counter === undefined ? "" : `+${card.counter}`;
+      const specs = [
+        [
+          { label: "Vida", value: card.life },
+          { label: "Atributo", value: card.attribute }
+        ],
+        [
+          { label: "Poder", value: card.power },
+          { label: "Counter", value: counterText }
+        ],
+        [
+          { label: "Color", value: colors },
+          { label: "Block Icon", value: card.blockIcon, fallback: "No disponible" }
+        ],
+        [
+          { label: "Coste", value: card.type === "Leader" ? "" : card.cost },
+          { label: "Actualizado", value: card.dateScraped }
+        ]
+      ];
+
+      return (
+        `<div class="cardInfoBody">` +
+          `<div class="cardInfoArt">${art}</div>` +
+          `<div class="cardInfoPanel">` +
+            `<div class="cardInfoMetaStrip">` +
+              `<span class="cardInfoTag">${escapeHtml(card.type || "-")}</span>` +
+              `<span class="cardInfoTag">${escapeHtml(card.rarity || "-")}</span>` +
+              colorTags +
+              `<span class="cardInfoTag">${escapeHtml(card.sourceLabel || "-")}</span>` +
+            `</div>` +
+            `<div class="cardInfoSpecs">` +
+              specs.map((row) => `<div class="cardInfoSpecRow">${row.map(cardInfoSpecMarkup).join("")}</div>`).join("") +
+            `</div>` +
+            `<div class="cardInfoSection">` +
+              `<span class="cardInfoSectionLabel">Tipo</span>` +
+              `<strong>${escapeHtml(card.subTypes || card.type || "Sin dato")}</strong>` +
+            `</div>` +
+            `<div class="cardInfoSection">` +
+              `<span class="cardInfoSectionLabel">Efecto</span>` +
+              `<div class="cardInfoText">${escapeHtml(card.text || "Sin texto disponible.")}</div>` +
+            `</div>` +
+            `<div class="cardInfoSet">` +
+              `<span class="cardInfoSectionLabel">Expansion</span>` +
+              `<strong>${escapeHtml(card.expansionLabel || card.expansionName || "Sin expansion")}</strong>` +
+              `<small>${escapeHtml(card.code || "-")} | ${escapeHtml(card.sourceLabel || "-")}</small>` +
+            `</div>` +
+          `</div>` +
+        `</div>`
+      );
+    }
+
+    function updateCardInfoModal(card){
+      cardInfoTitle.textContent = card.name || card.code || "Carta";
+      cardInfoSubtitle.textContent = [card.code, card.rarity, String(card.type || "").toUpperCase()].filter(Boolean).join(" | ");
+      cardInfoContent.innerHTML = cardInfoModalMarkup(card);
+    }
+
+    async function openCardInfo(code){
+      const canonical = normalizeCardCode(code) || norm(code);
+      if (!canonical) return;
+
+      document.dispatchEvent(new CustomEvent("matchupStats:hidePreview"));
+      state.activeCardCode = canonical;
+      updateCardInfoModal(cardInfoFallbackRecord(canonical, "Cargando datos de la carta..."));
+      cardInfoOverlay.classList.add("is-open");
+      cardInfoOverlay.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+
+      try{
+        const cardsByCode = await ensureLocalCardCatalog();
+        if (state.activeCardCode !== canonical) return;
+        updateCardInfoModal(cardsByCode.get(canonical) || cardInfoFallbackRecord(canonical, "No se ha encontrado la ficha local de esta carta."));
+      }catch(_error){
+        if (state.activeCardCode !== canonical) return;
+        updateCardInfoModal(cardInfoFallbackRecord(canonical, "No se ha podido cargar el catalogo local para mostrar el detalle completo."));
+      }
+    }
+
+    function closeCardInfo(){
+      state.activeCardCode = "";
+      cardInfoOverlay.classList.remove("is-open");
+      cardInfoOverlay.setAttribute("aria-hidden", "true");
+      cardInfoContent.innerHTML = "";
+      document.body.classList.remove("modal-open");
+    }
+
+    function handleCardInfoImageError(event){
+      const img = event.target;
+      if (!(img instanceof HTMLImageElement) || img.dataset.cardInfoImage !== "1") return;
+
+      const fallbackSrc = normalize(img.dataset.fallbackSrc || "");
+      if (fallbackSrc && img.dataset.fallbackApplied !== "1"){
+        img.dataset.fallbackApplied = "1";
+        img.src = fallbackSrc;
+        return;
+      }
+
+      const fallback = document.createElement("div");
+      fallback.className = "cardInfoArtFallback";
+      fallback.textContent = normalize(img.dataset.fallbackLabel || img.alt || "Sin imagen");
+      img.replaceWith(fallback);
     }
 
     function renderCurveTable(turns, title){
@@ -1734,21 +2529,8 @@
         </section>
         <section class="section">
           <h3>Top Decklists vs ${escapeHtml(leaderNameByCode(opponentCode))}</h3>
-          <p>Decklists del líder filtradas por matchup directo contra este rival.</p>
+          <p>Decklists del líder filtradas por matchup directo: mínimo 10 partidas por lista, con fallback a mínimo 3 si no hay 3 listas suficientes.</p>
           ${renderDecklists(leaderCode, opponentCode)}
-        </section>
-        <section class="section">
-          <h3>Curve into ${escapeHtml(leaderNameByCode(opponentCode))}</h3>
-          <p>Se usan las líneas específicas contra el rival y, si faltan, se cae al combo general de ese turno.</p>
-          <div class="curveDesktop">
-            <div class="curveGrid">
-              <div>${renderCurveTable(getCurveTurns(leaderCode, opponentCode, "first"), "Going 1st")}</div>
-              <div>${renderCurveTable(getCurveTurns(leaderCode, opponentCode, "second"), "Going 2nd")}</div>
-            </div>
-          </div>
-          <div class="curveMobile">
-            ${renderCurveCombinedTable(getCurveTurns(leaderCode, opponentCode, "first"), getCurveTurns(leaderCode, opponentCode, "second"))}
-          </div>
         </section>
       `;
     }
@@ -1862,7 +2644,15 @@
     });
 
     document.addEventListener("click", async (event) => {
-      const button = event.target instanceof Element ? event.target.closest(".deckCopyBtn[data-copy-decklist]") : null;
+      const target = event.target instanceof Element ? event.target : null;
+      const cardTile = target ? target.closest("[data-card-code]") : null;
+      if (cardTile && !target.closest(".deckCopyBtn")){
+        event.preventDefault();
+        await openCardInfo(cardTile.dataset.cardCode || "");
+        return;
+      }
+
+      const button = target ? target.closest(".deckCopyBtn[data-copy-decklist]") : null;
       if (!(button instanceof HTMLButtonElement)) return;
 
       const encoded = button.dataset.copyDecklist || "";
@@ -1885,6 +2675,26 @@
         button.classList.remove("isCopied");
       }, copied ? 1400 : 1800);
     });
+
+    document.addEventListener("keydown", async (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const cardTile = target ? target.closest("[data-card-code]") : null;
+      if (cardTile && (event.key === "Enter" || event.key === " ")){
+        event.preventDefault();
+        await openCardInfo(cardTile.dataset.cardCode || "");
+        return;
+      }
+
+      if (event.key === "Escape" && cardInfoOverlay.classList.contains("is-open")){
+        closeCardInfo();
+      }
+    });
+
+    cardInfoOverlay.addEventListener("click", (event) => {
+      if (event.target === cardInfoOverlay) closeCardInfo();
+    });
+    cardInfoClose.addEventListener("click", closeCardInfo);
+    document.addEventListener("error", handleCardInfoImageError, true);
 
     deckCountSelect.addEventListener("change", renderMatchup);
     techCountSelect.addEventListener("change", renderMatchup);
