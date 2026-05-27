@@ -201,6 +201,37 @@ h4 {
   font-family: "Segoe UI", Arial, sans-serif;
 }
 
+.eloChartPoint {
+  outline: none;
+}
+
+.eloChartHitArea {
+  pointer-events: all;
+}
+
+.eloChartPoint circle:first-of-type {
+  transition: r .15s ease, stroke-width .15s ease, filter .15s ease;
+}
+
+.eloChartPoint:hover circle:first-of-type,
+.eloChartPoint:focus circle:first-of-type {
+  r: 6;
+  stroke-width: 3;
+  filter: drop-shadow(0 3px 7px rgba(37,99,235,.35));
+}
+
+.eloChartTooltip {
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity .12s ease, transform .12s ease;
+}
+
+.eloChartPoint:hover .eloChartTooltip,
+.eloChartPoint:focus .eloChartTooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .eloChartEmpty {
   position: absolute;
   inset: 0;
