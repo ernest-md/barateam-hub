@@ -320,10 +320,11 @@
       letter-spacing:.06em;
       text-transform:uppercase;
     }
-    body[data-fantasy-view="gacha"] .rarityBadge.rare{background:#bae6fd;color:#075985}
+    body[data-fantasy-view="gacha"] .rarityBadge.common{background:#fed7aa;color:#7c2d12}
+    body[data-fantasy-view="gacha"] .rarityBadge.rare{background:#e5e7eb;color:#374151}
     body[data-fantasy-view="gacha"] .rarityBadge.epic{background:#ddd6fe;color:#5b21b6}
     body[data-fantasy-view="gacha"] .rarityBadge.legendary{background:#fde68a;color:#92400e}
-    body[data-fantasy-view="gacha"] .rarityBadge.mythic{background:#fecdd3;color:#9f1239}
+    body[data-fantasy-view="gacha"] .rarityBadge.mythic{background:#cffafe;color:#155e75}
     body[data-fantasy-view="gacha"] .gachaName{
       min-height:82px;
       padding:12px;
@@ -974,7 +975,7 @@
         <div>
           <div class="eyebrow">VadeFantasy OP15</div>
           <h1>VaDeGacha</h1>
-          <p>Ruleta fantasy mixta para desbloquear skins y equipables para tus jugadores.</p>
+          <p>Ruleta fantasy mixta para desbloquear skins, equipables y bolsas de berries.</p>
         </div>
         <div class="walletInline" title="Balance fantasy">
           <img src="berries.png" alt="" aria-hidden="true" />
@@ -985,9 +986,9 @@
         </div>
       </div>
       <div class="heroStats">
-        <div class="heroStat"><b id="activeBannerName">Pool mixto</b><span>Gacha activo</span></div>
+        <div class="heroStat"><b id="activeBannerName">VaDeGacha B1</b><span>Gacha activo</span></div>
         <div class="heroStat"><b id="singleCostStat">12.000</b><span>Coste x1</span></div>
-        <div class="heroStat"><b id="pityStat">72</b><span>Pity legendario</span></div>
+        <div class="heroStat"><b id="pityStat">60</b><span>Pity diamante</span></div>
         <div class="heroStat"><b id="inventoryStat">0</b><span>Inventario</span></div>
       </div>
       <div class="pageMsg" id="pageMsg"></div>
@@ -1011,7 +1012,7 @@
             <span class="oddsTooltip" id="oddsTooltip" role="tooltip"></span>
           </span>
         </div>
-        <p id="gachaResult">Pool OP15 listo.</p>
+        <p id="gachaResult">VaDeGacha B1 listo.</p>
         <div class="pullControls">
           <button class="btn btnPrimary" id="singlePullButton" type="button">
             Tirar x1
@@ -1086,16 +1087,16 @@
       const intFmt = new Intl.NumberFormat("es-ES");
       const STORAGE_KEY = "vadefantasy-gacha-mock-v1";
       const DEFAULT_BALANCE = 120000;
-      const DEFAULT_PITY = 72;
+      const DEFAULT_PITY = 60;
       const CURRENT_SEASON = "OP15";
       const REMOTE_BANNER_CODE = "mixed-op15";
       const RARITY_ORDER = { common: 1, rare: 2, epic: 3, legendary: 4, mythic: 5 };
       const RARITY_LABELS = {
-        common: "Comun",
-        rare: "Rara",
+        common: "Bronce",
+        rare: "Plata",
         epic: "Epica",
-        legendary: "Legendaria",
-        mythic: "Mitica"
+        legendary: "Oro",
+        mythic: "Diamante"
       };
       const INVENTORY_FILTERS = [
         { code: "all", label: "Todo" },
@@ -1105,34 +1106,52 @@
       const BANNERS = {
         mixed: {
           code: "mixed",
-          name: "Pool mixto OP15",
+          name: "VaDeGacha B1",
           shortName: "Mixto",
-          copy: "Skins y equipables en la misma ruleta.",
+          copy: "Equipables, skins y berries en la misma ruleta.",
           singleCost: 12000,
           multiCost: 100000,
-          pityTarget: "Legendaria",
-          odds: { common: 46, rare: 32, epic: 15, legendary: 6, mythic: 1 },
+          pityLimit: DEFAULT_PITY,
+          pityTarget: "Diamante",
+          pityRarities: ["mythic"],
+          odds: { common: 60, rare: 28, legendary: 10, mythic: 2 },
           rewards: [
-            { id: "skin-ernest-king", name: "Ernest Rey Carmesi", type: "Skin", rarity: "mythic", target: "Ernest", image: "fantasy/Ernest.png", category: "skin" },
-            { id: "gear-crown", name: "Corona de MVP", type: "Cabeza", rarity: "mythic", target: "Cualquier jugador", image: "fantasy_coin.png", equip: true, category: "equipment", slot: "head" },
-            { id: "skin-yago-neon", name: "Yago Neon", type: "Skin", rarity: "legendary", target: "Yago", image: "fantasy/Yago.png", category: "skin" },
-            { id: "skin-coquito-royal", name: "Coquito Royal", type: "Skin", rarity: "legendary", target: "Coquito", image: "fantasy/Coquito.png", category: "skin" },
-            { id: "gear-cape", name: "Capa de Capitan", type: "Espalda", rarity: "legendary", target: "Capitan", image: "VDJ.png", equip: true, category: "equipment", slot: "back" },
-            { id: "gear-den-den", name: "Den Den Scout", type: "Soporte", rarity: "legendary", target: "Scout", image: "berries.png", equip: true, category: "equipment", slot: "support" },
-            { id: "skin-dilix-cyber", name: "Dilix Cyber", type: "Skin", rarity: "epic", target: "Dilix", image: "fantasy/Dilix.png", category: "skin" },
-            { id: "skin-dr-yemo-galeon", name: "DrYemo Galeon", type: "Skin", rarity: "epic", target: "DrYemo", image: "fantasy/DrYemo.png", category: "skin" },
-            { id: "gear-boots", name: "Botas de Comeback", type: "Piernas", rarity: "epic", target: "Activo", image: "fantasy_coin.png", equip: true, category: "equipment", slot: "legs" },
-            { id: "gear-gloves", name: "Guantes de Clausula", type: "Manos", rarity: "epic", target: "Mercado", image: "berries.png", equip: true, category: "equipment", slot: "hands" },
-            { id: "skin-joselu-wave", name: "Joselu Oleaje", type: "Skin", rarity: "rare", target: "Joselu", image: "fantasy/Joselu.png", category: "skin" },
-            { id: "skin-renku-arcade", name: "Renku Arcade", type: "Skin", rarity: "rare", target: "Renku", image: "fantasy/Renku.png", category: "skin" },
-            { id: "gear-bandana", name: "Bandana Roja", type: "Cabeza", rarity: "rare", target: "Cualquier jugador", image: "inscrito.png", equip: true, category: "equipment", slot: "head" },
-            { id: "gear-logpose", name: "Log Pose", type: "Soporte", rarity: "rare", target: "Banquillo", image: "fantasy_coin.png", equip: true, category: "equipment", slot: "support" },
-            { id: "skin-romo-training", name: "Romo Training", type: "Skin", rarity: "common", target: "Romo", image: "fantasy/Romo.png", category: "skin" },
-            { id: "skin-charko-splash", name: "Charko Splash", type: "Skin", rarity: "common", target: "Charko", image: "fantasy/Charko.png", category: "skin" },
-            { id: "skin-vaina-street", name: "VainaLoca Street", type: "Skin", rarity: "common", target: "VainaLoca", image: "fantasy/VainaLoca.png", category: "skin" },
-            { id: "gear-berry-bag", name: "Bolsa de Berries", type: "Accesorio", rarity: "common", target: "Cualquier jugador", image: "berries.png", equip: true, category: "equipment", slot: "accessory" },
-            { id: "gear-training", name: "Pesas de Training", type: "Soporte", rarity: "common", target: "Training", image: "fantasy_coin.png", equip: true, category: "equipment", slot: "support" },
-            { id: "gear-ticket", name: "Ticket de Arena", type: "Accesorio", rarity: "common", target: "Cualquier jugador", image: "inscrito.png", equip: true, category: "equipment", slot: "accessory" }
+            { id: "eq-of-br-01", name: "Aura Púrpura", type: "Ofensivo", rarity: "common", target: "Ofensivo", image: "VDG/EQ-OF-BR-01.png", equip: true, category: "equipment", slot: "offensive", effect: "Suma +4 si juega lila" },
+            { id: "eq-of-br-02", name: "Bendición del Amarillo", type: "Ofensivo", rarity: "common", target: "Ofensivo", image: "VDG/EQ-OF-BR-02.png", equip: true, category: "equipment", slot: "offensive", effect: "Suma +4 si juega amarillo" },
+            { id: "eq-of-br-03", name: "Furia Roja", type: "Ofensivo", rarity: "common", target: "Ofensivo", image: "VDG/EQ-OF-BR-03.png", equip: true, category: "equipment", slot: "offensive", effect: "Suma +4 si juega rojo" },
+            { id: "eq-of-br-04", name: "Voluntad Oscura", type: "Ofensivo", rarity: "common", target: "Ofensivo", image: "VDG/EQ-OF-BR-04.png", equip: true, category: "equipment", slot: "offensive", effect: "Suma +4 si juega negro" },
+            { id: "eq-of-pl-01", name: "Racha del Tryhard", type: "Ofensivo", rarity: "rare", target: "Ofensivo", image: "VDG/EQ-OF-PL-01.png", equip: true, category: "equipment", slot: "offensive", effect: "Suma +2 puntos por torneo seguido jugado." },
+            { id: "eq-of-pl-02", name: "Premio al Desaparecido", type: "Ofensivo", rarity: "rare", target: "Ofensivo", image: "VDG/EQ-OF-PL-02.png", equip: true, category: "equipment", slot: "offensive", effect: "Suma +2 puntos por cada jornada no asistida seguida" },
+            { id: "eq-of-or-01", name: "Entrada al Top Cut", type: "Ofensivo", rarity: "legendary", target: "Ofensivo", image: "VDG/EQ-OF-OR-01.png", equip: true, category: "equipment", slot: "offensive", effect: "Si el jugador hace top 8, +8 puntos." },
+            { id: "eq-of-di-01", name: "Corona del Carry", type: "Ofensivo", rarity: "mythic", target: "Ofensivo", image: "VDG/EQ-OF-DI-01.png", equip: true, category: "equipment", slot: "offensive", effect: "Las victorias del jugador suman +4 puntos." },
+            { id: "eq-de-br-01", name: "Seguro Antiderrota", type: "Defensivo", rarity: "common", target: "Defensivo", image: "VDG/EQ-DE-BR-01.png", equip: true, category: "equipment", slot: "defensive", effect: "Una derrota no resta puntos por jornada." },
+            { id: "eq-de-br-02", name: "Excusa Perfecta", type: "Defensivo", rarity: "common", target: "Defensivo", image: "VDG/EQ-DE-BR-02.png", equip: true, category: "equipment", slot: "defensive", effect: "Si no asiste al torneo +5 puntos." },
+            { id: "eq-de-br-03", name: "Combo de Nakamas", type: "Defensivo", rarity: "common", target: "Defensivo", image: "VDG/EQ-DE-BR-03.png", equip: true, category: "equipment", slot: "defensive", effect: "Si todos los miembros activos de la jornada son del mismo equipo, suma +4 puntos." },
+            { id: "eq-de-pl-01", name: "Blindaje Anticláusula", type: "Defensivo", rarity: "rare", target: "Defensivo", image: "VDG/EQ-DE-PL-01.png", equip: true, category: "equipment", slot: "defensive", effect: "Si te hacen clausulazo, recibes x2 de su valor." },
+            { id: "eq-de-pl-02", name: "Banquillo de Lujo", type: "Defensivo", rarity: "rare", target: "Defensivo", image: "VDG/EQ-DE-PL-02.png", equip: true, category: "equipment", slot: "defensive", effect: "Si el jugador es suplente, suma +2 punto a la jornada." },
+            { id: "eq-de-pl-03", name: "Paracaídas del Top 16", type: "Defensivo", rarity: "rare", target: "Defensivo", image: "VDG/EQ-DE-PL-03.png", equip: true, category: "equipment", slot: "defensive", effect: "Si queda por debajo del top 16, suma +4 puntos." },
+            { id: "eq-de-or-01", name: "Escudo del Perdedor", type: "Defensivo", rarity: "legendary", target: "Defensivo", image: "VDG/EQ-DE-OR-01.png", equip: true, category: "equipment", slot: "defensive", effect: "Las derrotas de este jugador no restan puntos." },
+            { id: "eq-de-or-02", name: "Candado Antimercado", type: "Defensivo", rarity: "legendary", target: "Defensivo", image: "VDG/EQ-DE-OR-02.png", equip: true, category: "equipment", slot: "defensive", effect: "Jugador protegido a clausula de miercoles a viernes." },
+            { id: "eq-me-br-01", name: "Apuesta Offmeta", type: "Meme / utilidad", rarity: "common", target: "Meme / utilidad", image: "VDG/EQ-ME-BR-01.png", equip: true, category: "equipment", slot: "utility", effect: "Suma +2 si juega un lider offmeta." },
+            { id: "eq-me-br-02", name: "Pacto Shichibukai", type: "Meme / utilidad", rarity: "common", target: "Meme / utilidad", image: "VDG/EQ-ME-BR-02.png", equip: true, category: "equipment", slot: "utility", effect: "Suma +2 puntos si juega un Sichibukai." },
+            { id: "eq-me-br-03", name: "Marca del Yonkou", type: "Meme / utilidad", rarity: "common", target: "Meme / utilidad", image: "VDG/EQ-ME-BR-03.png", equip: true, category: "equipment", slot: "utility", effect: "Suma +2 puntos si juega un Yonkou." },
+            { id: "eq-me-pl-01", name: "Humillación Rentable", type: "Meme / utilidad", rarity: "rare", target: "Meme / utilidad", image: "VDG/EQ-ME-PL-01.png", equip: true, category: "equipment", slot: "utility", effect: "Si queda por debajo de top 20, +10 puntos." },
+            { id: "eq-me-pl-02", name: "Maldición del Suplente", type: "Meme / utilidad", rarity: "rare", target: "Meme / utilidad", image: "VDG/EQ-ME-PL-02.png", equip: true, category: "equipment", slot: "utility", effect: "Si es suplente, al resto de jugadores les resta una derrota." },
+            { id: "eq-me-pl-03", name: "Derrota Productiva", type: "Meme / utilidad", rarity: "rare", target: "Meme / utilidad", image: "VDG/EQ-ME-PL-03.png", equip: true, category: "equipment", slot: "utility", effect: "Si no ha ganado ninguna partida, suma +4 por derrota." },
+            { id: "eq-me-or-01", name: "Buff Barateamer", type: "Meme / utilidad", rarity: "legendary", target: "Meme / utilidad", image: "VDG/EQ-ME-OR-01.png", equip: true, category: "equipment", slot: "utility", effect: "Suma +3 puntos por cada Barateamer." },
+            { id: "eq-me-or-02", name: "Bendición Laboomer", type: "Meme / utilidad", rarity: "legendary", target: "Meme / utilidad", image: "VDG/EQ-ME-OR-02.png", equip: true, category: "equipment", slot: "utility", effect: "Suma +3 puntos por cada Laboomer." },
+            { id: "sk-br-01", name: "Semidimoni", type: "Skin", rarity: "common", target: "Skin visual", image: "VDG/SK-BR-01.png", category: "skin", effect: "Suma +2 puntos por jornada." },
+            { id: "sk-br-02", name: "Joselu", type: "Skin", rarity: "common", target: "Skin visual", image: "VDG/SK-BR-02.png", category: "skin", effect: "Suma +2 puntos por jornada." },
+            { id: "sk-pl-01", name: "Romo", type: "Skin", rarity: "rare", target: "Skin visual", image: "VDG/SK-PL-01.png", category: "skin", effect: "Suma +3 puntos por jornada." },
+            { id: "sk-pl-02", name: "Sicari", type: "Skin", rarity: "rare", target: "Skin visual", image: "VDG/SK-PL-02.png", category: "skin", effect: "Suma +3 puntos por jornada." },
+            { id: "sk-pl-03", name: "Xavisu", type: "Skin", rarity: "rare", target: "Skin visual", image: "VDG/SK-PL-03.png", category: "skin", effect: "Suma +3 puntos por jornada." },
+            { id: "sk-or-01", name: "Humano", type: "Skin", rarity: "legendary", target: "Skin visual", image: "VDG/SK-OR-01.png", category: "skin", effect: "Suma +4 puntos por jornada." },
+            { id: "sk-or-02", name: "Cojinho", type: "Skin", rarity: "legendary", target: "Skin visual", image: "VDG/SK-OR-02.png", category: "skin", effect: "Suma +4 puntos por jornada." },
+            { id: "sk-di-01", name: "Charko", type: "Skin", rarity: "mythic", target: "Skin visual", image: "VDG/SK-DI-01.png", category: "skin", effect: "Suma +5 puntos por jornada. Si no ha perdido ninguna partida, duplica la puntuación." },
+            { id: "be-br-01", name: "Bolsa de Berries", type: "Berries", rarity: "common", target: "Moneda", image: "berries.png", category: "berries", coinAmount: 5000, effect: "5000 Berries" },
+            { id: "be-br-02", name: "Bolsa de Berries", type: "Berries", rarity: "common", target: "Moneda", image: "berries.png", category: "berries", coinAmount: 5000, effect: "5000 Berries" },
+            { id: "be-pl-01", name: "Bolsa de Berries", type: "Berries", rarity: "rare", target: "Moneda", image: "berries.png", category: "berries", coinAmount: 12000, effect: "12000 Berries" },
+            { id: "be-or-01", name: "Bolsa de Berries", type: "Berries", rarity: "legendary", target: "Moneda", image: "berries.png", category: "berries", coinAmount: 50000, effect: "50000 Berries" }
           ]
         }
       };
@@ -1173,6 +1192,56 @@
 
       function currentBanner(){
         return BANNERS[state.activeBanner] || BANNERS.mixed;
+      }
+
+      function typeLabelForSlot(slot, kind){
+        const normalized = String(slot || "").trim().toLowerCase();
+        if (kind === "skin") return "Skin";
+        if (kind === "berries") return "Berries";
+        return ({
+          offensive: "Ofensivo",
+          defensive: "Defensivo",
+          utility: "Meme / utilidad",
+          head: "Cabeza",
+          back: "Espalda",
+          hands: "Manos",
+          legs: "Piernas",
+          accessory: "Accesorio",
+          support: "Soporte"
+        })[normalized] || slot || "Equipable";
+      }
+
+      function coinAmountFromReward(reward){
+        return Math.max(0, Math.round(Number(reward?.coinAmount || reward?.compensationCoins || 0)));
+      }
+
+      function isBerryReward(reward){
+        return String(reward?.category || "").toLowerCase() === "berries" || coinAmountFromReward(reward) > 0;
+      }
+
+      function rewardMetaText(reward){
+        if (isBerryReward(reward)) return `+${formatCoins(coinAmountFromReward(reward))} berries`;
+        const effect = String(reward?.effect || "").trim();
+        if (effect) return effect;
+        return `${reward?.type || "Recompensa"} para ${reward?.target || "cualquier jugador"}`;
+      }
+
+      function isContainReward(reward){
+        return !!reward?.equip || isBerryReward(reward);
+      }
+
+      function pityRaritiesForBanner(banner){
+        return Array.isArray(banner?.pityRarities) && banner.pityRarities.length ? banner.pityRarities : ["legendary", "mythic"];
+      }
+
+      function isPityResetReward(banner, reward){
+        return pityRaritiesForBanner(banner).includes(String(reward?.rarity || "").toLowerCase());
+      }
+
+      function pityRemainingFromCounter(counter){
+        const limit = Number(currentBanner().pityLimit || DEFAULT_PITY);
+        const misses = Math.max(0, Number(counter || 0));
+        return Math.max(0, limit - misses);
       }
 
 
@@ -1239,12 +1308,15 @@
           dbItemId: item.id || "",
           ownedItemId: ownedItemId || "",
           name: item.name || code || "Item",
-          type: kind === "skin" ? "Skin" : (item.slot || "Equipable"),
+          type: typeLabelForSlot(item.slot, kind),
           rarity: item.rarity || "common",
-          target: item.target_player_slug || item.target_rule || "any",
+          target: item.target_player_slug || item.target_rule || (kind === "berries" ? "Moneda" : "any"),
           image: item.asset_path || "",
+          effect: item.effect_summary || "",
+          compensationCoins: Number(item.duplicate_compensation_coins || 0),
+          coinAmount: kind === "berries" ? Number(item.duplicate_compensation_coins || 0) : 0,
           equip: kind === "equipment",
-          category: kind === "equipment" ? "equipment" : "skin",
+          category: kind === "berries" ? "berries" : (kind === "equipment" ? "equipment" : "skin"),
           slot: item.slot || null
         };
       }
@@ -1260,12 +1332,15 @@
           dbItemId: row.item_id || "",
           ownedItemId: row.owned_item_id || "",
           name: row.name || row.code || "Item",
-          type: row.kind === "skin" ? "Skin" : (row.slot || "Equipable"),
+          type: typeLabelForSlot(row.slot, row.kind),
           rarity: row.rarity || "common",
-          target: row.target_player_slug || row.target_rule || "any",
+          target: row.target_player_slug || row.target_rule || (row.kind === "berries" ? "Moneda" : "any"),
           image: row.asset_path || "",
+          effect: row.effect_summary || "",
+          compensationCoins: Number(row.compensation_coins || 0),
+          coinAmount: row.kind === "berries" ? Number(row.compensation_coins || 0) : 0,
           equip: row.kind === "equipment",
-          category: row.kind === "equipment" ? "equipment" : "skin",
+          category: row.kind === "berries" ? "berries" : (row.kind === "equipment" ? "equipment" : "skin"),
           slot: row.slot || null
         };
         rememberRemoteReward(reward);
@@ -1317,7 +1392,7 @@
       }
 
       function chooseReward(banner, forceHigh){
-        const highRarities = ["legendary", "mythic"];
+        const highRarities = pityRaritiesForBanner(banner);
         let rarity = forceHigh ? randomFrom(highRarities) : chooseWeightedRarity(banner);
         let pool = rewardsForRarity(banner, rarity);
         if (!pool.length){
@@ -1329,6 +1404,10 @@
       }
 
       function applyDropToInventory(drop){
+        if (isBerryReward(drop)){
+          state.balance += coinAmountFromReward(drop);
+          return;
+        }
         const now = Date.now();
         const current = inventoryEntry(drop.id);
         state.inventory[drop.id] = {
@@ -1346,8 +1425,8 @@
           const drop = chooseReward(banner, forceHigh);
           drops.push(drop);
           applyDropToInventory(drop);
-          if (RARITY_ORDER[drop.rarity] >= RARITY_ORDER.legendary){
-            state.pity = DEFAULT_PITY;
+          if (isPityResetReward(banner, drop)){
+            state.pity = Number(banner.pityLimit || DEFAULT_PITY);
           } else {
             state.pity = Math.max(1, state.pity - 1);
           }
@@ -1385,7 +1464,7 @@
         const image = reward.image
           ? `<img src="${escapeAttr(reward.image)}" alt="${escapeAttr(reward.name)}" onerror="this.onerror=null;this.remove();this.parentNode.innerHTML='&lt;div class=&quot;rewardFallback&quot;&gt;${fallback}&lt;/div&gt;'">`
           : `<div class="rewardFallback">${fallback}</div>`;
-        return `<div class="gachaArt${reward.equip ? " isEquip" : ""}">${image}<span class="rarityBadge ${escapeAttr(reward.rarity)}">${escapeHtml(RARITY_LABELS[reward.rarity] || reward.rarity)}</span></div>`;
+        return `<div class="gachaArt${isContainReward(reward) ? " isEquip" : ""}">${image}<span class="rarityBadge ${escapeAttr(reward.rarity)}">${escapeHtml(RARITY_LABELS[reward.rarity] || reward.rarity)}</span></div>`;
       }
 
       function renderTrackItem(reward, isWinner){
@@ -1433,12 +1512,12 @@
             <span>${String(banner.odds[rarity]).replace(".", ",")}%</span>
           </span>
         `).join("");
-        host.innerHTML = `<strong>Probabilidades</strong>${rows}<span class="oddsTooltipNote">Pity ${escapeHtml(banner.pityTarget)} en ${DEFAULT_PITY} tiradas sin legendaria o superior.</span>`;
+        host.innerHTML = `<strong>Probabilidades</strong>${rows}<span class="oddsTooltipNote">Pity ${escapeHtml(banner.pityTarget)} en ${Number(banner.pityLimit || DEFAULT_PITY)} tiradas sin ${escapeHtml(String(banner.pityTarget || "premio alto").toLowerCase())}.</span>`;
       }
 
       function itemThumb(reward, className){
         const fallback = escapeHtml(String(reward?.name || "?").slice(0, 2).toUpperCase());
-        const classes = `${className || "inventoryThumb"}${reward?.equip ? " isEquip" : ""}`;
+        const classes = `${className || "inventoryThumb"}${isContainReward(reward) ? " isEquip" : ""}`;
         if (reward?.image){
           return `<span class="${classes}"><img src="${escapeAttr(reward.image)}" alt="${escapeAttr(reward.name)}" onerror="this.onerror=null;this.remove();this.parentNode.innerHTML='&lt;span class=&quot;rewardFallback&quot;&gt;${fallback}&lt;/span&gt;'"></span>`;
         }
@@ -1459,7 +1538,7 @@
       function inventoryRows(){
         return Object.entries(state.inventory)
           .map(([id, value]) => ({ reward: findReward(id), entry: normalizeInventoryEntry(value) }))
-          .filter((row) => row.reward && row.entry.quantity > 0)
+          .filter((row) => row.reward && row.reward.category !== "berries" && row.entry.quantity > 0)
           .map((row) => ({
             reward: row.reward,
             quantity: row.entry.quantity,
@@ -1496,7 +1575,7 @@
             ${itemThumb(reward, "inventoryThumb")}
             <strong>${escapeHtml(reward.name)}</strong>
             <span>${escapeHtml(RARITY_LABELS[reward.rarity] || reward.rarity)} &middot; ${escapeHtml(reward.type)}</span>
-            <span>${escapeHtml(reward.target)}</span>
+            <span>${escapeHtml(rewardMetaText(reward))}</span>
             <span class="inventoryAction">Gestionar en Mi Plantilla</span>
           </button>
         `).join("");
@@ -1597,7 +1676,7 @@
             ${rewardArt(reward)}
             <div class="rewardTileBody">
               <strong>${escapeHtml(reward.name)}</strong>
-              <span>${escapeHtml(reward.type)} para ${escapeHtml(reward.target)}</span>
+              <span>${escapeHtml(rewardMetaText(reward))}</span>
             </div>
           </article>
         `).join("");
@@ -1650,13 +1729,13 @@
         saveLocalState();
         const result = $("gachaResult");
         if (result){
-          result.innerHTML = `${escapeHtml(winner.name)}<small>${escapeHtml(RARITY_LABELS[winner.rarity] || winner.rarity)} &middot; ${escapeHtml(winner.type)}</small>`;
+          result.innerHTML = `${escapeHtml(winner.name)}<small>${escapeHtml(RARITY_LABELS[winner.rarity] || winner.rarity)} &middot; ${escapeHtml(rewardMetaText(winner))}</small>`;
         }
         setMultiButtons(false, true);
         const modalResult = $("gachaModalResult");
         if (modalResult){
           modalResult.innerHTML = drops.length === 1
-            ? `${escapeHtml(winner.name)}<small>${escapeHtml(RARITY_LABELS[winner.rarity] || winner.rarity)} &middot; ${escapeHtml(winner.type)}</small>`
+            ? `${escapeHtml(winner.name)}<small>${escapeHtml(RARITY_LABELS[winner.rarity] || winner.rarity)} &middot; ${escapeHtml(rewardMetaText(winner))}</small>`
             : `Tirada x10 completada<small>Mejor recompensa: ${escapeHtml(winner.name)} (${escapeHtml(RARITY_LABELS[winner.rarity] || winner.rarity)})</small>`;
         }
         renderAll();
@@ -1721,7 +1800,7 @@
         const payload = data && typeof data === "object" ? data : {};
         const rewards = Array.isArray(payload.rewards) ? payload.rewards.map(remoteRewardFromPull).filter(Boolean) : [];
         state.balance = Number.isFinite(Number(payload.balance)) ? Number(payload.balance) : state.balance;
-        state.pity = Number.isFinite(Number(payload.pity)) ? Number(payload.pity) : state.pity;
+        state.pity = Number.isFinite(Number(payload.pity)) ? pityRemainingFromCounter(payload.pity) : state.pity;
         state.remoteReady = true;
         await loadRemoteInventory(client);
         return rewards;
@@ -1821,7 +1900,7 @@
                 .eq("team_id", state.currentTeam?.id || "")
                 .eq("banner_id", bannerRes.data.id)
                 .maybeSingle();
-              if (!pityRes.error && pityRes.data) state.pity = Number(pityRes.data.pity_counter || state.pity);
+              if (!pityRes.error && pityRes.data) state.pity = pityRemainingFromCounter(pityRes.data.pity_counter);
               await loadRemoteInventory(sb);
               state.remoteReady = true;
             }

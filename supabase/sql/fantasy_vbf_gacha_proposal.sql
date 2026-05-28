@@ -3,7 +3,7 @@
 --
 -- Goal:
 -- - Server-authoritative gacha pulls paid with fantasy_vbf_teams.coins.
--- - Mixed rewards: skins and equipment.
+-- - Mixed rewards: skins, equipment and berries.
 -- - Team inventory, skin assignment, 3 equipment slots per roster player.
 -- - Effect catalog prepared for a future scoring/market rules engine.
 --
@@ -19,7 +19,7 @@ create table if not exists public.fantasy_vbf_gacha_banners (
   description text not null default '',
   single_cost integer not null check (single_cost >= 0),
   multi_cost integer not null check (multi_cost >= 0),
-  pity_limit integer not null default 72 check (pity_limit >= 0),
+  pity_limit integer not null default 60 check (pity_limit >= 0),
   pity_rarity text not null default 'legendary' check (pity_rarity in ('epic', 'legendary', 'mythic')),
   active boolean not null default true,
   starts_at timestamptz,
@@ -33,11 +33,11 @@ create table if not exists public.fantasy_vbf_gacha_items (
   id uuid primary key default gen_random_uuid(),
   code text not null unique,
   name text not null,
-  kind text not null check (kind in ('skin', 'equipment')),
+  kind text not null check (kind in ('skin', 'equipment', 'berries')),
   rarity text not null check (rarity in ('common', 'rare', 'epic', 'legendary', 'mythic')),
   slot text check (
     slot is null
-    or slot in ('head', 'back', 'hands', 'legs', 'accessory', 'support')
+    or slot in ('head', 'back', 'hands', 'legs', 'accessory', 'support', 'offensive', 'defensive', 'utility')
   ),
   target_player_slug text,
   target_rule text not null default 'any' check (target_rule in ('any', 'player', 'captain', 'active', 'bench')),
@@ -49,7 +49,7 @@ create table if not exists public.fantasy_vbf_gacha_items (
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now()),
   check (
-    (kind = 'skin' and slot is null)
+    (kind in ('skin', 'berries') and slot is null)
     or (kind = 'equipment' and slot is not null)
   ),
   check (
@@ -57,6 +57,33 @@ create table if not exists public.fantasy_vbf_gacha_items (
     or (target_rule <> 'player')
   )
 );
+
+alter table public.fantasy_vbf_gacha_items
+  drop constraint if exists fantasy_vbf_gacha_items_kind_check,
+  drop constraint if exists fantasy_vbf_gacha_items_slot_check,
+  drop constraint if exists fantasy_vbf_gacha_items_kind_slot_check,
+  drop constraint if exists fantasy_vbf_gacha_items_target_player_check,
+  drop constraint if exists fantasy_vbf_gacha_items_check,
+  drop constraint if exists fantasy_vbf_gacha_items_check1;
+
+alter table public.fantasy_vbf_gacha_items
+  add constraint fantasy_vbf_gacha_items_kind_check
+    check (kind in ('skin', 'equipment', 'berries')),
+  add constraint fantasy_vbf_gacha_items_slot_check
+    check (
+      slot is null
+      or slot in ('head', 'back', 'hands', 'legs', 'accessory', 'support', 'offensive', 'defensive', 'utility')
+    ),
+  add constraint fantasy_vbf_gacha_items_kind_slot_check
+    check (
+      (kind in ('skin', 'berries') and slot is null)
+      or (kind = 'equipment' and slot is not null)
+    ),
+  add constraint fantasy_vbf_gacha_items_target_player_check
+    check (
+      (target_rule = 'player' and nullif(btrim(target_player_slug), '') is not null)
+      or (target_rule <> 'player')
+    );
 
 create table if not exists public.fantasy_vbf_gacha_banner_items (
   banner_id uuid not null references public.fantasy_vbf_gacha_banners(id) on delete cascade,
@@ -262,6 +289,7 @@ as $$
           'target_player_slug', i.target_player_slug,
           'target_rule', i.target_rule,
           'asset_path', i.asset_path,
+          'effect_summary', i.effect_summary,
           'duplicate', pr.duplicate,
           'compensation_coins', pr.compensation_coins,
           'pity_before', pr.pity_before,
@@ -412,7 +440,9 @@ begin
         and i.active = true
         and (
           not v_force_high
-          or i.rarity in ('legendary', 'mythic')
+          or (v_banner.pity_rarity = 'mythic' and i.rarity = 'mythic')
+          or (v_banner.pity_rarity = 'legendary' and i.rarity in ('legendary', 'mythic'))
+          or (v_banner.pity_rarity = 'epic' and i.rarity in ('epic', 'legendary', 'mythic'))
           or bi.min_pity > 0
         )
     ),
@@ -469,34 +499,41 @@ begin
       raise exception 'Banner % has no active gacha items', p_banner_code;
     end if;
 
-    v_duplicate := exists (
-      select 1
-      from public.fantasy_vbf_gacha_owned_items oi
-      where oi.season = p_season
-        and oi.team_id = v_team.id
-        and oi.item_id = v_item.id
-    );
+    v_owned_item_id := null;
+    v_duplicate := false;
 
-    v_compensation := case
-      when v_duplicate and not v_item.stackable then v_item.duplicate_compensation_coins
-      else 0
-    end;
+    if v_item.kind = 'berries' then
+      v_compensation := greatest(0, v_item.duplicate_compensation_coins);
+    else
+      v_duplicate := exists (
+        select 1
+        from public.fantasy_vbf_gacha_owned_items oi
+        where oi.season = p_season
+          and oi.team_id = v_team.id
+          and oi.item_id = v_item.id
+      );
 
-    insert into public.fantasy_vbf_gacha_owned_items (
-      season,
-      team_id,
-      user_id,
-      item_id,
-      source_pull_id
-    )
-    values (
-      p_season,
-      v_team.id,
-      v_user,
-      v_item.id,
-      v_pull_id
-    )
-    returning id into v_owned_item_id;
+      v_compensation := case
+        when v_duplicate and not v_item.stackable then v_item.duplicate_compensation_coins
+        else 0
+      end;
+
+      insert into public.fantasy_vbf_gacha_owned_items (
+        season,
+        team_id,
+        user_id,
+        item_id,
+        source_pull_id
+      )
+      values (
+        p_season,
+        v_team.id,
+        v_user,
+        v_item.id,
+        v_pull_id
+      )
+      returning id into v_owned_item_id;
+    end if;
 
     if v_compensation > 0 then
       update public.fantasy_vbf_teams
@@ -506,7 +543,9 @@ begin
     end if;
 
     v_pity_after := case
-      when v_item.rarity in ('legendary', 'mythic') then 0
+      when v_banner.pity_rarity = 'mythic' and v_item.rarity = 'mythic' then 0
+      when v_banner.pity_rarity = 'legendary' and v_item.rarity in ('legendary', 'mythic') then 0
+      when v_banner.pity_rarity = 'epic' and v_item.rarity in ('epic', 'legendary', 'mythic') then 0
       else v_pity_before + 1
     end;
 
@@ -966,12 +1005,12 @@ insert into public.fantasy_vbf_gacha_banners (
 values (
   'OP15',
   'mixed-op15',
-  'Pool mixto OP15',
-  'Skins y equipables en la misma ruleta.',
+  'VaDeGacha B1',
+  'Banner 1 con equipables, skins y bolsas de berries.',
   12000,
   100000,
-  72,
-  'legendary',
+  60,
+  'mythic',
   true
 )
 on conflict (season, code) do update set
@@ -999,26 +1038,42 @@ insert into public.fantasy_vbf_gacha_items (
   active
 )
 values
-  ('skin-ernest-king', 'Ernest Rey Carmesi', 'skin', 'mythic', null, 'ernest', 'player', 'fantasy/Ernest.png', 'Cosmetica mythic para Ernest.', 25000, false, true),
-  ('gear-crown', 'Corona de MVP', 'equipment', 'mythic', 'head', null, 'any', 'fantasy_coin.png', '+8% puntos si el jugador gana la ronda.', 20000, false, true),
-  ('skin-yago-neon', 'Yago Neon', 'skin', 'legendary', null, 'yago', 'player', 'fantasy/Yago.png', 'Cosmetica legendaria para Yago.', 15000, false, true),
-  ('skin-coquito-royal', 'Coquito Royal', 'skin', 'legendary', null, 'coquito', 'player', 'fantasy/Coquito.png', 'Cosmetica legendaria para Coquito.', 15000, false, true),
-  ('gear-cape', 'Capa de Capitan', 'equipment', 'legendary', 'back', null, 'captain', 'VDJ.png', '+5 puntos al capitan si puntua en positivo.', 12000, false, true),
-  ('gear-den-den', 'Den Den Scout', 'equipment', 'legendary', 'support', null, 'any', 'berries.png', '-6% en la primera compra de mercado por jornada.', 12000, false, true),
-  ('skin-dilix-cyber', 'Dilix Cyber', 'skin', 'epic', null, 'dilix', 'player', 'fantasy/Dilix.png', 'Cosmetica epica para Dilix.', 6000, false, true),
-  ('skin-dryemo-galeon', 'DrYemo Galeon', 'skin', 'epic', null, 'dryemo', 'player', 'fantasy/DrYemo.png', 'Cosmetica epica para DrYemo.', 6000, false, true),
-  ('gear-boots', 'Botas de Comeback', 'equipment', 'epic', 'legs', null, 'active', 'fantasy_coin.png', '+3 puntos si venia de derrota.', 4500, false, true),
-  ('gear-gloves', 'Guantes de Clausula', 'equipment', 'epic', 'hands', null, 'any', 'berries.png', '+4% al vender un jugador.', 4500, false, true),
-  ('skin-joselu-wave', 'Joselu Oleaje', 'skin', 'rare', null, 'joselu', 'player', 'fantasy/Joselu.png', 'Cosmetica rara para Joselu.', 2000, false, true),
-  ('skin-renku-arcade', 'Renku Arcade', 'skin', 'rare', null, 'renku', 'player', 'fantasy/Renku.png', 'Cosmetica rara para Renku.', 2000, false, true),
-  ('gear-bandana', 'Bandana Roja', 'equipment', 'rare', 'head', null, 'any', 'inscrito.png', '+2 puntos si esta en lineup activo.', 1500, false, true),
-  ('gear-logpose', 'Log Pose', 'equipment', 'rare', 'support', null, 'bench', 'fantasy_coin.png', '+2 puntos si entra desde banquillo.', 1500, false, true),
-  ('skin-romo-training', 'Romo Training', 'skin', 'common', null, 'romo', 'player', 'fantasy/Romo.png', 'Cosmetica comun para Romo.', 500, false, true),
-  ('skin-charko-splash', 'Charko Splash', 'skin', 'common', null, 'charko', 'player', 'fantasy/Charko.png', 'Cosmetica comun para Charko.', 500, false, true),
-  ('skin-vainaloca-street', 'VainaLoca Street', 'skin', 'common', null, 'vainaloca', 'player', 'fantasy/VainaLoca.png', 'Cosmetica comun para VainaLoca.', 500, false, true),
-  ('gear-berry-bag', 'Bolsa de Berries', 'equipment', 'common', 'accessory', null, 'any', 'berries.png', '+1% recompensa semanal.', 250, false, true),
-  ('gear-training', 'Pesas de Training', 'equipment', 'common', 'support', null, 'any', 'fantasy_coin.png', '+1 punto si juega la ronda.', 250, false, true),
-  ('gear-ticket', 'Ticket de Arena', 'equipment', 'common', 'accessory', null, 'any', 'inscrito.png', '+1 punto si gana.', 250, false, true)
+  ('eq-of-br-01', 'Aura Púrpura', 'equipment', 'common', 'offensive', null, 'any', 'VDG/EQ-OF-BR-01.png', 'Suma +4 si juega lila', 0, false, true),
+  ('eq-of-br-02', 'Bendición del Amarillo', 'equipment', 'common', 'offensive', null, 'any', 'VDG/EQ-OF-BR-02.png', 'Suma +4 si juega amarillo', 0, false, true),
+  ('eq-of-br-03', 'Furia Roja', 'equipment', 'common', 'offensive', null, 'any', 'VDG/EQ-OF-BR-03.png', 'Suma +4 si juega rojo', 0, false, true),
+  ('eq-of-br-04', 'Voluntad Oscura', 'equipment', 'common', 'offensive', null, 'any', 'VDG/EQ-OF-BR-04.png', 'Suma +4 si juega negro', 0, false, true),
+  ('eq-of-pl-01', 'Racha del Tryhard', 'equipment', 'rare', 'offensive', null, 'any', 'VDG/EQ-OF-PL-01.png', 'Suma +2 puntos por torneo seguido jugado.', 0, false, true),
+  ('eq-of-pl-02', 'Premio al Desaparecido', 'equipment', 'rare', 'offensive', null, 'any', 'VDG/EQ-OF-PL-02.png', 'Suma +2 puntos por cada jornada no asistida seguida', 0, false, true),
+  ('eq-of-or-01', 'Entrada al Top Cut', 'equipment', 'legendary', 'offensive', null, 'any', 'VDG/EQ-OF-OR-01.png', 'Si el jugador hace top 8, +8 puntos.', 0, false, true),
+  ('eq-of-di-01', 'Corona del Carry', 'equipment', 'mythic', 'offensive', null, 'any', 'VDG/EQ-OF-DI-01.png', 'Las victorias del jugador suman +4 puntos.', 0, false, true),
+  ('eq-de-br-01', 'Seguro Antiderrota', 'equipment', 'common', 'defensive', null, 'any', 'VDG/EQ-DE-BR-01.png', 'Una derrota no resta puntos por jornada.', 0, false, true),
+  ('eq-de-br-02', 'Excusa Perfecta', 'equipment', 'common', 'defensive', null, 'any', 'VDG/EQ-DE-BR-02.png', 'Si no asiste al torneo +5 puntos.', 0, false, true),
+  ('eq-de-br-03', 'Combo de Nakamas', 'equipment', 'common', 'defensive', null, 'any', 'VDG/EQ-DE-BR-03.png', 'Si todos los miembros activos de la jornada son del mismo equipo, suma +4 puntos.', 0, false, true),
+  ('eq-de-pl-01', 'Blindaje Anticláusula', 'equipment', 'rare', 'defensive', null, 'any', 'VDG/EQ-DE-PL-01.png', 'Si te hacen clausulazo, recibes x2 de su valor.', 0, false, true),
+  ('eq-de-pl-02', 'Banquillo de Lujo', 'equipment', 'rare', 'defensive', null, 'any', 'VDG/EQ-DE-PL-02.png', 'Si el jugador es suplente, suma +2 punto a la jornada.', 0, false, true),
+  ('eq-de-pl-03', 'Paracaídas del Top 16', 'equipment', 'rare', 'defensive', null, 'any', 'VDG/EQ-DE-PL-03.png', 'Si queda por debajo del top 16, suma +4 puntos.', 0, false, true),
+  ('eq-de-or-01', 'Escudo del Perdedor', 'equipment', 'legendary', 'defensive', null, 'any', 'VDG/EQ-DE-OR-01.png', 'Las derrotas de este jugador no restan puntos.', 0, false, true),
+  ('eq-de-or-02', 'Candado Antimercado', 'equipment', 'legendary', 'defensive', null, 'any', 'VDG/EQ-DE-OR-02.png', 'Jugador protegido a clausula de miercoles a viernes.', 0, false, true),
+  ('eq-me-br-01', 'Apuesta Offmeta', 'equipment', 'common', 'utility', null, 'any', 'VDG/EQ-ME-BR-01.png', 'Suma +2 si juega un lider offmeta.', 0, false, true),
+  ('eq-me-br-02', 'Pacto Shichibukai', 'equipment', 'common', 'utility', null, 'any', 'VDG/EQ-ME-BR-02.png', 'Suma +2 puntos si juega un Sichibukai.', 0, false, true),
+  ('eq-me-br-03', 'Marca del Yonkou', 'equipment', 'common', 'utility', null, 'any', 'VDG/EQ-ME-BR-03.png', 'Suma +2 puntos si juega un Yonkou.', 0, false, true),
+  ('eq-me-pl-01', 'Humillación Rentable', 'equipment', 'rare', 'utility', null, 'any', 'VDG/EQ-ME-PL-01.png', 'Si queda por debajo de top 20, +10 puntos.', 0, false, true),
+  ('eq-me-pl-02', 'Maldición del Suplente', 'equipment', 'rare', 'utility', null, 'any', 'VDG/EQ-ME-PL-02.png', 'Si es suplente, al resto de jugadores les resta una derrota.', 0, false, true),
+  ('eq-me-pl-03', 'Derrota Productiva', 'equipment', 'rare', 'utility', null, 'any', 'VDG/EQ-ME-PL-03.png', 'Si no ha ganado ninguna partida, suma +4 por derrota.', 0, false, true),
+  ('eq-me-or-01', 'Buff Barateamer', 'equipment', 'legendary', 'utility', null, 'any', 'VDG/EQ-ME-OR-01.png', 'Suma +3 puntos por cada Barateamer.', 0, false, true),
+  ('eq-me-or-02', 'Bendición Laboomer', 'equipment', 'legendary', 'utility', null, 'any', 'VDG/EQ-ME-OR-02.png', 'Suma +3 puntos por cada Laboomer.', 0, false, true),
+  ('sk-br-01', 'Semidimoni', 'skin', 'common', null, null, 'any', 'VDG/SK-BR-01.png', 'Suma +2 puntos por jornada.', 0, false, true),
+  ('sk-br-02', 'Joselu', 'skin', 'common', null, null, 'any', 'VDG/SK-BR-02.png', 'Suma +2 puntos por jornada.', 0, false, true),
+  ('sk-pl-01', 'Romo', 'skin', 'rare', null, null, 'any', 'VDG/SK-PL-01.png', 'Suma +3 puntos por jornada.', 0, false, true),
+  ('sk-pl-02', 'Sicari', 'skin', 'rare', null, null, 'any', 'VDG/SK-PL-02.png', 'Suma +3 puntos por jornada.', 0, false, true),
+  ('sk-pl-03', 'Xavisu', 'skin', 'rare', null, null, 'any', 'VDG/SK-PL-03.png', 'Suma +3 puntos por jornada.', 0, false, true),
+  ('sk-or-01', 'Humano', 'skin', 'legendary', null, null, 'any', 'VDG/SK-OR-01.png', 'Suma +4 puntos por jornada.', 0, false, true),
+  ('sk-or-02', 'Cojinho', 'skin', 'legendary', null, null, 'any', 'VDG/SK-OR-02.png', 'Suma +4 puntos por jornada.', 0, false, true),
+  ('sk-di-01', 'Charko', 'skin', 'mythic', null, null, 'any', 'VDG/SK-DI-01.png', 'Suma +5 puntos por jornada. Si no ha perdido ninguna partida, duplica la puntuación.', 0, false, true),
+  ('be-br-01', 'Bolsa de Berries', 'berries', 'common', null, null, 'any', 'berries.png', '5000 Berries', 5000, true, true),
+  ('be-br-02', 'Bolsa de Berries', 'berries', 'common', null, null, 'any', 'berries.png', '5000 Berries', 5000, true, true),
+  ('be-pl-01', 'Bolsa de Berries', 'berries', 'rare', null, null, 'any', 'berries.png', '12000 Berries', 12000, true, true),
+  ('be-or-01', 'Bolsa de Berries', 'berries', 'legendary', null, null, 'any', 'berries.png', '50000 Berries', 50000, true, true)
 on conflict (code) do update set
   name = excluded.name,
   kind = excluded.kind,
@@ -1038,29 +1093,55 @@ with banner as (
   from public.fantasy_vbf_gacha_banners
   where season = 'OP15'
     and code = 'mixed-op15'
+)
+delete from public.fantasy_vbf_gacha_banner_items bi
+using banner
+where bi.banner_id = banner.id;
+
+with banner as (
+  select id
+  from public.fantasy_vbf_gacha_banners
+  where season = 'OP15'
+    and code = 'mixed-op15'
 ),
 weights(code, weight, featured) as (
   values
-    ('skin-ernest-king', 1.0, true),
-    ('gear-crown', 1.0, true),
-    ('skin-yago-neon', 3.0, true),
-    ('skin-coquito-royal', 3.0, true),
-    ('gear-cape', 3.0, true),
-    ('gear-den-den', 3.0, true),
-    ('skin-dilix-cyber', 7.5, false),
-    ('skin-dryemo-galeon', 7.5, false),
-    ('gear-boots', 7.5, false),
-    ('gear-gloves', 7.5, false),
-    ('skin-joselu-wave', 10.5, false),
-    ('skin-renku-arcade', 10.5, false),
-    ('gear-bandana', 10.5, false),
-    ('gear-logpose', 10.5, false),
-    ('skin-romo-training', 9.2, false),
-    ('skin-charko-splash', 9.2, false),
-    ('skin-vainaloca-street', 9.2, false),
-    ('gear-berry-bag', 9.2, false),
-    ('gear-training', 9.2, false),
-    ('gear-ticket', 9.2, false)
+    ('eq-of-br-01', 4.2857, false),
+    ('eq-of-br-02', 4.2857, false),
+    ('eq-of-br-03', 4.2857, false),
+    ('eq-of-br-04', 4.2857, false),
+    ('eq-of-pl-01', 2.3333, false),
+    ('eq-of-pl-02', 2.3333, false),
+    ('eq-of-or-01', 1.2500, true),
+    ('eq-of-di-01', 1.0000, true),
+    ('eq-de-br-01', 4.2857, false),
+    ('eq-de-br-02', 4.2857, false),
+    ('eq-de-br-03', 4.2857, false),
+    ('eq-de-pl-01', 2.3333, false),
+    ('eq-de-pl-02', 2.3333, false),
+    ('eq-de-pl-03', 2.3333, false),
+    ('eq-de-or-01', 1.2500, true),
+    ('eq-de-or-02', 1.2500, true),
+    ('eq-me-br-01', 4.2857, false),
+    ('eq-me-br-02', 4.2857, false),
+    ('eq-me-br-03', 4.2857, false),
+    ('eq-me-pl-01', 2.3333, false),
+    ('eq-me-pl-02', 2.3333, false),
+    ('eq-me-pl-03', 2.3333, false),
+    ('eq-me-or-01', 1.2500, true),
+    ('eq-me-or-02', 1.2500, true),
+    ('sk-br-01', 4.2857, false),
+    ('sk-br-02', 4.2857, false),
+    ('sk-pl-01', 2.3333, false),
+    ('sk-pl-02', 2.3333, false),
+    ('sk-pl-03', 2.3333, false),
+    ('sk-or-01', 1.2500, true),
+    ('sk-or-02', 1.2500, true),
+    ('sk-di-01', 1.0000, true),
+    ('be-br-01', 4.2857, false),
+    ('be-br-02', 4.2857, false),
+    ('be-pl-01', 2.3333, false),
+    ('be-or-01', 1.2500, true)
 )
 insert into public.fantasy_vbf_gacha_banner_items (banner_id, item_id, weight, featured)
 select banner.id, item.id, weights.weight, weights.featured
@@ -1071,56 +1152,22 @@ on conflict (banner_id, item_id) do update set
   weight = excluded.weight,
   featured = excluded.featured;
 
-insert into public.fantasy_vbf_gacha_effects (
-  code,
-  name,
-  trigger_key,
-  modifier_type,
-  value,
-  stacking_rule,
-  config,
-  active
-)
-values
-  ('win_points_percent_8', '+8% al ganar', 'round_scoring', 'percent', 8, 'add', '{"only_if_won": true}'::jsonb, true),
-  ('captain_flat_5_positive', '+5 capitan positivo', 'round_scoring', 'flat', 5, 'unique_code', '{"only_captain": true, "min_raw_points": 0.01}'::jsonb, true),
-  ('market_first_buy_discount_6', '-6% primera compra', 'market_buy', 'percent', -6, 'highest_only', '{"max_uses_per_round": 1}'::jsonb, true),
-  ('comeback_flat_3', '+3 comeback', 'round_scoring', 'flat', 3, 'unique_code', '{"requires_previous_loss": true}'::jsonb, true),
-  ('sell_bonus_percent_4', '+4% venta', 'market_sell', 'percent', 4, 'highest_only', '{"max_uses_per_round": 1}'::jsonb, true),
-  ('active_flat_2', '+2 activo', 'round_scoring', 'flat', 2, 'add', '{"lineup_slot": "active"}'::jsonb, true),
-  ('bench_entry_flat_2', '+2 banquillo', 'round_scoring', 'flat', 2, 'unique_code', '{"lineup_slot": "bench", "requires_played": true}'::jsonb, true),
-  ('weekly_reward_percent_1', '+1% recompensa semanal', 'weekly_reward', 'percent', 1, 'add', '{}'::jsonb, true),
-  ('played_flat_1', '+1 si juega', 'round_scoring', 'flat', 1, 'add', '{"requires_played": true}'::jsonb, true),
-  ('win_flat_1', '+1 si gana', 'round_scoring', 'flat', 1, 'add', '{"only_if_won": true}'::jsonb, true)
-on conflict (code) do update set
-  name = excluded.name,
-  trigger_key = excluded.trigger_key,
-  modifier_type = excluded.modifier_type,
-  value = excluded.value,
-  stacking_rule = excluded.stacking_rule,
-  config = excluded.config,
-  active = excluded.active;
-
-with links(item_code, effect_code) as (
-  values
-    ('gear-crown', 'win_points_percent_8'),
-    ('gear-cape', 'captain_flat_5_positive'),
-    ('gear-den-den', 'market_first_buy_discount_6'),
-    ('gear-boots', 'comeback_flat_3'),
-    ('gear-gloves', 'sell_bonus_percent_4'),
-    ('gear-bandana', 'active_flat_2'),
-    ('gear-logpose', 'bench_entry_flat_2'),
-    ('gear-berry-bag', 'weekly_reward_percent_1'),
-    ('gear-training', 'played_flat_1'),
-    ('gear-ticket', 'win_flat_1')
-)
-insert into public.fantasy_vbf_gacha_item_effects (item_id, effect_id, params)
-select item.id, effect.id, '{}'::jsonb
-from links
-join public.fantasy_vbf_gacha_items item on item.code = links.item_code
-join public.fantasy_vbf_gacha_effects effect on effect.code = links.effect_code
-on conflict (item_id, effect_id) do update set
-  params = excluded.params;
+-- B1 effects are descriptive only for now. The executable effect tables remain
+-- available for the later rules engine, but B1 items are not linked to effects.
+delete from public.fantasy_vbf_gacha_item_effects ie
+using public.fantasy_vbf_gacha_items item
+where ie.item_id = item.id
+  and item.code in (
+    'eq-of-br-01', 'eq-of-br-02', 'eq-of-br-03', 'eq-of-br-04',
+    'eq-of-pl-01', 'eq-of-pl-02', 'eq-of-or-01', 'eq-of-di-01',
+    'eq-de-br-01', 'eq-de-br-02', 'eq-de-br-03',
+    'eq-de-pl-01', 'eq-de-pl-02', 'eq-de-pl-03', 'eq-de-or-01', 'eq-de-or-02',
+    'eq-me-br-01', 'eq-me-br-02', 'eq-me-br-03',
+    'eq-me-pl-01', 'eq-me-pl-02', 'eq-me-pl-03', 'eq-me-or-01', 'eq-me-or-02',
+    'sk-br-01', 'sk-br-02', 'sk-pl-01', 'sk-pl-02', 'sk-pl-03',
+    'sk-or-01', 'sk-or-02', 'sk-di-01',
+    'be-br-01', 'be-br-02', 'be-pl-01', 'be-or-01'
+  );
 
 commit;
 

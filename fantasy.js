@@ -54,11 +54,11 @@
   const GACHA_EQUIP_SLOTS = 3;
   const GACHA_RARITY_ORDER = { common: 1, rare: 2, epic: 3, legendary: 4, mythic: 5 };
   const GACHA_RARITY_LABELS = {
-    common: 'Comun',
-    rare: 'Rara',
+    common: 'Bronce',
+    rare: 'Plata',
     epic: 'Epica',
-    legendary: 'Legendaria',
-    mythic: 'Mitica'
+    legendary: 'Oro',
+    mythic: 'Diamante'
   };
   const TIER_BASE_PRICES = {
     'pirate king': 100000,
