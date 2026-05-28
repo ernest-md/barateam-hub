@@ -3164,6 +3164,37 @@
     return `<span class="${escapeAttr(tone || '')}"><small>${escapeHtml(label)}</small><strong>${escapeHtml(value)}</strong></span>`;
   }
 
+  function rosterEntryTradeInValue(entry){
+    if (!entry) return 0;
+    const player = playerForRosterRow(entry);
+    return Math.max(0, Number(player?.price || entry.buy_price || 0));
+  }
+
+  function clauseTradeInCosts(clauseCost, outgoingEntry){
+    const fullCost = Math.max(0, Number(clauseCost || 0));
+    const credit = outgoingEntry ? Math.min(fullCost, rosterEntryTradeInValue(outgoingEntry)) : 0;
+    return {
+      clauseCost: fullCost,
+      tradeInCredit: credit,
+      netCost: Math.max(fullCost - credit, 0)
+    };
+  }
+
+  function maxClauseTradeInCredit(roster, clauseCost){
+    const fullCost = Math.max(0, Number(clauseCost || 0));
+    return (roster || []).reduce((best, entry) => Math.max(best, Math.min(fullCost, rosterEntryTradeInValue(entry))), 0);
+  }
+
+  function renderClauseCostBreakdown(costs, targetOwner){
+    if (!costs || !Number.isFinite(Number(costs.clauseCost))) return '';
+    return `<div class="clauseCostBreakdown">
+      <span><small>Clausula rival</small><strong>${renderCoinInline(costs.clauseCost || 0, false)}</strong></span>
+      <span class="${costs.tradeInCredit > 0 ? 'discount' : ''}"><small>Valor sustituido</small><strong>${costs.tradeInCredit > 0 ? '-' : ''}${renderCoinInline(costs.tradeInCredit || 0, false)}</strong></span>
+      <span class="net"><small>Pagas tu</small><strong>${renderCoinInline(costs.netCost || 0, false)}</strong></span>
+      <p>${targetOwner ? `El equipo ${escapeHtml(targetOwner.teamName || 'rival')} cobra la clausula completa: ${renderCoinInline(costs.clauseCost || 0, false)}.` : 'El rival cobra siempre la clausula completa.'}</p>
+    </div>`;
+  }
+
   function renderComparePlayerCard(player, label, factsHtml, options){
     const opts = options || {};
     if (!player){
@@ -3196,14 +3227,16 @@
       targetOwner ? compareFact('Origen', targetOwner.teamName || 'Equipo rival') : ''
     ].join('');
     const outgoingClause = outgoingEntry ? Number(outgoingEntry.clause_price || outgoingPlayer?.clausePrice || defaultClauseForPrice(outgoingPlayer?.price || 0)) : 0;
+    const outgoingValue = outgoingEntry ? rosterEntryTradeInValue(outgoingEntry) : 0;
+    const tradeInCredit = mode === 'buyout' && outgoingPlayer ? Math.min(Number(cost || 0), outgoingValue) : 0;
     const outgoingFacts = outgoingPlayer ? [
-      compareFact('Valor', formatCoins(outgoingPlayer.price || 0)),
-      compareFact('Clausula', formatCoins(outgoingClause))
-    ].join('') : '';
+      compareFact('Valor', formatCoins(outgoingValue), tradeInCredit > 0 ? 'good' : ''),
+      compareFact('Clausula', formatCoins(outgoingClause)),
+      tradeInCredit > 0 ? compareFact('Descuenta', formatCoins(tradeInCredit), 'good') : ''
+    ].filter(Boolean).join('') : '';
     const targetWeekly = Number(targetPlayer.currentFantasyPoints || 0);
     const outgoingWeekly = Number(outgoingPlayer?.currentFantasyPoints || 0);
     const targetValue = Number(targetPlayer.price || cost || 0);
-    const outgoingValue = Number(outgoingPlayer?.price || 0);
     const rankIncoming = Number(targetPlayer.rank || 9999);
     const rankOutgoing = Number(outgoingPlayer?.rank || 9999);
     return `<div class="transferCompare">
@@ -3970,7 +4003,7 @@
           <article class="fantasyInfoCard">
             <span>Clausulazos</span>
             <strong>Mas caro que fichar normal</strong>
-            <p>Si un jugador ya esta en equipos rivales, puedes pagar la clausula de una copia concreta. La clausula cuesta mas que su precio normal, ahora x1,5 por defecto. El vendedor recibe esas berries y tu nuevo jugador queda protegido 24 horas.</p>
+            <p>Si un jugador ya esta en equipos rivales, puedes pagar la clausula de una copia concreta. Si sustituyes uno de tus jugadores, su valor descuenta lo que pagas tu, pero el vendedor cobra la clausula completa. Tu nuevo jugador queda protegido 24 horas.</p>
           </article>
           <article class="fantasyInfoCard">
             <span>Venta manual</span>
@@ -4056,8 +4089,8 @@
     if (roster.some((row) => String(row.player_slug) === String(player.slug))) return 'Ya en plantilla';
     if (mode === 'market' && !player?.canDirectBuy) return 'Solo disponible por clausula';
     if (mode === 'buyout' && !targetOwner) return 'Elige un equipo propietario';
-    if (Number(state.currentTeam?.coins || 0) < Number(cost || 0)) return 'Sin berries';
     if (roster.length >= squadCapacity() && !state.confirmBuyOutgoingSlug) return 'Elige a quien sustituyes';
+    if (Number(state.currentTeam?.coins || 0) < Number(cost || 0)) return 'Sin berries';
     return '';
   }
 
@@ -4080,23 +4113,46 @@
     const roster = derived.myRoster || [];
     const targetOwner = player?.owners?.find((owner) => String(owner.teamId || '') === String(state.confirmBuyTargetTeamId || '')) || null;
     const mode = targetOwner ? 'buyout' : (player?.canDirectBuy ? 'market' : 'buyout');
-    const cost = targetOwner ? Number(targetOwner.clausePrice || 0) : Number(player?.price || 0);
+    const baseCost = targetOwner ? Number(targetOwner.clausePrice || 0) : Number(player?.price || 0);
+    const outgoingEntry = roster.find((row) => String(row.player_slug || '') === String(state.confirmBuyOutgoingSlug || '')) || null;
+    const costs = mode === 'buyout'
+      ? clauseTradeInCosts(baseCost, outgoingEntry)
+      : { clauseCost: baseCost, tradeInCredit: 0, netCost: baseCost };
+    const cost = costs.netCost;
     const blocked = player ? buyConfirmBlockReason(player, mode, cost, roster, targetOwner) : 'Jugador invalido';
     const actionLabel = mode === 'buyout' ? 'Pagar clausula' : 'Fichar';
     title.textContent = mode === 'buyout' ? 'Confirmar clausulazo' : 'Confirmar fichaje';
-    text.innerHTML = player
-      ? `Vas a ${mode === 'buyout' ? 'pagar la clausula de' : 'fichar a'} <strong>${escapeHtml(player.name)}</strong> por ${renderCoinInline(cost, false)}.`
-      : 'No pude encontrar el jugador seleccionado.';
+    if (player && mode === 'buyout'){
+      const outgoingPlayer = outgoingEntry ? playerForRosterRow(outgoingEntry) : null;
+      text.innerHTML = outgoingEntry
+        ? `Vas a pagar la clausula de <strong>${escapeHtml(player.name)}</strong>. ${escapeHtml(outgoingPlayer?.name || outgoingEntry.player_name || 'El jugador saliente')} descuenta ${renderCoinInline(costs.tradeInCredit || 0, false)} y pagas ${renderCoinInline(costs.netCost || 0, false)}.`
+        : `Vas a pagar la clausula de <strong>${escapeHtml(player.name)}</strong> por ${renderCoinInline(costs.clauseCost || 0, false)}. Si sustituyes un jugador, su valor se descuenta del coste.`;
+    } else {
+      text.innerHTML = player
+        ? `Vas a fichar a <strong>${escapeHtml(player.name)}</strong> por ${renderCoinInline(cost, false)}.`
+        : 'No pude encontrar el jugador seleccionado.';
+    }
     action.innerHTML = player ? `${actionLabel} - ${renderCoinInline(cost, true)}` : 'Comprar';
     action.disabled = !!blocked;
     if (blocked) text.innerHTML = `${text.innerHTML} ${escapeHtml(blocked)}.`;
-    const outgoingEntry = roster.find((row) => String(row.player_slug || '') === String(state.confirmBuyOutgoingSlug || '')) || null;
     const needsReplacement = roster.length >= squadCapacity();
-    const comparisonHtml = player ? renderTransferComparison(player, outgoingEntry, mode, cost, targetOwner, needsReplacement) : '';
+    const comparisonHtml = player ? renderTransferComparison(player, outgoingEntry, mode, baseCost, targetOwner, needsReplacement) : '';
+    const clauseBreakdownHtml = mode === 'buyout' ? renderClauseCostBreakdown(costs, targetOwner) : '';
     const replacementOptions = roster.map((row) => {
       const rosterPlayer = playerForRosterRow(row);
       const checked = String(state.confirmBuyOutgoingSlug || '') === String(row.player_slug || '');
-      return `<label class="replaceOption"><input type="radio" name="buyReplacePlayer" value="${escapeAttr(row.player_slug || '')}" ${checked ? 'checked' : ''} /><div><strong>${escapeHtml(rosterPlayer.name || row.player_name || 'Jugador')}</strong><span>#${intFmt.format(rosterPlayer.rank || 0)} - ${escapeHtml(tierLabel(rosterPlayer.tier))}</span></div></label>`;
+      const portrait = playerPortraitUrl(rosterPlayer);
+      const isBench = String(row.lineup_slot || LINEUP_SLOT_ACTIVE) === LINEUP_SLOT_BENCH;
+      const isCaptain = String(state.currentTeam?.captain_player_slug || '') === String(row.player_slug || '');
+      const roleLabel = isCaptain ? 'Capitan' : isBench ? 'Suplente' : 'Activo';
+      const optionCosts = mode === 'buyout' ? clauseTradeInCosts(baseCost, row) : null;
+      const economyHtml = optionCosts
+        ? `<span class="replaceOptionEconomy">
+            <span class="replaceOptionValue discount"><small>Descuenta</small><strong>${renderCoinInline(optionCosts.tradeInCredit, true)}</strong></span>
+            <span class="replaceOptionValue net"><small>Pagas</small><strong>${renderCoinInline(optionCosts.netCost, true)}</strong></span>
+          </span>`
+        : '';
+      return `<label class="replaceOption"><input type="radio" name="buyReplacePlayer" value="${escapeAttr(row.player_slug || '')}" ${checked ? 'checked' : ''} /><span class="replaceOptionAvatar ${escapeAttr(tierClass(rosterPlayer.tier))}">${portrait ? `<img src="${escapeAttr(portrait)}" alt="${escapeAttr(rosterPlayer.name || row.player_name || 'Jugador')}" loading="lazy" decoding="async" />` : ''}</span><span class="replaceOptionContent"><span class="replaceOptionTop"><span><strong class="replaceOptionName">${escapeHtml(rosterPlayer.name || row.player_name || 'Jugador')}</strong><span class="replaceOptionMeta">#${intFmt.format(rosterPlayer.rank || 0)} - ${escapeHtml(tierLabel(rosterPlayer.tier))}</span></span><small class="replaceOptionRole">${escapeHtml(roleLabel)}</small></span>${economyHtml}</span></label>`;
     }).join('');
     const ownerInfo = targetOwner
       ? `<div class="helper">La clausula sale del equipo <strong>${escapeHtml(targetOwner.teamName || 'Equipo')}</strong> de ${escapeHtml(targetOwner.coachName || 'Manager')} y le abona ${renderCoinInline(targetOwner.clausePrice || 0, false)}.</div>`
@@ -4104,7 +4160,7 @@
     const freeSlotLabel = activeRosterEntries(roster).length >= activeRosterLimit()
       ? 'Tienes libre el hueco de suplente: esta ficha entra ahi.'
       : 'Tienes un hueco libre en plantilla, asi que esta ficha entra directa.';
-    body.innerHTML = `${ownerInfo}${comparisonHtml}${needsReplacement ? `<div class="confirmPicker"><div class="confirmPickerLabel">Jugador que sale de tu plantilla</div><div class="replaceGrid">${replacementOptions}</div></div>` : `<div class="helper">${escapeHtml(freeSlotLabel)}</div>`}`;
+    body.innerHTML = `${ownerInfo}${clauseBreakdownHtml}${comparisonHtml}${needsReplacement ? `<div class="confirmPicker"><div class="confirmPickerLabel">Jugador que sale de tu plantilla</div><div class="replaceGrid">${replacementOptions}</div></div>` : `<div class="helper">${escapeHtml(freeSlotLabel)}</div>`}`;
     wrap.classList.remove('hidden');
     wrap.setAttribute('aria-hidden', 'false');
     lockPageScroll();
@@ -4175,15 +4231,23 @@
     const ownerRows = (marketPlayer?.owners || []).slice(0, config().maxPlayerCopies).map((owner) => {
       const protectedDate = owner.protectedUntil ? new Date(owner.protectedUntil) : null;
       const protectedLabel = protectedDate && Number.isFinite(protectedDate.getTime()) ? protectedDate.toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-      const disabled = owner.isMine || owner.isProtected || !marketOpenNow() || Number(state.currentTeam?.coins || 0) < Number(owner.clausePrice || 0);
+      const clauseCost = Number(owner.clausePrice || 0);
+      const bestTradeInCredit = roster.length >= squadCapacity() ? maxClauseTradeInCredit(roster, clauseCost) : 0;
+      const bestNetCost = Math.max(clauseCost - bestTradeInCredit, 0);
+      const hasEnoughBerries = Number(state.currentTeam?.coins || 0) >= bestNetCost;
+      const canUseTradeIn = bestTradeInCredit > 0 && bestNetCost < clauseCost;
+      const disabled = owner.isMine || owner.isProtected || !marketOpenNow() || !hasEnoughBerries;
       const ownerIsBench = String(owner.lineupSlot || LINEUP_SLOT_ACTIVE) === LINEUP_SLOT_BENCH;
       const ownerSlotLabel = ownerIsBench ? 'Suplente' : 'Activo';
       const title = owner.isMine
         ? 'Ya tienes esta copia'
         : owner.isProtected
           ? `Protegido hasta ${protectedLabel || 'dentro de unas horas'}`
-          : (!marketOpenNow() ? 'Mercado economico cerrado' : (Number(state.currentTeam?.coins || 0) < Number(owner.clausePrice || 0) ? 'Sin berries suficientes' : `Pagar clausula a ${owner.teamName}`));
-      return `<div class="ownerCard ${ownerIsBench ? 'isBenchOwner' : ''}"><div class="ownerMeta"><strong>${escapeHtml(owner.teamName || 'Equipo')}</strong><span>${escapeHtml(owner.coachName || 'Manager')}</span><span class="ownerHint">${owner.isMine ? (ownerIsBench ? 'Tu suplente' : 'Tu copia activa') : owner.isProtected ? `Protegido ${escapeHtml(protectedLabel || '')}` : `Copia ${escapeHtml(ownerSlotLabel.toLowerCase())}`}</span></div><span class="ownerSlotBadge ${ownerIsBench ? 'bench' : 'active'}">${escapeHtml(ownerSlotLabel)}</span><button class="btn btnPrimary compactBtn" type="button" data-buy-confirm="${escapeAttr(player.slug || '')}" data-buy-target-team="${escapeAttr(owner.teamId || '')}" ${disabled ? 'disabled' : ''} title="${escapeAttr(title)}"><span class="clauseBtnLabel">Clausula</span>${renderCoinInline(owner.clausePrice || 0, true)}</button></div>`;
+          : (!marketOpenNow() ? 'Mercado economico cerrado' : (!hasEnoughBerries ? 'Sin berries suficientes incluso sustituyendo' : (canUseTradeIn ? `Pagar clausula a ${owner.teamName}; neto desde ${formatCoins(bestNetCost)} sustituyendo un jugador` : `Pagar clausula a ${owner.teamName}`)));
+      const buttonLabel = canUseTradeIn && Number(state.currentTeam?.coins || 0) < clauseCost
+        ? `<span class="clauseBtnLabel">Neto desde</span>${renderCoinInline(bestNetCost, true)}`
+        : `<span class="clauseBtnLabel">Clausula</span>${renderCoinInline(clauseCost, true)}`;
+      return `<div class="ownerCard ${ownerIsBench ? 'isBenchOwner' : ''}"><div class="ownerMeta"><strong>${escapeHtml(owner.teamName || 'Equipo')}</strong><span>${escapeHtml(owner.coachName || 'Manager')}</span><span class="ownerHint">${owner.isMine ? (ownerIsBench ? 'Tu suplente' : 'Tu copia activa') : owner.isProtected ? `Protegido ${escapeHtml(protectedLabel || '')}` : `Copia ${escapeHtml(ownerSlotLabel.toLowerCase())}`}</span></div><span class="ownerSlotBadge ${ownerIsBench ? 'bench' : 'active'}">${escapeHtml(ownerSlotLabel)}</span><button class="btn btnPrimary compactBtn" type="button" data-buy-confirm="${escapeAttr(player.slug || '')}" data-buy-target-team="${escapeAttr(owner.teamId || '')}" ${disabled ? 'disabled' : ''} title="${escapeAttr(title)}">${buttonLabel}</button></div>`;
     }).join('');
     const marketHint = source === 'market'
       ? (marketPlayer?.canDirectBuy
