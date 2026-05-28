@@ -85,6 +85,9 @@
       flex:1;
       background:linear-gradient(90deg, rgba(15,23,42,.20), transparent);
     }
+    .adminPlayerPanel{ display:none; margin-bottom:12px; }
+    .adminPlayerGrid{ display:grid; grid-template-columns:minmax(220px,420px) minmax(0,1fr); gap:10px; align-items:end; }
+    .adminPlayerHint{ margin:0; color:#475569; font-size:13px; font-weight:800; line-height:1.35; }
     .list{ display:grid; gap:8px; }
     .tournamentItem{ border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,.78); overflow:hidden; }
     .tournamentItem.is-win{ border-color:rgba(34,197,94,.32); background:rgba(240,253,244,.90); }
@@ -236,6 +239,7 @@
       .hero{ display:block; border-radius:16px; }
       .hero .actions{ margin-top:12px; }
       .summaryGrid{ grid-template-columns:1fr 1fr; }
+      .adminPlayerGrid{ grid-template-columns:1fr; }
       .tournamentButton{ grid-template-columns:1fr; }
       .record{ font-size:15px; }
       .formGrid{ grid-template-columns:1fr; }
@@ -320,12 +324,23 @@
     <section class="hero">
       <div>
         <h1>Mi historial de torneos</h1>
-        <p>Registra torneos BO1 con lider jugado, rondas, lideres rivales, dado, turno y comentarios. De momento solo ves tus propios resultados.</p>
+        <p>Registra torneos BO1 con lider jugado, rondas, lideres rivales, dado, turno y comentarios. Los admin pueden cargar historial para otros jugadores.</p>
       </div>
       <div class="actions">
         <button class="btn2 primary" id="newTournamentBtn" type="button">Anadir manual</button>
         <a class="btn2" href="#vdbfPendingPanel">Desde VDBF</a>
         <a class="btn2" href="profile.html">Perfil</a>
+      </div>
+    </section>
+
+    <section class="panel adminPlayerPanel" id="adminPlayerPanel">
+      <h2>Jugador seleccionado</h2>
+      <div class="adminPlayerGrid">
+        <div>
+          <label for="adminPlayerSelect">Registrar historial para</label>
+          <select id="adminPlayerSelect"></select>
+        </div>
+        <p class="adminPlayerHint" id="adminPlayerHint">Los torneos guardados y pendientes VDBF se cargan para este jugador.</p>
       </div>
     </section>
 
@@ -428,6 +443,11 @@
     const escapeAttr = window.BarateamApp.escapeAttr;
     const state = {
       user: null,
+      accessState: null,
+      isAdmin: false,
+      profiles: [],
+      profileMap: new Map(),
+      selectedProfileId: "",
       leaders: [],
       leaderMap: new Map(),
       tournaments: [],
@@ -510,6 +530,86 @@
       navController.setUser(user || null);
       void window.BarateamApp.syncTopbarAvatar(sb, user || null);
     }
+    function profileLabel(profile){
+      if (!profile) return "";
+      return String(profile.display_name || profile.username || profile.email || profile.id || "").trim() || "Jugador";
+    }
+    function selectedProfileId(){
+      if (!state.isAdmin) return state.user?.id || "";
+      return state.selectedProfileId || $("adminPlayerSelect")?.value || state.user?.id || "";
+    }
+    function selectedProfileLabel(){
+      const profileId = selectedProfileId();
+      const profile = state.profileMap.get(profileId) || (profileId === state.user?.id ? state.accessState?.profile : null);
+      return profileLabel(profile) || (profileId === state.user?.id ? "tu usuario" : "jugador seleccionado");
+    }
+    function formTitle(base){
+      return state.isAdmin ? `${base} - ${selectedProfileLabel()}` : base;
+    }
+    function updateAdminPlayerHint(){
+      const hint = $("adminPlayerHint");
+      if (!hint) return;
+      hint.textContent = `Los torneos guardados y pendientes VDBF se cargan para ${selectedProfileLabel()}.`;
+    }
+    function setSelectedProfileId(profileId){
+      const fallback = state.user?.id || "";
+      const next = profileId || fallback;
+      state.selectedProfileId = next;
+      const select = $("adminPlayerSelect");
+      if (select && select.value !== next) select.value = next;
+      updateAdminPlayerHint();
+    }
+    function renderAdminPlayerSelector(){
+      const panel = $("adminPlayerPanel");
+      const select = $("adminPlayerSelect");
+      if (!panel || !select) return;
+      if (!state.isAdmin){
+        panel.style.display = "none";
+        return;
+      }
+      const currentUserId = state.user?.id || "";
+      const currentProfile = state.accessState?.profile || (currentUserId ? { id: currentUserId, username: state.user?.email } : null);
+      let profiles = state.profiles.slice();
+      if (currentProfile && !profiles.some((profile) => profile.id === currentProfile.id)){
+        profiles.unshift(currentProfile);
+      }
+      profiles = profiles.filter((profile) => profile?.id);
+      select.innerHTML = profiles.map((profile) => {
+        const self = profile.id === currentUserId ? " (tu)" : "";
+        const role = profile.app_role === "admin" ? " - admin" : "";
+        return `<option value="${escapeAttr(profile.id)}">${escapeHtml(profileLabel(profile) + self + role)}</option>`;
+      }).join("");
+      const wantedId = state.selectedProfileId || currentUserId;
+      const nextId = profiles.some((profile) => profile.id === wantedId) ? wantedId : (currentUserId || profiles[0]?.id || "");
+      state.selectedProfileId = nextId;
+      select.value = nextId;
+      panel.style.display = "block";
+      updateAdminPlayerHint();
+    }
+    async function loadProfilesForAdmin(){
+      const currentUserId = state.user?.id || "";
+      if (!state.isAdmin){
+        const ownProfile = state.accessState?.profile || (currentUserId ? { id: currentUserId, username: state.user?.email } : null);
+        state.profiles = ownProfile ? [ownProfile] : [];
+        state.profileMap = new Map(state.profiles.map((profile) => [profile.id, profile]));
+        renderAdminPlayerSelector();
+        return;
+      }
+      const { data, error } = await sb
+        .from("profiles")
+        .select("id,username,display_name,app_role")
+        .order("username", { ascending:true });
+      if (error) throw error;
+      state.profiles = Array.isArray(data) ? data : [];
+      state.profileMap = new Map(state.profiles.map((profile) => [profile.id, profile]));
+      renderAdminPlayerSelector();
+    }
+    async function loadAccessContext(){
+      state.accessState = await window.BarateamApp.resolveAccessState(sb);
+      state.isAdmin = state.accessState?.isAdmin === true;
+      state.selectedProfileId = state.user?.id || "";
+      await loadProfilesForAdmin();
+    }
     function openModal(){
       $("historyModal").classList.add("open");
       $("historyModal").setAttribute("aria-hidden", "false");
@@ -570,7 +670,7 @@
       renderSummary();
       const list = $("historyList");
       if (!state.tournaments.length){
-        list.innerHTML = '<div class="emptyState">Todavia no tienes torneos guardados.</div>';
+        list.innerHTML = `<div class="emptyState">Todavia no hay torneos guardados para ${escapeHtml(selectedProfileLabel())}.</div>`;
         return;
       }
       list.innerHTML = state.tournaments.map((t) => {
@@ -621,7 +721,7 @@
       const completed = new Set(state.tournaments.map((item) => item.vdbf_event_result_id).filter(Boolean));
       const pending = state.vdbfResults.filter((row) => !completed.has(row.id));
       if (!pending.length){
-        target.innerHTML = '<div class="emptyState">No hay torneos VDBF pendientes. Si acabas de vincular un perfil, sincroniza VDBF desde admin.</div>';
+        target.innerHTML = `<div class="emptyState">No hay torneos VDBF pendientes para ${escapeHtml(selectedProfileLabel())}. Si acabas de vincular un perfil, sincroniza VDBF desde admin.</div>`;
         return;
       }
       target.innerHTML = pending.map((row) => {
@@ -784,7 +884,7 @@
     }
     function resetForm(options){
       const opts = options || {};
-      $("formTitle").textContent = "Nuevo torneo";
+      $("formTitle").textContent = formTitle("Nuevo torneo");
       $("tournamentId").value = "";
       $("historySource").value = "manual";
       $("vdbfEventResultId").value = "";
@@ -811,8 +911,9 @@
     function editTournament(id){
       const t = state.tournaments.find((item) => item.id === id);
       if (!t) return;
+      if (state.isAdmin && t.user_id) setSelectedProfileId(t.user_id);
       const playerLeader = t.player || state.leaderMap.get(t.player_leader_code) || null;
-      $("formTitle").textContent = "Editar torneo";
+      $("formTitle").textContent = formTitle("Editar torneo");
       $("tournamentId").value = t.id;
       $("historySource").value = t.source || "manual";
       $("vdbfEventResultId").value = t.vdbf_event_result_id || "";
@@ -840,7 +941,7 @@
       const row = state.vdbfResults.find((item) => item.id === id);
       if (!row) return;
       const event = row.event || {};
-      $("formTitle").textContent = "Completar torneo VDBF";
+      $("formTitle").textContent = formTitle("Completar torneo VDBF");
       $("tournamentId").value = "";
       $("historySource").value = "vdbf";
       $("vdbfEventResultId").value = row.id;
@@ -875,7 +976,9 @@
       state.leaderMap = new Map(state.leaders.map((leader) => [leader.code, leader]));
     }
     async function loadTournaments(){
-      const { data, error } = await sb
+      const profileId = selectedProfileId();
+      if (!profileId) throw new Error("Selecciona un jugador para cargar su historial.");
+      let query = sb
         .from("tournament_history")
         .select(`
           *,
@@ -901,6 +1004,8 @@
             )
           )
         `)
+        .eq("user_id", profileId);
+      const { data, error } = await query
         .order("tournament_date", { ascending:false })
         .order("created_at", { ascending:false });
       if (error) throw error;
@@ -909,10 +1014,16 @@
       renderVdbfPending();
     }
     async function loadVdbfResults(){
+      const profileId = selectedProfileId();
+      if (!profileId){
+        state.vdbfResults = [];
+        renderVdbfPending();
+        return;
+      }
       const { data: link, error: linkError } = await sb
         .from("profile_vdbf_players")
         .select("vdbf_player_id")
-        .eq("profile_id", state.user.id)
+        .eq("profile_id", profileId)
         .maybeSingle();
       if (linkError) throw linkError;
       if (!link?.vdbf_player_id){
@@ -946,12 +1057,23 @@
         : [];
       renderVdbfPending();
     }
+    async function reloadSelectedData(){
+      $("historyList").innerHTML = '<div class="emptyState">Cargando historial...</div>';
+      $("vdbfPendingList").innerHTML = '<div class="emptyState">Cargando pendientes VDBF...</div>';
+      await loadVdbfResults();
+      await loadTournaments();
+    }
     async function saveTournament(event){
       event.preventDefault();
       if (state.saving) return;
       const date = $("tournamentDate").value;
       const playerLeaderCode = $("playerLeaderCode").value.trim();
       const source = $("historySource").value === "vdbf" ? "vdbf" : "manual";
+      const targetProfileId = selectedProfileId();
+      if (!targetProfileId){
+        showMsg("Selecciona el jugador al que quieres guardar este torneo.", "err");
+        return;
+      }
       if ((source === "manual" && !date) || !playerLeaderCode){
         showMsg("Fecha y lider jugado son obligatorios. Selecciona el lider desde el autocompletado.", "err");
         return;
@@ -967,7 +1089,7 @@
         const existingId = $("tournamentId").value || null;
         const finalResult = source === "vdbf" ? ($("officialResult").value || null) : tournamentResultFromRounds(rounds);
         const payload = {
-          user_id: state.user.id,
+          user_id: targetProfileId,
           source,
           vdbf_event_result_id: source === "vdbf" ? $("vdbfEventResultId").value : null,
           tournament_date: date || null,
@@ -995,7 +1117,8 @@
         const { error: roundError } = await sb.from("tournament_rounds").insert(roundPayload);
         if (roundError) throw roundError;
         showMsg("Historial guardado.", "ok");
-        await loadTournaments();
+        setSelectedProfileId(targetProfileId);
+        await reloadSelectedData();
         editTournament(tournamentId);
       } catch (err){
         showMsg(err?.message || "No se pudo guardar el historial.", "err");
@@ -1032,12 +1155,12 @@
         setNavUser(nextSession?.user || null);
         if (!nextSession?.user) location.href = "login.html";
       });
-      resetForm();
       bindPlayerLeaderSearch();
       try{
+        await loadAccessContext();
+        resetForm();
         await loadLeaders();
-        await loadVdbfResults();
-        await loadTournaments();
+        await reloadSelectedData();
       } catch (err){
         $("historyList").innerHTML = `<div class="emptyState">${escapeHtml(err?.message || "No se pudo cargar el historial.")}</div>`;
       }
@@ -1050,6 +1173,13 @@
     });
     $("resetBtn").addEventListener("click", () => resetForm());
     $("newTournamentBtn").addEventListener("click", () => resetForm({ open:true }));
+    $("adminPlayerSelect").addEventListener("change", () => {
+      setSelectedProfileId($("adminPlayerSelect").value);
+      resetForm();
+      reloadSelectedData().catch((err) => {
+        $("historyList").innerHTML = `<div class="emptyState">${escapeHtml(err?.message || "No se pudo cargar el historial.")}</div>`;
+      });
+    });
     $("closeModalBtn").addEventListener("click", closeModal);
     $("deleteBtn").addEventListener("click", deleteTournament);
     $("historyModal").addEventListener("click", (event) => {
