@@ -3031,6 +3031,7 @@ body[data-fantasy-view] .playerTournamentRows{
 }
 
 body[data-fantasy-view] .playerTournamentRow{
+  position:relative;
   display:grid;
   grid-template-columns:minmax(58px,.8fr) minmax(52px,.6fr) minmax(72px,.8fr);
   align-items:center;
@@ -3040,6 +3041,17 @@ body[data-fantasy-view] .playerTournamentRow{
   border-radius:8px;
   background:#f8fafc;
   padding:6px 8px;
+  overflow:visible;
+}
+
+body[data-fantasy-view] .playerTournamentRow.hasLeaderInfo{
+  border-color:rgba(37,99,235,.18);
+  background-image:linear-gradient(90deg,rgba(248,250,252,.96),rgba(248,250,252,.56) 38%,rgba(248,250,252,0)),var(--leader-bg-image);
+  background-repeat:no-repeat;
+  background-size:100% 100%,150%;
+  background-position:center,17% 37%;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.72);
+  cursor:help;
 }
 
 body[data-fantasy-view] .playerTournamentRow span,
@@ -3071,6 +3083,85 @@ body[data-fantasy-view] .playerTournamentRow em{
   color:#1d4ed8;
   font-style:normal;
   font-weight:1000;
+  text-shadow:
+    -1px -1px 0 rgba(255,255,255,.92),
+    1px -1px 0 rgba(255,255,255,.92),
+    -1px 1px 0 rgba(255,255,255,.92),
+    1px 1px 0 rgba(255,255,255,.92),
+    0 1px 3px rgba(15,23,42,.18);
+}
+
+body[data-fantasy-view] .playerTournamentHover{
+  position:absolute;
+  left:8px;
+  right:8px;
+  bottom:calc(100% + 8px);
+  z-index:60;
+  display:grid;
+  gap:4px;
+  justify-items:center;
+  min-width:210px;
+  padding:9px 10px;
+  border:1px solid rgba(15,23,42,.12);
+  border-radius:8px;
+  background:rgba(15,23,42,.96);
+  box-shadow:0 18px 38px rgba(2,6,23,.28);
+  color:#fff;
+  font-size:12px;
+  opacity:0;
+  overflow:visible;
+  pointer-events:none;
+  text-overflow:clip;
+  text-align:center;
+  transform:translateY(4px);
+  transition:opacity .14s ease, transform .14s ease;
+  white-space:normal;
+}
+
+body[data-fantasy-view] .playerTournamentHover::after{
+  content:"";
+  position:absolute;
+  left:22px;
+  top:100%;
+  border:7px solid transparent;
+  border-top-color:rgba(15,23,42,.96);
+}
+
+body[data-fantasy-view] .playerTournamentHover strong,
+body[data-fantasy-view] .playerTournamentHover small,
+body[data-fantasy-view] .playerTournamentHover em{
+  display:block;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:normal;
+  line-height:1.25;
+}
+
+body[data-fantasy-view] .playerTournamentHover strong{
+  font-size:12px;
+  font-weight:1000;
+}
+
+body[data-fantasy-view] .playerTournamentHover small{
+  color:rgba(226,232,240,.9);
+  font-size:11px;
+  font-weight:800;
+}
+
+body[data-fantasy-view] .playerTournamentHover em{
+  justify-self:center;
+  color:#bfdbfe;
+  font-size:11px;
+  font-style:normal;
+  font-weight:900;
+  text-shadow:none;
+}
+
+body[data-fantasy-view] .playerTournamentRow.hasLeaderInfo:hover .playerTournamentHover,
+body[data-fantasy-view] .playerTournamentRow.hasLeaderInfo:focus-visible .playerTournamentHover{
+  opacity:1;
+  transform:translateY(0);
 }
 
 body[data-fantasy-view] .fantasyScoringLegend{
@@ -5653,6 +5744,166 @@ body[data-fantasy-view="team"] #squadGrid .squadCard .playerVisual{
 .playerModalTabPanel.active{
   display:grid;
   gap:12px;
+}
+
+.playerStatsGrid{
+  display:grid;
+  gap:10px;
+}
+
+.playerStatsSection{
+  display:grid;
+  gap:10px;
+  padding:10px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:8px;
+  background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(241,245,249,.92));
+  min-width:0;
+}
+
+.playerStatsSectionHead{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+
+.playerStatsSectionHead span{
+  display:block;
+  color:#64748b;
+  font-size:10px;
+  font-weight:1000;
+  letter-spacing:.08em;
+  line-height:1.1;
+  text-transform:uppercase;
+}
+
+.playerStatsSectionHead strong{
+  display:block;
+  margin-top:3px;
+  color:#0f172a;
+  font-size:13px;
+  font-weight:1000;
+  line-height:1.2;
+}
+
+.playerStatsLeaderList{
+  display:grid;
+  gap:7px;
+}
+
+.playerStatsLeaderRow{
+  display:grid;
+  grid-template-columns:34px 46px minmax(0,1fr) auto;
+  align-items:center;
+  gap:9px;
+  min-width:0;
+  padding:7px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:8px;
+  background:rgba(255,255,255,.92);
+}
+
+.playerStatsLeaderRank{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:32px;
+  height:32px;
+  border-radius:999px;
+  background:rgba(37,99,235,.1);
+  color:#1d4ed8;
+  font-size:11px;
+  font-weight:1000;
+}
+
+.playerStatsLeaderArt{
+  display:block;
+  width:46px;
+  aspect-ratio:1/1;
+  overflow:hidden;
+  border-radius:8px;
+  border:1px solid rgba(15,23,42,.08);
+  background:linear-gradient(160deg,#334155,#0f172a);
+}
+
+.playerStatsLeaderArt img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center 16%;
+  display:block;
+}
+
+.playerStatsLeaderMain{
+  display:grid;
+  gap:3px;
+  min-width:0;
+}
+
+.playerStatsLeaderMain strong{
+  display:block;
+  color:#0f172a;
+  font-size:13px;
+  font-weight:1000;
+  line-height:1.14;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.playerStatsLeaderMain small{
+  display:block;
+  color:#64748b;
+  font-size:11px;
+  font-weight:900;
+  line-height:1.2;
+}
+
+.playerStatsLeaderWr{
+  display:grid;
+  justify-items:end;
+  gap:2px;
+  min-width:62px;
+}
+
+.playerStatsLeaderWr strong{
+  color:#16a34a;
+  font-size:16px;
+  font-weight:1000;
+  line-height:1;
+}
+
+.playerStatsLeaderWr small{
+  color:#64748b;
+  font-size:9px;
+  font-weight:1000;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.playerStatsEmpty{
+  margin-top:0;
+}
+
+@media (max-width:560px){
+  .playerStatsLeaderRow{
+    grid-template-columns:30px 42px minmax(0,1fr);
+    gap:8px;
+  }
+
+  .playerStatsLeaderArt{
+    width:42px;
+  }
+
+  .playerStatsLeaderWr{
+    grid-column:3;
+    justify-items:start;
+    display:flex;
+    align-items:baseline;
+    gap:5px;
+    min-width:0;
+  }
 }
 
 .managerPanelViews{

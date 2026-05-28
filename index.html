@@ -971,6 +971,40 @@
       opacity: 1;
       transform: translateY(-50%) translateX(0) scale(1);
     }
+    .leaderZoomPortal{
+      position: fixed;
+      left: 0;
+      top: 0;
+      pointer-events: none;
+      z-index: 4000;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.35);
+      background: rgba(2,6,23,.90);
+      box-shadow: 0 20px 38px rgba(2,6,23,.55);
+      padding: 6px;
+    }
+    .leaderZoomPortal img{
+      width: 180px;
+      height: auto;
+      max-height: 280px;
+      object-fit: contain;
+      display:block;
+      border-radius: 8px;
+      background: rgba(2,6,23,.40);
+    }
+    .leaderStatsLink{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      color:inherit;
+      text-decoration:none;
+      border-radius:6px;
+      cursor:pointer;
+    }
+    .leaderStatsLink:focus-visible{
+      outline:2px solid rgba(96,165,250,.95);
+      outline-offset:3px;
+    }
     .leaderFallback{
       width: calc(42px * var(--leader-card-ratio));
       height: 42px;
@@ -1230,6 +1264,28 @@
       font-weight: 900;
       border-bottom: 1px solid rgba(255,255,255,.12);
       background: rgba(15,23,42,.22);
+    }
+    .leaderRankRows{
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+      scrollbar-color: rgba(248,250,252,.34) rgba(15,23,42,.22);
+      scrollbar-width: thin;
+    }
+    .leaderRankRows.isScrollable{
+      overflow-y: auto;
+    }
+    .leaderRankRows .leaderZoomPreview{
+      display: none;
+    }
+    .leaderRankRows::-webkit-scrollbar{
+      width: 8px;
+    }
+    .leaderRankRows::-webkit-scrollbar-track{
+      background: rgba(15,23,42,.22);
+    }
+    .leaderRankRows::-webkit-scrollbar-thumb{
+      background: rgba(248,250,252,.34);
+      border-radius: 999px;
     }
     .lrHead span{ text-align: center; }
     .lrHead span:nth-child(3){
@@ -2320,9 +2376,22 @@
 
   function leaderImageHtml(leader){
     const source = String(leader?.parallel_image_url || leader?.image_url || "").trim();
+    const code = String(leader?.code || "").trim();
     if (source){
       const src = escapeAttr(source);
       const alt = escapeAttr(leader.name || "leader");
+      const href = code ? `leader-stats.html?leader=${encodeURIComponent(code)}` : "";
+      const content = `
+        <span class="leaderZoom">
+          <img class="leaderImg" src="${src}" alt="${alt}" />
+          <span class="leaderZoomPreview">
+            <img src="${src}" alt="${alt}" />
+          </span>
+        </span>
+      `;
+      if (href){
+        return `<a class="leaderStatsLink" href="${escapeAttr(href)}" aria-label="Ver stats de ${alt}">${content}</a>`;
+      }
       return `
         <span class="leaderZoom">
           <img class="leaderImg" src="${src}" alt="${alt}" />
@@ -2333,6 +2402,80 @@
       `;
     }
     return `<div class="leaderFallback">N/A</div>`;
+  }
+
+  function syncLeaderRankViewports(root = document){
+    root.querySelectorAll(".leaderRankRows.isScrollable").forEach((box) => {
+      const rows = Array.from(box.querySelectorAll(".lrRow")).slice(0, 5);
+      if (rows.length < 5){
+        box.style.maxHeight = "";
+        return;
+      }
+      const height = rows.reduce((sum, row) => sum + row.getBoundingClientRect().height, 0);
+      box.style.maxHeight = `${Math.ceil(height)}px`;
+    });
+  }
+
+  function initLeaderRankPreviewPortal(){
+    if (window.__barateamLeaderRankPreviewPortal) return;
+    window.__barateamLeaderRankPreviewPortal = true;
+
+    let activeAnchor = null;
+    let portal = null;
+
+    const hide = () => {
+      activeAnchor = null;
+      if (portal){
+        portal.remove();
+        portal = null;
+      }
+    };
+
+    const place = () => {
+      if (!activeAnchor || !portal) return;
+      const rect = activeAnchor.getBoundingClientRect();
+      const margin = 10;
+      const pw = portal.offsetWidth || 194;
+      const ph = portal.offsetHeight || 292;
+      let x = rect.right + margin;
+      let y = rect.top + (rect.height / 2) - (ph / 2);
+      if (x + pw > window.innerWidth - margin) x = rect.left - pw - margin;
+      y = Math.max(margin, Math.min(y, window.innerHeight - ph - margin));
+      portal.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+    };
+
+    const show = (anchor) => {
+      const img = anchor?.querySelector(".leaderImg");
+      if (!img?.src) return;
+      activeAnchor = anchor;
+      if (!portal){
+        portal = document.createElement("div");
+        portal.className = "leaderZoomPortal";
+        portal.innerHTML = `<img alt="">`;
+        document.body.appendChild(portal);
+      }
+      const preview = portal.querySelector("img");
+      preview.src = img.currentSrc || img.src;
+      preview.alt = img.alt || "";
+      requestAnimationFrame(place);
+    };
+
+    document.addEventListener("mouseover", (event) => {
+      const anchor = event.target.closest?.(".leaderRankRows .leaderZoom");
+      if (!anchor || anchor === activeAnchor) return;
+      show(anchor);
+    });
+    document.addEventListener("mousemove", (event) => {
+      if (activeAnchor && activeAnchor.contains(event.target)) place();
+    });
+    document.addEventListener("mouseout", (event) => {
+      if (!activeAnchor) return;
+      const next = event.relatedTarget;
+      if (next && activeAnchor.contains(next)) return;
+      hide();
+    });
+    window.addEventListener("scroll", hide, true);
+    window.addEventListener("resize", hide);
   }
 
   function chooseLeaderMostPlayed(leaderMap){
@@ -2616,7 +2759,7 @@
     const byPlayed = [...rows].sort((a, b) => {
       if (b.games !== a.games) return b.games - a.games;
       return b.wr - a.wr;
-    }).slice(0, 3);
+    }).slice(0, 10);
 
     const minGames = 15;
     const wrPool = rows.filter((x) => x.games >= minGames);
@@ -2625,7 +2768,7 @@
         if (b.wr !== a.wr) return b.wr - a.wr;
         return b.games - a.games;
       })
-      .slice(0, 3);
+      .slice(0, 10);
 
     return { byWr, byPlayed };
   }
@@ -2659,6 +2802,7 @@
     const content = rows.length
       ? rows.map((r) => leaderRowHtml(r)).join("")
       : `<div class="lrRow"><span class="featuredMuted">Sin datos suficientes.</span></div>`;
+    const scrollClass = rows.length > 5 ? " isScrollable" : "";
     return `
       <div class="leaderRankCard">
         <div class="leaderRankHeader">
@@ -2672,7 +2816,7 @@
           <span>Mejor WR</span>
           <span>Peor WR</span>
         </div>
-        ${content}
+        <div class="leaderRankRows${scrollClass}">${content}</div>
       </div>
     `;
   }
@@ -2947,10 +3091,12 @@
         </div>
       </div>
       <div class="leaderRanks">
-        ${leaderRankCardHtml("Top 3 lideres por WR", leaderRankings?.byWr || [], "Minimo 15 partidas para aparecer.")}
-        ${leaderRankCardHtml("Top 3 lideres mas jugados", leaderRankings?.byPlayed || [])}
+        ${leaderRankCardHtml("Top 10 lideres por WR", leaderRankings?.byWr || [], "Minimo 15 partidas para aparecer.")}
+        ${leaderRankCardHtml("Top 10 lideres mas jugados", leaderRankings?.byPlayed || [])}
       </div>
     `;
+    syncLeaderRankViewports(root);
+    initLeaderRankPreviewPortal();
   }
 
   async function refreshFeaturedPlayerSection(){
@@ -3109,6 +3255,10 @@
 
   $("btnLoadMorePosts")?.addEventListener("click", async () => {
     await loadMorePosts();
+  });
+
+  window.addEventListener("resize", () => {
+    syncLeaderRankViewports(document);
   });
 
   document.addEventListener("click", async (e) => {

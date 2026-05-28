@@ -362,6 +362,7 @@ as $$
 declare
   v_season text := upper(trim(coalesce(p_season, '')));
   v_cfg public.fantasy_vbf_seasons%rowtype;
+  v_snapshot_count integer := 0;
   v_result jsonb;
 begin
   perform public.fantasy_vbf_require_admin();
@@ -374,6 +375,22 @@ begin
 
   if not found then raise exception 'La temporada fantasy no existe.'; end if;
   if nullif(v_cfg.current_round_key, '') is null then raise exception 'No hay jornada actual para procesar.'; end if;
+
+  select count(*)
+  into v_snapshot_count
+  from public.fantasy_vbf_roster_snapshots
+  where season = v_season
+    and round_key = v_cfg.current_round_key;
+
+  if v_snapshot_count = 0 then
+    perform public.fantasy_vbf_capture_round_snapshot(
+      v_season,
+      v_cfg.current_round_key,
+      coalesce(nullif(v_cfg.current_round_label, ''), v_cfg.current_round_key),
+      coalesce(v_cfg.current_round_order, 0),
+      false
+    );
+  end if;
 
   v_result := public.fantasy_vbf_sync_round(
     v_season,

@@ -63,7 +63,7 @@
     .profileCard,
     .summaryCard{
       position: relative;
-      overflow: hidden;
+      overflow: visible;
       isolation: isolate;
     }
     .profileCard.withLeaderBg::before,
@@ -71,8 +71,10 @@
       content:"";
       position:absolute;
       inset:0;
+      border-radius: inherit;
       background-repeat: no-repeat, no-repeat;
       z-index:-1;
+      pointer-events:none;
     }
     .profileCard.withLeaderBg::before{
       background:
@@ -217,6 +219,10 @@
       align-items: center;
       justify-content: center;
       line-height: 0;
+      z-index: 1;
+    }
+    .leaderZoom:hover{
+      z-index: 1000;
     }
     .leaderZoomPreview{
       position: absolute;
@@ -225,7 +231,7 @@
       transform: translateY(-50%) translateX(-6px) scale(.96);
       opacity: 0;
       pointer-events: none;
-      z-index: 120;
+      z-index: 1001;
       border-radius: 12px;
       border: 1px solid rgba(255,255,255,.35);
       background: rgba(2,6,23,.90);
@@ -282,6 +288,14 @@
       align-items:center;
       justify-content:space-between;
       gap:10px;
+      position: relative;
+    }
+    .leaderTopItem:hover,
+    .item:hover{
+      z-index: 100;
+    }
+    .card:has(.leaderZoom:hover){
+      z-index: 50;
     }
     .leaderTopMain{
       display:flex;
@@ -507,7 +521,109 @@
     let allDecks = [];
     let decksPage = 1;
 
+    function normalize(value){
+      return String(value ?? "").trim();
+    }
+
+    function normalizeCardCode(value){
+      const raw = String(value || "")
+        .trim()
+        .toUpperCase()
+        .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015]/g, "-")
+        .replace(/\s+/g, "");
+      if (!raw) return "";
+
+      const normalized = raw.replace(/_/g, "-");
+      const promoMatch = normalized.match(/^P-?0*(\d{1,3})$/);
+      if (promoMatch) return `P-${promoMatch[1].padStart(3, "0")}`;
+
+      const setMatch = normalized.match(/^((?:OP|ST|EB|PRB))(\d{1,2})-?(\d{3})$/);
+      if (setMatch) return `${setMatch[1]}${setMatch[2].padStart(2, "0")}-${setMatch[3]}`;
+
+      return normalized;
+    }
+
+    function extractCardCode(value){
+      const raw = String(value || "").replace(/[\u2010\u2011\u2012\u2013\u2014\u2015]/g, "-");
+      const match = raw.match(/((?:OP|ST|EB|PRB)\s*-?\s*\d{1,2}\s*-?\s*\d{3}|P\s*-?\s*\d{1,3})/i);
+      return match ? normalizeCardCode(match[1]) : "";
+    }
+
+    function buildDotggCardImageUrl(value){
+      const code = normalizeCardCode(value);
+      if (!code) return "";
+      return `https://static.dotgg.gg/onepiece/card/${encodeURIComponent(code)}.webp`;
+    }
+
+    function normalizeLeaderImageUrl(value, leaderLabel){
+      const raw = normalize(value);
+      const code = extractCardCode(leaderLabel || raw);
+      const fallback = code ? buildDotggCardImageUrl(code) : "";
+
+      if (!raw) return fallback;
+      if (/^https?:\/\//i.test(raw)) return raw;
+      if (/^\/\//.test(raw)) return `https:${raw}`;
+
+      const cardPath = raw.match(/images\/cardlist\/card\/([^?#]+)([?#].*)?$/i);
+      if (cardPath){
+        const host = /asia/i.test(raw)
+          ? "https://asia-en.onepiece-cardgame.com"
+          : "https://en.onepiece-cardgame.com";
+        return `${host}/images/cardlist/card/${cardPath[1]}${cardPath[2] || ""}`;
+      }
+
+      return fallback || raw;
+    }
+
+    function deckLeaderImageSources(deck){
+      const code = extractCardCode(deck?.leader || deck?.leader_image_url || "");
+      const primary = normalizeLeaderImageUrl(deck?.leader_image_url || "", deck?.leader || code);
+      const fallback = code ? buildDotggCardImageUrl(code) : "";
+      return {
+        primary,
+        fallback: fallback && fallback !== primary ? fallback : "",
+        label: code || deck?.leader || "Lider"
+      };
+    }
+
+    function deckLeaderThumbMarkup(deck){
+      const art = deckLeaderImageSources(deck);
+      const alt = deck?.leader || "Lider";
+      if (!art.primary) return `<div class="deckLeaderThumb" aria-hidden="true"></div>`;
+
+      const fallbackAttrs = art.fallback
+        ? ` data-fallback-src="${escapeAttr(art.fallback)}"`
+        : "";
+      const fallbackLabel = escapeAttr(art.label);
+      return `
+        <span class="leaderZoom">
+          <img class="deckLeaderThumb" src="${escapeAttr(art.primary)}" alt="${escapeAttr(alt)}" data-leader-img="1"${fallbackAttrs} data-fallback-label="${fallbackLabel}" data-fallback-class="deckLeaderThumb" />
+          <span class="leaderZoomPreview">
+            <img src="${escapeAttr(art.primary)}" alt="${escapeAttr(alt)}" data-leader-img="1"${fallbackAttrs} data-fallback-label="${fallbackLabel}" />
+          </span>
+        </span>
+      `;
+    }
+
+    function handleLeaderImageError(event){
+      const img = event.target;
+      if (!(img instanceof HTMLImageElement) || img.dataset.leaderImg !== "1") return;
+
+      const fallbackSrc = normalize(img.dataset.fallbackSrc || "");
+      if (fallbackSrc && img.dataset.fallbackApplied !== "1"){
+        img.dataset.fallbackApplied = "1";
+        img.src = fallbackSrc;
+        return;
+      }
+
+      const fallback = document.createElement("div");
+      fallback.className = img.dataset.fallbackClass || img.className || "deckLeaderThumb";
+      fallback.textContent = normalize(img.dataset.fallbackLabel || img.alt || "Lider");
+      img.replaceWith(fallback);
+    }
+
     window.BarateamApp.bindProtectedNavLinks(sb);
+    document.addEventListener("error", handleLeaderImageError, true);
 
     const navController = window.BarateamApp.initUserNav({
       onLogout: async () => {
@@ -734,16 +850,7 @@
       $("decksList").innerHTML = pageRows.map((d) => `
         <a class="item" href="deck.html?id=${escapeAttr(d.id)}">
           <div class="deckRowMain">
-            ${d.leader_image_url
-              ? `
-                <span class="leaderZoom">
-                  <img class="deckLeaderThumb" src="${escapeAttr(d.leader_image_url)}" alt="${escapeAttr(d.leader || "Lider")}" />
-                  <span class="leaderZoomPreview">
-                    <img src="${escapeAttr(d.leader_image_url)}" alt="${escapeAttr(d.leader || "Lider")}" />
-                  </span>
-                </span>
-              `
-              : `<div class="deckLeaderThumb" aria-hidden="true"></div>`}
+            ${deckLeaderThumbMarkup(d)}
             <div>
             <div class="itemTitle">${escapeHtml(d.name || "Deck")}</div>
             <div class="itemMeta">

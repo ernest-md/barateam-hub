@@ -723,13 +723,81 @@
     function normalize(s){
       return String(s || "").trim();
     }
+    function normalizeCardCode(value){
+      const raw = String(value || "")
+        .trim()
+        .toUpperCase()
+        .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015]/g, "-")
+        .replace(/\s+/g, "");
+      if (!raw) return "";
+      const normalized = raw.replace(/_/g, "-");
+      const promoMatch = normalized.match(/^P-?0*(\d{1,3})$/);
+      if (promoMatch) return `P-${promoMatch[1].padStart(3, "0")}`;
+      const setMatch = normalized.match(/^((?:OP|ST|EB|PRB))(\d{1,2})-?(\d{3})$/);
+      if (setMatch) return `${setMatch[1]}${setMatch[2].padStart(2, "0")}-${setMatch[3]}`;
+      return normalized;
+    }
+    function extractCardCode(value){
+      const raw = String(value || "").replace(/[\u2010\u2011\u2012\u2013\u2014\u2015]/g, "-");
+      const match = raw.match(/((?:OP|ST|EB|PRB)\s*-?\s*\d{1,2}\s*-?\s*\d{3}|P\s*-?\s*\d{1,3})/i);
+      return match ? normalizeCardCode(match[1]) : "";
+    }
+    function buildDotggCardImageUrl(value){
+      const code = normalizeCardCode(value);
+      if (!code) return "";
+      return `https://static.dotgg.gg/onepiece/card/${encodeURIComponent(code)}.webp`;
+    }
+    function normalizeLeaderImageUrl(value, leaderLabel){
+      const raw = normalize(value);
+      const code = extractCardCode(leaderLabel || raw);
+      const fallback = code ? buildDotggCardImageUrl(code) : "";
+      if (!raw) return fallback;
+      if (/^https?:\/\//i.test(raw)) return raw;
+      if (/^\/\//.test(raw)) return `https:${raw}`;
+      const cardPath = raw.match(/images\/cardlist\/card\/([^?#]+)([?#].*)?$/i);
+      if (cardPath){
+        const host = /asia/i.test(raw)
+          ? "https://asia-en.onepiece-cardgame.com"
+          : "https://en.onepiece-cardgame.com";
+        return `${host}/images/cardlist/card/${cardPath[1]}${cardPath[2] || ""}`;
+      }
+      return fallback || raw;
+    }
+    function leaderImageSources(deck, leaderMeta){
+      const leader = deck?.leader || leaderMeta?.label || "";
+      const code = extractCardCode(leader || deck?.leader_image_url || leaderMeta?.code || "");
+      const fromMeta = normalizeLeaderImageUrl(leaderMeta?.image || "", leader || code);
+      const fromDeck = normalizeLeaderImageUrl(deck?.leader_image_url || "", leader || code);
+      const fallback = code ? buildDotggCardImageUrl(code) : "";
+      const seen = new Set();
+      const urls = [fromMeta, fromDeck, fallback].map(normalize).filter((url) => {
+        if (!url || seen.has(url)) return false;
+        seen.add(url);
+        return true;
+      });
+      return { primary: urls[0] || "", fallback: urls[1] || "", label: code || leader || "Lider" };
+    }
+    function handleLeaderImageError(event){
+      const img = event.target;
+      if (!(img instanceof HTMLImageElement) || img.dataset.leaderImg !== "1") return;
+      const fallbackSrc = normalize(img.dataset.fallbackSrc || "");
+      if (fallbackSrc && img.dataset.fallbackApplied !== "1"){
+        img.dataset.fallbackApplied = "1";
+        img.src = fallbackSrc;
+        return;
+      }
+      const fallback = document.createElement("div");
+      fallback.className = img.dataset.fallbackClass || img.className || "leaderThumb";
+      fallback.textContent = normalize(img.dataset.fallbackLabel || img.alt || "Lider");
+      img.replaceWith(fallback);
+    }
     function leaderLabelFromRow(row){
       const name = normalize(row?.name);
       const code = normalize(row?.code);
       return [name, code].filter(Boolean).join(" ").trim();
     }
     function leaderImageFromRow(row){
-      return normalize(row?.parallel_image_url || row?.image_url);
+      return normalizeLeaderImageUrl(row?.parallel_image_url || row?.image_url, leaderLabelFromRow(row));
     }
     function resolveLeaderMeta(leaderLabel){
       const normalized = normalize(leaderLabel);
@@ -869,13 +937,17 @@
         const autor = usernameByUserId.get(d.autor) || d.autor || "-";
         const name = d.name || "Sin nombre";
         const leaderMeta = resolveLeaderMeta(leader);
-        const leaderImg = leaderMeta?.image || d.leader_image_url || "";
+        const leaderArt = leaderImageSources(d, leaderMeta);
+        const leaderImg = leaderArt.primary;
+        const fallbackAttrs = leaderArt.fallback
+          ? ` data-fallback-src="${escapeAttr(leaderArt.fallback)}"`
+          : "";
         const imgHtml = leaderImg
           ? `
             <span class="leaderZoom">
-              <img class="leaderThumb" src="${escapeAttr(leaderImg)}" alt="${escapeAttr(leader)}">
+              <img class="leaderThumb" src="${escapeAttr(leaderImg)}" alt="${escapeAttr(leader)}" data-leader-img="1"${fallbackAttrs} data-fallback-label="${escapeAttr(leaderArt.label)}" data-fallback-class="leaderThumb">
               <span class="leaderZoomPreview">
-                <img src="${escapeAttr(leaderImg)}" alt="${escapeAttr(leader)}">
+                <img src="${escapeAttr(leaderImg)}" alt="${escapeAttr(leader)}" data-leader-img="1"${fallbackAttrs} data-fallback-label="${escapeAttr(leaderArt.label)}">
               </span>
             </span>
           `
@@ -901,7 +973,7 @@
           const article = document.createElement("article");
           article.className = "mobileDeckCard";
           const mobileImg = leaderImg
-            ? `<img class="mobileDeckThumb" src="${escapeAttr(leaderImg)}" alt="${escapeAttr(leader)}">`
+            ? `<img class="mobileDeckThumb" src="${escapeAttr(leaderImg)}" alt="${escapeAttr(leader)}" data-leader-img="1"${fallbackAttrs} data-fallback-label="${escapeAttr(leaderArt.label)}" data-fallback-class="mobileDeckThumb">`
             : `<div class="mobileDeckThumb" aria-hidden="true"></div>`;
           article.innerHTML = `
             <div class="mobileDeckHead">
@@ -1038,6 +1110,7 @@
       deckPage += 1;
       renderDecksCurrentPage();
     });
+    document.addEventListener("error", handleLeaderImageError, true);
 
     // ===== Init =====
     (async function(){

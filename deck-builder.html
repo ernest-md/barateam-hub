@@ -28,6 +28,9 @@
       color:var(--text);
       background:var(--bg);
     }
+    body.modal-open{
+      overflow:hidden;
+    }
     body::before{
       content:"";
       position:fixed;
@@ -956,8 +959,12 @@
       position:fixed;
       left:0;
       top:0;
+      width:236px;
+      max-width:calc(100vw - 24px);
+      max-height:calc(100vh - 24px);
       transform:translate3d(-9999px, -9999px, 0);
       opacity:0;
+      visibility:hidden;
       pointer-events:none;
       z-index:250000;
       border:1px solid rgba(255,255,255,.16);
@@ -966,15 +973,227 @@
       background:rgba(2,6,23,.96);
       box-shadow:0 24px 60px rgba(0,0,0,.48);
       transition:opacity .12s ease;
+      will-change:transform, opacity;
+    }
+    .cardPreview.is-visible{
+      opacity:1;
+      visibility:visible;
     }
     .cardPreview img{
-      width:220px;
+      width:100%;
       height:auto;
-      max-height:320px;
+      aspect-ratio:63 / 88;
+      max-height:calc(100vh - 42px);
       object-fit:contain;
       display:block;
       border-radius:10px;
       background:rgba(255,255,255,.04);
+    }
+    .cardPreview.is-loading img{
+      visibility:hidden;
+    }
+    .cardPreview.is-missing img{
+      display:none;
+    }
+    .cardPreview::after{
+      display:none;
+      width:100%;
+      aspect-ratio:63 / 88;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      border-radius:10px;
+      background:rgba(255,255,255,.05);
+      color:#cbd5e1;
+      font-size:13px;
+      font-weight:900;
+      padding:12px;
+      content:attr(data-preview-label);
+    }
+    .cardPreview.is-missing::after{
+      display:flex;
+    }
+    .cardInfoOverlay{
+      position:fixed;
+      inset:0;
+      z-index:300000;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      background:rgba(2,6,23,.68);
+      backdrop-filter:blur(7px);
+    }
+    .cardInfoOverlay.is-open{
+      display:flex;
+    }
+    .cardInfoModal{
+      width:min(1000px, 100%);
+      max-height:min(90vh, 920px);
+      overflow:auto;
+      border-radius:24px;
+      border:1px solid rgba(255,255,255,.14);
+      background:#f8fafc;
+      color:#0f172a;
+      box-shadow:0 28px 72px rgba(0,0,0,.38);
+    }
+    .cardInfoTop{
+      position:relative;
+      padding:26px 76px 18px;
+      text-align:center;
+      background:#020617;
+      color:#fff;
+    }
+    .cardInfoTop h3{
+      margin:7px 0 0;
+      font-size:clamp(2rem, 4vw, 3rem);
+      line-height:.98;
+      font-weight:1000;
+      letter-spacing:-.04em;
+      color:#fff;
+    }
+    .cardInfoTop p{
+      margin:0;
+      color:rgba(226,232,240,.78);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+    }
+    .cardInfoClose{
+      position:absolute;
+      top:16px;
+      right:16px;
+      width:40px;
+      height:40px;
+      border-radius:999px;
+      border:1px solid rgba(226,232,240,.28);
+      background:rgba(255,255,255,.08);
+      color:#fff;
+      font-size:24px;
+      line-height:1;
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+    }
+    .cardInfoContent{
+      padding:28px;
+    }
+    .cardInfoBody{
+      display:grid;
+      grid-template-columns:minmax(260px, 420px) minmax(0, 1fr);
+      gap:28px;
+      align-items:start;
+    }
+    .cardInfoArt{
+      border-radius:22px;
+      overflow:hidden;
+      border:1px solid rgba(15,23,42,.08);
+      background:linear-gradient(180deg, #dbe4ee, #cbd5e1);
+      box-shadow:0 28px 54px rgba(15,23,42,.16);
+      min-height:260px;
+    }
+    .cardInfoArt img{
+      display:block;
+      width:100%;
+      aspect-ratio:63 / 88;
+      object-fit:cover;
+    }
+    .cardInfoArtFallback{
+      width:100%;
+      aspect-ratio:63 / 88;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      text-align:center;
+      color:#475569;
+      font-weight:1000;
+      background:linear-gradient(180deg, #e2e8f0, #cbd5e1);
+    }
+    .cardInfoMetaStrip{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:16px;
+    }
+    .cardInfoTag{
+      display:inline-flex;
+      align-items:center;
+      min-height:26px;
+      padding:5px 9px;
+      border-radius:999px;
+      border:1px solid rgba(15,23,42,.1);
+      background:#fff;
+      color:#334155;
+      font-size:11px;
+      font-weight:900;
+    }
+    .cardInfoSpecs{
+      display:grid;
+      gap:8px;
+      margin-bottom:16px;
+      border-top:1px solid rgba(15,23,42,.08);
+      border-bottom:1px solid rgba(15,23,42,.08);
+    }
+    .cardInfoSpecRow{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      border-top:1px solid rgba(15,23,42,.08);
+    }
+    .cardInfoSpecRow:first-child{
+      border-top:0;
+    }
+    .cardInfoSpec{
+      min-width:0;
+      padding:12px 0;
+    }
+    .cardInfoSpec span,
+    .cardInfoSectionLabel{
+      display:block;
+      color:#64748b;
+      font-size:11px;
+      font-weight:1000;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+    .cardInfoSpec strong,
+    .cardInfoSection strong,
+    .cardInfoSet strong{
+      display:block;
+      margin-top:6px;
+      color:#0f172a;
+      font-size:16px;
+      font-weight:1000;
+      overflow-wrap:anywhere;
+    }
+    .cardInfoSection{
+      padding:14px 0;
+      border-bottom:1px solid rgba(15,23,42,.08);
+    }
+    .cardInfoText{
+      margin-top:6px;
+      color:#334155;
+      font-size:14px;
+      line-height:1.55;
+      white-space:pre-line;
+      overflow-wrap:anywhere;
+    }
+    .cardInfoSet{
+      margin-top:18px;
+      padding:18px;
+      background:#f1eee7;
+      border:1px solid rgba(15,23,42,.06);
+    }
+    .cardInfoSet small{
+      display:block;
+      margin-top:6px;
+      color:#64748b;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.08em;
+      text-transform:uppercase;
     }
     .detailOverlay.is-open{
       display:flex;
@@ -1199,6 +1418,13 @@
       }
       .recommendationsGrid{ grid-template-columns:1fr; }
       .cardPreview{ display:none !important; }
+      .cardInfoOverlay{ padding:8px; align-items:flex-start; }
+      .cardInfoModal{ max-height:calc(100vh - 16px); border-radius:18px; }
+      .cardInfoTop{ padding:24px 54px 16px; }
+      .cardInfoTop h3{ font-size:2rem; }
+      .cardInfoContent{ padding:16px; }
+      .cardInfoBody{ grid-template-columns:1fr; gap:18px; }
+      .cardInfoSpecRow{ grid-template-columns:1fr; gap:0; }
     }
   </style>
 </head>
@@ -1450,6 +1676,19 @@
     </div>
   </div>
 
+  <div class="cardInfoOverlay" id="cardInfoOverlay" aria-hidden="true">
+    <div class="cardInfoModal" role="dialog" aria-modal="true" aria-labelledby="cardInfoTitle">
+      <div class="cardInfoTop">
+        <div>
+          <p id="cardInfoSubtitle">Carta</p>
+          <h3 id="cardInfoTitle">Detalle de carta</h3>
+        </div>
+        <button class="cardInfoClose" id="cardInfoCloseButton" type="button" aria-label="Cerrar carta">&times;</button>
+      </div>
+      <div class="cardInfoContent" id="cardInfoContent"></div>
+    </div>
+  </div>
+
   <script>
     const SOURCE_DEFS = [
       { key: "english", label: "English", basePath: "punkrecords/english" },
@@ -1508,6 +1747,7 @@
       },
       partialFailures: [],
       detailOpen: false,
+      activeCardCode: "",
       currentUser: null,
       currentDeckId: initialDeckId,
       currentDeckUrl: "",
@@ -1644,11 +1884,29 @@
       if (!code) return "";
       return `https://static.dotgg.gg/onepiece/card/${encodeURIComponent(code)}.webp`;
     }
+    function officialCardImageHost(sourceKey){
+      return String(sourceKey || "").toLowerCase().includes("asia")
+        ? "https://asia-en.onepiece-cardgame.com"
+        : "https://en.onepiece-cardgame.com";
+    }
+    function normalizeCardImageUrl(value, sourceKey){
+      const raw = normalize(value);
+      if (!raw) return "";
+      if (/^https?:\/\//i.test(raw)) return raw;
+      if (/^\/\//.test(raw)) return `https:${raw}`;
+
+      const cardPath = raw.match(/images\/cardlist\/card\/([^?#]+)([?#].*)?$/i);
+      if (cardPath){
+        return `${officialCardImageHost(sourceKey)}/images/cardlist/card/${cardPath[1]}${cardPath[2] || ""}`;
+      }
+
+      return raw;
+    }
     function cardFallbackSource(card){
       return normalize(card?.fallbackImage) || buildDotggCardImageUrl(card?.code);
     }
     function cardImageSource(card){
-      return normalize(card?.image) || cardFallbackSource(card);
+      return normalizeCardImageUrl(card?.image, card?.sourceKey) || cardFallbackSource(card);
     }
     function failedImageFallbackMarkup(label, fallbackClass){
       const node = document.createElement("div");
@@ -1690,6 +1948,7 @@
 
       const img = preview.querySelector("img");
       let activeAnchor = null;
+      let previewRequestId = 0;
 
       function place(anchor){
         if (!anchor) return;
@@ -1699,31 +1958,76 @@
         const previewHeight = preview.offsetHeight || 336;
         let x = rect.right + 12;
         let y = rect.top + ((rect.height - previewHeight) / 2);
-        if (x + previewWidth > window.innerWidth - margin) x = rect.left - previewWidth - 12;
-        if (y < margin) y = margin;
-        if (y + previewHeight > window.innerHeight - margin){
-          y = Math.max(margin, window.innerHeight - previewHeight - margin);
-        }
+        const maxX = Math.max(margin, window.innerWidth - previewWidth - margin);
+        const maxY = Math.max(margin, window.innerHeight - previewHeight - margin);
+
+        if (x > maxX) x = rect.left - previewWidth - 12;
+        x = Math.max(margin, Math.min(maxX, x));
+        y = Math.max(margin, Math.min(maxY, y));
         preview.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
       }
 
       function hide(){
         activeAnchor = null;
-        preview.style.opacity = "0";
+        previewRequestId += 1;
+        img.removeAttribute("src");
+        preview.classList.remove("is-visible", "is-loading", "is-missing");
         preview.style.transform = "translate3d(-9999px,-9999px,0)";
+      }
+
+      function showLoadedImage(src, requestId){
+        if (requestId !== previewRequestId || !activeAnchor) return;
+        img.src = src;
+        preview.classList.remove("is-loading", "is-missing");
+        preview.classList.add("is-visible");
+        place(activeAnchor);
+      }
+
+      function showMissing(requestId){
+        if (requestId !== previewRequestId || !activeAnchor) return;
+        img.removeAttribute("src");
+        preview.classList.remove("is-loading");
+        preview.classList.add("is-visible", "is-missing");
+        place(activeAnchor);
+      }
+
+      function preloadPreviewImage(src, fallbackSrc, requestId){
+        const probe = new Image();
+        probe.onload = () => showLoadedImage(probe.src, requestId);
+        probe.onerror = () => {
+          if (fallbackSrc && fallbackSrc !== src){
+            preloadPreviewImage(fallbackSrc, "", requestId);
+            return;
+          }
+          showMissing(requestId);
+        };
+        probe.src = src;
       }
 
       function show(anchor){
         const src = normalize(anchor?.dataset?.previewSrc || "");
-        if (!src){
+        const fallbackSrc = normalize(anchor?.dataset?.previewFallbackSrc || "");
+        const nextSrc = src || fallbackSrc;
+        if (!nextSrc){
           hide();
           return;
         }
+        if (activeAnchor === anchor){
+          place(anchor);
+          return;
+        }
+
         activeAnchor = anchor;
-        img.src = src;
-        img.alt = normalize(anchor?.dataset?.previewLabel || "Carta");
-        preview.style.opacity = "1";
+        previewRequestId += 1;
+        const requestId = previewRequestId;
+        preview.dataset.previewLabel = normalize(anchor?.dataset?.previewLabel || "Carta");
+        preview.dataset.fallbackSrc = fallbackSrc && fallbackSrc !== nextSrc ? fallbackSrc : "";
+        preview.classList.add("is-loading");
+        preview.classList.remove("is-visible", "is-missing");
+        img.alt = preview.dataset.previewLabel;
+        img.removeAttribute("src");
         place(anchor);
+        preloadPreviewImage(nextSrc, preview.dataset.fallbackSrc, requestId);
       }
 
       document.addEventListener("mouseover", (event) => {
@@ -1748,6 +2052,7 @@
       window.addEventListener("scroll", () => { if (activeAnchor) place(activeAnchor); }, true);
       window.addEventListener("resize", () => { if (activeAnchor) place(activeAnchor); });
       window.addEventListener("blur", hide);
+      document.addEventListener("deckBuilder:hidePreview", hide);
     }
     function toIntOrNull(value){
       if (value === null || value === undefined || value === "") return null;
@@ -1805,7 +2110,7 @@
         attribute: punkListText(raw?.attributes),
         sub_types: punkListText(raw?.types),
         card_text: buildPunkText(raw),
-        card_image: normalize(raw?.img_full_url || raw?.img_url || ""),
+        card_image: normalizeCardImageUrl(raw?.img_full_url || raw?.img_url || "", source?.key),
         card_image_id: rawId,
         date_scraped: formatUnixDate(manifest?.generated_at),
         block_number: raw?.block_number
@@ -2322,7 +2627,7 @@
         ? `<img src="${escapeAttr(src)}" alt="${escapeAttr(card.name)}" loading="lazy" data-deck-builder-image="1" data-fallback-src="${escapeAttr(fallbackSrc)}" data-fallback-label="${escapeAttr(card.code)}" data-fallback-class="recommendationFallback">`
         : `<div class="recommendationFallback">${escapeHtml(card.code)}</div>`;
       return `
-        <article class="recommendationCard cardZoom" data-preview-src="${escapeAttr(src)}" data-preview-label="${escapeAttr(card.name)}">
+        <article class="recommendationCard cardZoom" data-card-code="${escapeAttr(card.code)}" data-preview-src="${escapeAttr(src)}" data-preview-fallback-src="${escapeAttr(fallbackSrc)}" data-preview-label="${escapeAttr(card.name)}">
           <div class="recommendationArt">${art}</div>
           <div class="recommendationBody">
             <div class="recommendationName" title="${escapeAttr(card.name)}">${escapeHtml(card.name)}</div>
@@ -2771,7 +3076,7 @@
         : `<div class="artFallback">${escapeHtml(card.code)}</div>`;
 
       return (
-        `<article class="cardTile cardZoom${card.type === "Leader" ? " is-leader" : ""}" data-card-code="${escapeAttr(card.code)}" data-context="${escapeAttr(context)}" data-current-qty="${escapeAttr(qty)}" data-preview-src="${escapeAttr(src)}" data-preview-label="${escapeAttr(card.name)}">` +
+        `<article class="cardTile cardZoom${card.type === "Leader" ? " is-leader" : ""}" data-card-code="${escapeAttr(card.code)}" data-context="${escapeAttr(context)}" data-current-qty="${escapeAttr(qty)}" data-preview-src="${escapeAttr(src)}" data-preview-fallback-src="${escapeAttr(fallbackSrc)}" data-preview-label="${escapeAttr(card.name)}">` +
           `<div class="artWrap">${imageMarkup}</div>` +
           `<div class="cardMeta">` +
             `<div class="cardName">${escapeHtml(card.name)}</div>` +
@@ -2864,7 +3169,7 @@
 
       slot.innerHTML = (
         `<div class="leaderSlot">` +
-          `<div class="leaderArt cardZoom" data-preview-src="${escapeAttr(src)}" data-preview-label="${escapeAttr(leader.name)}">${imageMarkup}</div>` +
+          `<div class="leaderArt cardZoom" data-card-code="${escapeAttr(leader.code)}" data-preview-src="${escapeAttr(src)}" data-preview-fallback-src="${escapeAttr(fallbackSrc)}" data-preview-label="${escapeAttr(leader.name)}">${imageMarkup}</div>` +
           `<div class="leaderInfo">` +
             `<h3>${escapeHtml(leader.name)}</h3>` +
             `<p>${escapeHtml(leader.code)} - ${escapeHtml(leader.colors.map(humanColor).join(" / ") || "Sin color")} - Leader unico del mazo</p>` +
@@ -2952,6 +3257,96 @@
       state.detailOpen = false;
       $("detailOverlay").classList.remove("is-open");
       $("detailOverlay").setAttribute("aria-hidden", "true");
+    }
+    function cardInfoValue(value, fallback = "Sin dato"){
+      const text = normalize(value);
+      return text || fallback;
+    }
+    function cardInfoSpecMarkup(item){
+      return (
+        `<div class="cardInfoSpec">` +
+          `<span>${escapeHtml(item.label)}</span>` +
+          `<strong>${escapeHtml(cardInfoValue(item.value, item.fallback))}</strong>` +
+        `</div>`
+      );
+    }
+    function cardInfoModalMarkup(card){
+      const src = cardImageSource(card);
+      const fallbackSrc = cardFallbackSource(card);
+      const colors = card.colors.length ? card.colors.map(humanColor).join(" / ") : "";
+      const colorTags = card.colors.length
+        ? card.colors.map((color) => `<span class="cardInfoTag">${escapeHtml(humanColor(color))}</span>`).join("")
+        : `<span class="cardInfoTag">Sin color</span>`;
+      const art = src
+        ? `<img src="${escapeAttr(src)}" alt="${escapeAttr(card.name)}" loading="lazy" data-deck-builder-image="1" data-fallback-src="${escapeAttr(fallbackSrc)}" data-fallback-label="${escapeAttr(card.code)}" data-fallback-class="cardInfoArtFallback" />`
+        : `<div class="cardInfoArtFallback">${escapeHtml(card.code)}</div>`;
+      const specs = [
+        [
+          { label: "Vida", value: card.life },
+          { label: "Atributo", value: card.attribute }
+        ],
+        [
+          { label: "Poder", value: card.power },
+          { label: "Counter", value: card.counter === null ? "" : `+${card.counter}` }
+        ],
+        [
+          { label: "Color", value: colors },
+          { label: "Block Icon", value: card.blockIcon, fallback: "No disponible" }
+        ],
+        [
+          { label: "Coste", value: card.type === "Leader" ? "" : card.cost },
+          { label: "Actualizado", value: card.dateScraped }
+        ]
+      ];
+
+      return (
+        `<div class="cardInfoBody">` +
+          `<div class="cardInfoArt">${art}</div>` +
+          `<div class="cardInfoPanel">` +
+            `<div class="cardInfoMetaStrip">` +
+              `<span class="cardInfoTag">${escapeHtml(card.type || "-")}</span>` +
+              `<span class="cardInfoTag">${escapeHtml(card.rarity || "-")}</span>` +
+              colorTags +
+              `<span class="cardInfoTag">${escapeHtml(card.sourceLabel || "-")}</span>` +
+            `</div>` +
+            `<div class="cardInfoSpecs">` +
+              specs.map((row) => `<div class="cardInfoSpecRow">${row.map(cardInfoSpecMarkup).join("")}</div>`).join("") +
+            `</div>` +
+            `<div class="cardInfoSection">` +
+              `<span class="cardInfoSectionLabel">Tipo</span>` +
+              `<strong>${escapeHtml(card.subTypes || card.type || "Sin dato")}</strong>` +
+            `</div>` +
+            `<div class="cardInfoSection">` +
+              `<span class="cardInfoSectionLabel">Efecto</span>` +
+              `<div class="cardInfoText">${escapeHtml(card.text || "Sin texto disponible.")}</div>` +
+            `</div>` +
+            `<div class="cardInfoSet">` +
+              `<span class="cardInfoSectionLabel">Expansion</span>` +
+              `<strong>${escapeHtml(card.expansionName || "Sin expansion")}</strong>` +
+              `<small>${escapeHtml(card.code)} | ${escapeHtml(card.sourceLabel || "-")}</small>` +
+            `</div>` +
+          `</div>` +
+        `</div>`
+      );
+    }
+    function openCardInfo(code){
+      const card = state.cardsByCode.get(normalizeCardCode(code));
+      if (!card) return;
+      document.dispatchEvent(new CustomEvent("deckBuilder:hidePreview"));
+      state.activeCardCode = card.code;
+      $("cardInfoTitle").textContent = card.name;
+      $("cardInfoSubtitle").textContent = [card.code, card.rarity, String(card.type || "").toUpperCase()].filter(Boolean).join(" | ");
+      $("cardInfoContent").innerHTML = cardInfoModalMarkup(card);
+      $("cardInfoOverlay").classList.add("is-open");
+      $("cardInfoOverlay").setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+    }
+    function closeCardInfo(){
+      state.activeCardCode = "";
+      $("cardInfoOverlay").classList.remove("is-open");
+      $("cardInfoOverlay").setAttribute("aria-hidden", "true");
+      $("cardInfoContent").innerHTML = "";
+      if (!state.detailOpen) document.body.classList.remove("modal-open");
     }
     function render(){
       renderAvailable();
@@ -3159,21 +3554,47 @@
         closeDetail();
       }
     });
+    $("cardInfoCloseButton").addEventListener("click", closeCardInfo);
+    $("cardInfoOverlay").addEventListener("click", (event) => {
+      if (event.target === $("cardInfoOverlay")){
+        closeCardInfo();
+      }
+    });
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && state.detailOpen){
+      if (event.key !== "Escape") return;
+      if (state.activeCardCode){
+        closeCardInfo();
+        return;
+      }
+      if (state.detailOpen){
         closeDetail();
       }
     });
+    $("leaderSlot").addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (button) return;
+      const tile = event.target.closest("[data-card-code]");
+      if (!tile) return;
+      openCardInfo(tile.dataset.cardCode || "");
+    });
     $("availableGrid").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-action]");
-      if (!button) return;
+      if (!button){
+        const tile = event.target.closest("[data-card-code]");
+        if (tile) openCardInfo(tile.dataset.cardCode || "");
+        return;
+      }
       const tile = button.closest("[data-card-code]");
       if (!tile) return;
       handleQuantityAction(tile.dataset.cardCode || "", button.dataset.action || "");
     });
     $("deckGrid").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-action]");
-      if (!button) return;
+      if (!button){
+        const tile = event.target.closest("[data-card-code]");
+        if (tile) openCardInfo(tile.dataset.cardCode || "");
+        return;
+      }
       const tile = button.closest("[data-card-code]");
       if (!tile) return;
       handleQuantityAction(tile.dataset.cardCode || "", button.dataset.action || "");
@@ -3184,6 +3605,8 @@
         applyRecommendationAction(addButton.dataset.recAdd || "", "add");
         return;
       }
+      const tile = event.target.closest("[data-card-code]");
+      if (tile) openCardInfo(tile.dataset.cardCode || "");
     });
     if (sb?.auth?.onAuthStateChange){
       sb.auth.onAuthStateChange((_event, session) => {

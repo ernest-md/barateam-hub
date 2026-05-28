@@ -592,6 +592,190 @@
       border-radius:10px;
       background:rgba(255,255,255,.04);
     }
+    body.modal-open{
+      overflow:hidden;
+    }
+    .simCard[data-card-code],
+    .considerationCard[data-card-code]{
+      cursor:zoom-in;
+    }
+    .cardDetailOverlay{
+      position:fixed;
+      inset:0;
+      z-index:300000;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      background:rgba(2,6,23,.78);
+      backdrop-filter:blur(8px);
+    }
+    .cardDetailOverlay.isOpen{
+      display:flex;
+    }
+    .cardDetailModal{
+      width:min(940px, 100%);
+      max-height:calc(100vh - 48px);
+      overflow:auto;
+      border-radius:18px;
+      background:#f8fafc;
+      color:#0f172a;
+      border:1px solid rgba(255,255,255,.5);
+      box-shadow:0 24px 80px rgba(0,0,0,.5);
+    }
+    .cardDetailTop{
+      position:sticky;
+      top:0;
+      z-index:1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:18px 20px;
+      background:#020617;
+      color:#f8fafc;
+    }
+    .cardDetailTop h2{
+      margin:0;
+      font-size:28px;
+      line-height:1.05;
+      font-weight:1000;
+    }
+    .cardDetailTop p{
+      margin:5px 0 0;
+      color:#cbd5e1;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .cardDetailClose{
+      width:40px;
+      height:40px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.22);
+      background:rgba(255,255,255,.08);
+      color:#f8fafc;
+      font-size:24px;
+      line-height:1;
+      cursor:pointer;
+      flex:0 0 auto;
+    }
+    .cardDetailClose:hover{
+      background:rgba(255,255,255,.16);
+    }
+    .cardDetailBody{
+      display:grid;
+      grid-template-columns:minmax(220px, 320px) minmax(0, 1fr);
+      gap:20px;
+      padding:22px;
+    }
+    .cardDetailArt{
+      min-height:320px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+    }
+    .cardDetailArt img{
+      width:100%;
+      max-width:320px;
+      height:auto;
+      border-radius:10px;
+      box-shadow:0 18px 40px rgba(15,23,42,.28);
+      background:#e2e8f0;
+    }
+    .cardDetailArtFallback{
+      width:100%;
+      max-width:320px;
+      aspect-ratio:5/7;
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      text-align:center;
+      font-weight:1000;
+      color:#475569;
+      background:#e2e8f0;
+      border:1px dashed #94a3b8;
+    }
+    .cardDetailPanel{
+      min-width:0;
+    }
+    .cardDetailMetaStrip{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .cardDetailTag{
+      display:inline-flex;
+      align-items:center;
+      min-height:22px;
+      border-radius:999px;
+      padding:4px 9px;
+      background:#eef2ff;
+      color:#1e293b;
+      border:1px solid #dbe4ff;
+      font-size:11px;
+      font-weight:1000;
+    }
+    .cardDetailSpecs{
+      border-top:1px solid #e2e8f0;
+      margin-bottom:14px;
+    }
+    .cardDetailSpecRow{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      border-bottom:1px solid #e2e8f0;
+    }
+    .cardDetailSpec{
+      padding:12px 10px;
+      min-width:0;
+    }
+    .cardDetailSpec span,
+    .cardDetailSectionLabel{
+      display:block;
+      margin-bottom:5px;
+      color:#64748b;
+      font-size:10px;
+      font-weight:1000;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .cardDetailSpec strong,
+    .cardDetailSection strong,
+    .cardDetailSet strong{
+      color:#0f172a;
+      font-size:15px;
+      font-weight:1000;
+      word-break:break-word;
+    }
+    .cardDetailSection{
+      border-bottom:1px solid #e2e8f0;
+      padding:13px 0;
+    }
+    .cardDetailText{
+      white-space:pre-line;
+      color:#334155;
+      font-size:14px;
+      line-height:1.55;
+      font-weight:700;
+    }
+    .cardDetailSet{
+      margin-top:16px;
+      padding:15px;
+      border-radius:10px;
+      background:#f1f5f9;
+      border:1px solid #e2e8f0;
+    }
+    .cardDetailSet small{
+      display:block;
+      margin-top:5px;
+      color:#64748b;
+      font-size:12px;
+      font-weight:900;
+    }
     .simPasteInlineText{
       width:100%;
     }
@@ -868,6 +1052,33 @@
       .considerationFallback{
         width:44px;
       }
+      .cardDetailOverlay{
+        padding:10px;
+      }
+      .cardDetailModal{
+        max-height:calc(100vh - 20px);
+        border-radius:14px;
+      }
+      .cardDetailTop{
+        padding:14px 16px;
+      }
+      .cardDetailTop h2{
+        font-size:22px;
+      }
+      .cardDetailBody{
+        grid-template-columns:1fr;
+        padding:16px;
+      }
+      .cardDetailArt{
+        min-height:0;
+      }
+      .cardDetailArt img,
+      .cardDetailArtFallback{
+        max-width:240px;
+      }
+      .cardDetailSpecRow{
+        grid-template-columns:1fr;
+      }
       .hoverUsers{ width: min(220px, calc(100vw - 40px)); }
       .socialRow .iconBtn{ flex: 1 1 auto; justify-content: center; }
     }
@@ -1028,6 +1239,19 @@
     </div>
   </div>
 
+  <div class="cardDetailOverlay" id="cardDetailOverlay" aria-hidden="true">
+    <div class="cardDetailModal" role="dialog" aria-modal="true" aria-labelledby="cardDetailTitle">
+      <div class="cardDetailTop">
+        <div>
+          <h2 id="cardDetailTitle">Carta</h2>
+          <p id="cardDetailSubtitle">Detalle de la carta seleccionada</p>
+        </div>
+        <button class="cardDetailClose" id="cardDetailClose" type="button" aria-label="Cerrar">&times;</button>
+      </div>
+      <div id="cardDetailContent"></div>
+    </div>
+  </div>
+
   <script>
     const sb = window.BarateamApp.createClient();
     window.BarateamApp.bindProtectedNavLinks(sb);
@@ -1044,6 +1268,8 @@
     let editLeaderByLabel = new Map();
     let cardCatalogByCode = new Map();
     let catalogReady = false;
+    let catalogLoadPromise = null;
+    let activeCardDetailCode = "";
     let recommendationState = { leaderCode:"", status:"idle", rows:[], sourceDate:"", error:"", inflight:null, cache:new Map() };
 
     const CARD_SOURCES = [
@@ -1070,12 +1296,25 @@
     const formatDate = window.BarateamApp.formatDate;
     const formatDateTime = window.BarateamApp.formatDateTime;
 
-    function setImage(el, url){
+    function setImage(el, url, fallbacks){
+      const fallbackList = Array.isArray(fallbacks) ? fallbacks.filter(Boolean) : [];
       if (url){
         el.src = url;
+        if (fallbackList.length){
+          el.dataset.cardImg = "1";
+          el.dataset.fallbackSrcs = fallbackList.join("|");
+          el.dataset.fallbackIndex = "0";
+        } else {
+          delete el.dataset.cardImg;
+          delete el.dataset.fallbackSrcs;
+          delete el.dataset.fallbackIndex;
+        }
         el.style.display = "block";
       } else {
         el.removeAttribute("src");
+        delete el.dataset.cardImg;
+        delete el.dataset.fallbackSrcs;
+        delete el.dataset.fallbackIndex;
         el.style.display = "none";
       }
     }
@@ -1161,11 +1400,18 @@
       )) || null;
     }
 
-    function deckLeaderImage(deck){
+    function deckLeaderImageSources(deck){
       const byLeader = resolveLeaderForDeck(deck?.leader || "");
-      const fromLeaders = norm(byLeader?.image || "");
-      if (fromLeaders) return fromLeaders;
-      return norm(deck?.leader_image_url);
+      const leaderCode = leaderCodeFromDeck(deck);
+      const fromLeaders = normalizeCardImageUrl(byLeader?.image || "", "", leaderCode);
+      const fromDeck = normalizeCardImageUrl(deck?.leader_image_url || "", "", leaderCode);
+      const dotgg = buildDotggCardImageUrl(leaderCode);
+      const urls = uniqueUrls([fromLeaders, fromDeck, dotgg]);
+      return { primary: urls[0] || "", fallbacks: urls.slice(1) };
+    }
+
+    function deckLeaderImage(deck){
+      return deckLeaderImageSources(deck).primary;
     }
 
     function normalizeCardCode(value){
@@ -1209,6 +1455,29 @@
       return `https://asia-en.onepiece-cardgame.com/images/cardlist/card/${encodeURIComponent(code)}.png`;
     }
 
+    function officialCardImageHost(sourceKey){
+      return String(sourceKey || "").toLowerCase().includes("asia")
+        ? "https://asia-en.onepiece-cardgame.com"
+        : "https://en.onepiece-cardgame.com";
+    }
+
+    function normalizeCardImageUrl(value, sourceKey, fallbackCode){
+      const raw = norm(value);
+      const code = normalizeCardCode(fallbackCode || extractCardCode(raw));
+      const fallback = code ? buildDotggCardImageUrl(code) : "";
+
+      if (!raw) return fallback;
+      if (/^https?:\/\//i.test(raw)) return raw;
+      if (/^\/\//.test(raw)) return `https:${raw}`;
+
+      const cardPath = raw.match(/images\/cardlist\/card\/([^?#]+)([?#].*)?$/i);
+      if (cardPath){
+        return `${officialCardImageHost(sourceKey)}/images/cardlist/card/${cardPath[1]}${cardPath[2] || ""}`;
+      }
+
+      return fallback || raw;
+    }
+
     function uniqueUrls(values){
       const seen = new Set();
       return values.map((value) => norm(value)).filter((value) => {
@@ -1220,7 +1489,7 @@
 
     function cardImageSources(cardOrCode){
       const code = typeof cardOrCode === "string" ? normalizeCardCode(cardOrCode) : normalizeCardCode(cardOrCode?.code);
-      const catalog = typeof cardOrCode === "object" ? norm(cardOrCode?.image) : "";
+      const catalog = typeof cardOrCode === "object" ? normalizeCardImageUrl(cardOrCode?.image, cardOrCode?.sourceKey, code) : "";
       const dotgg = buildDotggCardImageUrl(code);
       const asiaOfficial = buildAsiaOfficialCardImageUrl(code);
       const official = buildOfficialCardImageUrl(code);
@@ -1228,7 +1497,26 @@
       return { primary: urls[0] || "", fallbacks: urls.slice(1) };
     }
 
-    function normalizeCatalogCard(raw){
+    function seriesCodeFromCardCode(code){
+      const normalized = normalizeCardCode(code);
+      const match = normalized.match(/^(OP\d{2}|ST\d{2}|EB\d{2}|PRB\d{2}|P)-?/);
+      return match ? match[1] : "";
+    }
+
+    function packTitleFromMeta(pack){
+      return norm(pack?.title_parts?.title || pack?.raw_title || pack?.name || pack?.title || "");
+    }
+
+    function packLabelFromMeta(pack){
+      return norm(pack?.title_parts?.label || pack?.label || pack?.id || "");
+    }
+
+    function normalizeAttribute(value){
+      if (Array.isArray(value)) return value.map((entry) => norm(entry)).filter(Boolean).join(" / ");
+      return norm(value);
+    }
+
+    function normalizeCatalogCard(raw, source, pack){
       const code = normalizeCardCode(raw?.id || raw?.card_id || raw?.code || "");
       if (!code) return null;
       const type = norm(raw?.category || raw?.type || "Unknown");
@@ -1236,17 +1524,33 @@
       const cost = costValue === null || costValue === undefined || costValue === "" ? null : Number(costValue);
       const counterValue = raw?.counter ?? raw?.counter_amount;
       const counter = counterValue === null || counterValue === undefined || counterValue === "" ? null : Number(counterValue);
+      const expansionName = norm(raw?.set_name || raw?.expansion || packTitleFromMeta(pack) || seriesCodeFromCardCode(code) || "Sin expansion");
+      const expansionCode = norm(raw?.set_id || raw?.pack_id || packLabelFromMeta(pack) || seriesCodeFromCardCode(code));
+      const expansionLabel = expansionCode && !expansionName.includes(expansionCode) ? `${expansionName} (${expansionCode})` : expansionName;
+      const powerValue = raw?.power ?? raw?.card_power;
+      const lifeValue = raw?.life;
       return {
         code,
         name: norm(raw?.name) || code,
         type,
+        rarity: norm(raw?.rarity || "-"),
+        expansionName,
+        expansionCode,
+        expansionLabel,
         cost: Number.isFinite(cost) ? cost : null,
         counter: Number.isFinite(counter) ? counter : null,
         subTypes: Array.isArray(raw?.types) ? raw.types.map((entry) => norm(entry)).filter(Boolean) : norm(raw?.sub_types).split(/[\/,]+/).map((entry) => norm(entry)).filter(Boolean),
         effect: norm(raw?.effect || raw?.card_text),
         trigger: norm(raw?.trigger),
+        power: powerValue === null || powerValue === undefined ? "" : norm(powerValue),
+        life: lifeValue === null || lifeValue === undefined ? "" : norm(lifeValue),
+        attribute: normalizeAttribute(raw?.attributes || raw?.attribute),
+        blockIcon: norm(raw?.block_number || raw?.block_icon || raw?.blockIcon),
+        dateScraped: norm(raw?.date_scraped),
         colors: colorListFromRaw(raw?.colors || raw?.card_color || raw?.color),
-        image: norm(raw?.img_full_url || raw?.card_image || raw?.img_url) || buildOfficialCardImageUrl(code)
+        sourceKey: source?.key || "",
+        sourceLabel: source?.key === "english-asia" ? "English Asia" : "English",
+        image: normalizeCardImageUrl(raw?.img_full_url || raw?.card_image || raw?.img_url, source?.key, code) || buildOfficialCardImageUrl(code)
       };
     }
 
@@ -1256,12 +1560,17 @@
         const packs = await fetchJson(`${source.basePath}/packs.json`);
         const packIds = Object.keys(packs || {});
         const packResults = await Promise.allSettled(
-          packIds.map(async (packId) => fetchJson(`${source.basePath}/data/${packId}.json`))
+          packIds.map(async (packId) => ({
+            packId,
+            rows: normalizeApiArray(await fetchJson(`${source.basePath}/data/${packId}.json`))
+          }))
         );
         for (const result of packResults){
           if (result.status !== "fulfilled") continue;
-          for (const raw of normalizeApiArray(result.value)){
-            const card = normalizeCatalogCard(raw);
+          const { packId, rows } = result.value;
+          const pack = packs?.[packId] || null;
+          for (const raw of rows){
+            const card = normalizeCatalogCard(raw, source, pack);
             if (card && !next.has(card.code)){
               next.set(card.code, card);
             }
@@ -1273,6 +1582,23 @@
       });
       cardCatalogByCode = next;
       catalogReady = next.size > 0;
+    }
+
+    function requestCardCatalogLoad(){
+      if (catalogReady) return Promise.resolve();
+      if (catalogLoadPromise) return catalogLoadPromise;
+
+      catalogLoadPromise = loadCardCatalog()
+        .then(() => {
+          if (currentDeck) renderDeck(currentDeck);
+        })
+        .catch((error) => {
+          console.warn("catalog:", error?.message || error);
+        })
+        .finally(() => {
+          catalogLoadPromise = null;
+        });
+      return catalogLoadPromise;
     }
 
     function parseSimPasteItems(text){
@@ -1295,12 +1621,14 @@
       const card = cardCatalogByCode.get(item?.code || "");
       const label = card ? `${card.name} (${card.code})` : (item?.code || "Carta");
       const badgeText = `${item?.qty || 0}x`;
+      const cardCode = normalizeCardCode(item?.code || card?.code || "");
+      const actionAttrs = cardCode ? ` data-card-code="${escapeAttr(cardCode)}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(label)}"` : "";
       const sources = cardImageSources(card || item?.code || "");
       const src = sources.primary;
       if (!src){
-        return `<div class="simCard" title="${escapeAttr(label)}"><div class="simCardFallback">${escapeHtml(label)}</div><div class="simCardBadge">${escapeHtml(badgeText)}</div></div>`;
+        return `<div class="simCard" title="${escapeAttr(label)}"${actionAttrs}><div class="simCardFallback">${escapeHtml(label)}</div><div class="simCardBadge">${escapeHtml(badgeText)}</div></div>`;
       }
-      return `<div class="simCard cardZoom" title="${escapeAttr(label)}" data-preview-src="${escapeAttr(src)}" data-preview-label="${escapeAttr(label)}"><img src="${escapeAttr(src)}" alt="${escapeAttr(label)}" loading="lazy" data-card-img="1" data-fallback-srcs="${escapeAttr(sources.fallbacks.join("|"))}" data-fallback-class="simCardFallback" data-sim-card-label="${escapeAttr(label)}"><div class="simCardBadge">${escapeHtml(badgeText)}</div></div>`;
+      return `<div class="simCard cardZoom" title="${escapeAttr(label)}" data-preview-src="${escapeAttr(src)}" data-preview-label="${escapeAttr(label)}"${actionAttrs}><img src="${escapeAttr(src)}" alt="${escapeAttr(label)}" loading="lazy" data-card-img="1" data-fallback-srcs="${escapeAttr(sources.fallbacks.join("|"))}" data-fallback-class="simCardFallback" data-sim-card-label="${escapeAttr(label)}"><div class="simCardBadge">${escapeHtml(badgeText)}</div></div>`;
     }
 
     function renderSimPasteVisual(text){
@@ -1326,8 +1654,7 @@
     function leaderCodeFromDeck(deck){
       const byLeader = resolveLeaderForDeck(deck?.leader || "");
       if (byLeader?.code) return normalizeCardCode(byLeader.code);
-      const match = norm(deck?.leader).match(/\b(?:OP|ST|EB|P)-?\d{2,3}-\d{3}\b/i);
-      return match ? normalizeCardCode(match[0]) : "";
+      return extractCardCode(deck?.leader || "");
     }
 
     function mainDeckItems(deck){
@@ -1582,10 +1909,12 @@
         const sources = cardImageSources(card);
         const pct = `${Math.round((item.inclusionRate || 0) * 100)}%`;
         const missing = item.missingQty > 0 ? `+${item.missingQty}` : "+";
+        const label = `${card.name} (${card.code})`;
+        const previewAttrs = sources.primary ? ` data-preview-src="${escapeAttr(sources.primary)}" data-preview-label="${escapeAttr(label)}"` : "";
         const img = sources.primary
           ? `<img src="${escapeAttr(sources.primary)}" alt="${escapeAttr(card.name)}" loading="lazy" data-card-img="1" data-fallback-srcs="${escapeAttr(sources.fallbacks.join("|"))}" data-fallback-class="considerationFallback" data-sim-card-label="${escapeAttr(card.code)}">`
           : `<div class="considerationFallback">${escapeHtml(card.code)}</div>`;
-        return `<article class="considerationCard">${img}<div class="considerationText"><strong>${escapeHtml(card.name)}</strong><span>${escapeHtml(card.code)} · ${missing} copias</span><span>${pct} listas top (${item.deckCount}/${item.deckCountTotal})</span></div></article>`;
+        return `<article class="considerationCard${sources.primary ? " cardZoom" : ""}" title="${escapeAttr(label)}"${previewAttrs} data-card-code="${escapeAttr(card.code)}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(label)}">${img}<div class="considerationText"><strong>${escapeHtml(card.name)}</strong><span>${escapeHtml(card.code)} · ${missing} copias</span><span>${pct} listas top (${item.deckCount}/${item.deckCountTotal})</span></div></article>`;
       }).join("");
     }
 
@@ -1635,6 +1964,162 @@
           recommendationState = { ...recommendationState, leaderCode, status:"error", rows:[], error:error?.message || "No se pudieron cargar recomendaciones." };
           host.innerHTML = `<div class="muted">Recomendaciones no disponibles: ${escapeHtml(recommendationState.error)}</div>`;
         });
+    }
+
+    function cardDetailFallbackRecord(code, text){
+      const canonical = normalizeCardCode(code);
+      return {
+        code: canonical,
+        name: canonical || "Carta",
+        type: "",
+        rarity: "-",
+        expansionName: seriesCodeFromCardCode(canonical) || "Sin expansion",
+        expansionLabel: seriesCodeFromCardCode(canonical) || "Sin expansion",
+        cost: null,
+        counter: null,
+        subTypes: [],
+        effect: text || "Cargando datos de la carta...",
+        trigger: "",
+        power: "",
+        life: "",
+        attribute: "",
+        blockIcon: "",
+        dateScraped: "",
+        colors: [],
+        sourceKey: "",
+        sourceLabel: "Deck",
+        image: buildDotggCardImageUrl(canonical)
+      };
+    }
+
+    function cardDetailValue(value, fallback = "Sin dato"){
+      const text = norm(value);
+      return text || fallback;
+    }
+
+    function cardDetailRulesText(card){
+      const effect = String(card?.effect || "").replace(/<br\s*\/?>/gi, "\n").trim();
+      const trigger = String(card?.trigger || "").replace(/<br\s*\/?>/gi, "\n").trim();
+      return [
+        effect && effect !== "-" ? effect : "",
+        trigger && trigger !== "-" ? (trigger.startsWith("[Trigger]") ? trigger : `[Trigger] ${trigger}`) : ""
+      ].filter(Boolean).join("\n\n") || "Sin texto disponible.";
+    }
+
+    function cardDetailSpecMarkup(item){
+      return `<div class="cardDetailSpec"><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(cardDetailValue(item.value, item.fallback))}</strong></div>`;
+    }
+
+    function cardDetailModalMarkup(card){
+      const sources = cardImageSources(card || card?.code || "");
+      const colorText = Array.isArray(card.colors) && card.colors.length ? card.colors.map(humanColor).join(" / ") : "";
+      const colorTags = Array.isArray(card.colors) && card.colors.length
+        ? card.colors.map((color) => `<span class="cardDetailTag">${escapeHtml(humanColor(color))}</span>`).join("")
+        : `<span class="cardDetailTag">Sin color</span>`;
+      const art = sources.primary
+        ? `<img src="${escapeAttr(sources.primary)}" alt="${escapeAttr(card.name || card.code)}" loading="lazy" data-card-detail-img="1" data-fallback-srcs="${escapeAttr(sources.fallbacks.join("|"))}" data-fallback-label="${escapeAttr(card.code || "Sin imagen")}">`
+        : `<div class="cardDetailArtFallback">${escapeHtml(card.code || "Sin imagen")}</div>`;
+      const subTypes = Array.isArray(card.subTypes) ? card.subTypes.join(" / ") : norm(card.subTypes);
+      const counterText = card.counter === null || card.counter === undefined ? "" : String(card.counter);
+      const specs = [
+        [
+          { label: "Vida", value: card.life },
+          { label: "Atributo", value: card.attribute }
+        ],
+        [
+          { label: "Poder", value: card.power },
+          { label: "Counter", value: counterText }
+        ],
+        [
+          { label: "Color", value: colorText },
+          { label: "Block Icon", value: card.blockIcon, fallback: "No disponible" }
+        ],
+        [
+          { label: "Coste", value: card.type === "Leader" ? "" : card.cost },
+          { label: "Actualizado", value: card.dateScraped }
+        ]
+      ];
+
+      return (
+        `<div class="cardDetailBody">` +
+          `<div class="cardDetailArt">${art}</div>` +
+          `<div class="cardDetailPanel">` +
+            `<div class="cardDetailMetaStrip">` +
+              `<span class="cardDetailTag">${escapeHtml(card.type || "-")}</span>` +
+              `<span class="cardDetailTag">${escapeHtml(card.rarity || "-")}</span>` +
+              colorTags +
+              `<span class="cardDetailTag">${escapeHtml(card.sourceLabel || "-")}</span>` +
+            `</div>` +
+            `<div class="cardDetailSpecs">` +
+              specs.map((row) => `<div class="cardDetailSpecRow">${row.map(cardDetailSpecMarkup).join("")}</div>`).join("") +
+            `</div>` +
+            `<div class="cardDetailSection">` +
+              `<span class="cardDetailSectionLabel">Tipo</span>` +
+              `<strong>${escapeHtml(subTypes || card.type || "Sin dato")}</strong>` +
+            `</div>` +
+            `<div class="cardDetailSection">` +
+              `<span class="cardDetailSectionLabel">Efecto</span>` +
+              `<div class="cardDetailText">${escapeHtml(cardDetailRulesText(card))}</div>` +
+            `</div>` +
+            `<div class="cardDetailSet">` +
+              `<span class="cardDetailSectionLabel">Expansion</span>` +
+              `<strong>${escapeHtml(card.expansionLabel || card.expansionName || "Sin expansion")}</strong>` +
+              `<small>${escapeHtml(card.code || "-")} | ${escapeHtml(card.sourceLabel || "-")}</small>` +
+            `</div>` +
+          `</div>` +
+        `</div>`
+      );
+    }
+
+    function updateCardDetailModal(card){
+      $("cardDetailTitle").textContent = card.name || card.code || "Carta";
+      $("cardDetailSubtitle").textContent = [card.code, card.rarity, String(card.type || "").toUpperCase()].filter(Boolean).join(" | ");
+      $("cardDetailContent").innerHTML = cardDetailModalMarkup(card);
+    }
+
+    async function openCardDetail(code){
+      const canonical = normalizeCardCode(code);
+      if (!canonical) return;
+
+      document.dispatchEvent(new CustomEvent("deck:hidePreview"));
+      activeCardDetailCode = canonical;
+      updateCardDetailModal(cardCatalogByCode.get(canonical) || cardDetailFallbackRecord(canonical, "Cargando datos de la carta..."));
+      $("cardDetailOverlay").classList.add("isOpen");
+      $("cardDetailOverlay").setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+
+      if (!catalogReady){
+        await requestCardCatalogLoad();
+      }
+      if (activeCardDetailCode !== canonical) return;
+      updateCardDetailModal(cardCatalogByCode.get(canonical) || cardDetailFallbackRecord(canonical, "No se ha encontrado la ficha local de esta carta."));
+    }
+
+    function closeCardDetail(){
+      activeCardDetailCode = "";
+      $("cardDetailOverlay").classList.remove("isOpen");
+      $("cardDetailOverlay").setAttribute("aria-hidden", "true");
+      $("cardDetailContent").innerHTML = "";
+      document.body.classList.remove("modal-open");
+    }
+
+    function handleCardDetailImageError(event){
+      const target = event.target;
+      if (!(target instanceof HTMLImageElement) || target.dataset.cardDetailImg !== "1") return;
+
+      const fallbacks = String(target.dataset.fallbackSrcs || "").split("|").map((value) => norm(value)).filter(Boolean);
+      const fallbackIndex = Number(target.dataset.fallbackIndex || 0);
+      const fallbackSrc = fallbacks[fallbackIndex] || "";
+      if (fallbackSrc){
+        target.dataset.fallbackIndex = String(fallbackIndex + 1);
+        target.src = fallbackSrc;
+        return;
+      }
+
+      const fallback = document.createElement("div");
+      fallback.className = "cardDetailArtFallback";
+      fallback.textContent = target.dataset.fallbackLabel || target.alt || "Sin imagen";
+      target.replaceWith(fallback);
     }
 
     function handleSimPasteImageError(event){
@@ -1726,6 +2211,8 @@
 
       window.addEventListener("scroll", () => { if (activeAnchor) place(activeAnchor); }, true);
       window.addEventListener("resize", () => { if (activeAnchor) place(activeAnchor); });
+      window.addEventListener("blur", hide);
+      document.addEventListener("deck:hidePreview", hide);
     }
 
     async function initEditLeaders(){
@@ -1843,9 +2330,10 @@
       $("deckAuthor").innerHTML = `Autor: ${profileLink(deck.autor, authorLabel)}`;
       $("deckCreated").textContent = `Creado: ${formatDate(deck.created_at)}`;
 
-      const resolvedLeaderImage = deckLeaderImage(deck);
+      const leaderImageSources = deckLeaderImageSources(deck);
+      const resolvedLeaderImage = leaderImageSources.primary;
       $("leaderName").textContent = deck.leader || "-";
-      setImage($("leaderImage"), resolvedLeaderImage || "");
+      setImage($("leaderImage"), resolvedLeaderImage || "", leaderImageSources.fallbacks);
       applyDeckTheme(deck);
 
       renderDescription(deck.description || "-");
@@ -2223,13 +2711,35 @@
     $("descriptionToggle").addEventListener("click", toggleDescription);
     window.addEventListener("resize", refreshDescriptionToggle);
     document.addEventListener("error", handleSimPasteImageError, true);
+    document.addEventListener("error", handleCardDetailImageError, true);
+    document.addEventListener("click", async (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const cardTile = target ? target.closest(".simCard[data-card-code], .considerationCard[data-card-code]") : null;
+      if (!cardTile) return;
+      event.preventDefault();
+      await openCardDetail(cardTile.dataset.cardCode || "");
+    });
+    document.addEventListener("keydown", async (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const cardTile = target ? target.closest(".simCard[data-card-code], .considerationCard[data-card-code]") : null;
+      if (cardTile && (event.key === "Enter" || event.key === " ")){
+        event.preventDefault();
+        await openCardDetail(cardTile.dataset.cardCode || "");
+        return;
+      }
+      if (event.key === "Escape" && $("cardDetailOverlay").classList.contains("isOpen")){
+        closeCardDetail();
+      }
+    });
+    $("cardDetailOverlay").addEventListener("click", (event) => {
+      if (event.target === $("cardDetailOverlay")) closeCardDetail();
+    });
+    $("cardDetailClose").addEventListener("click", closeCardDetail);
     initCardHoverPreview();
 
     (async function init(){
       await refreshSession();
-      const catalogPromise = loadCardCatalog()
-        .then(() => { if (currentDeck) renderDeck(currentDeck); })
-        .catch((error) => { console.warn("catalog:", error?.message || error); });
+      const catalogPromise = requestCardCatalogLoad();
       await initEditLeaders();
       const ok = await loadDeck();
       if (!ok) return;
