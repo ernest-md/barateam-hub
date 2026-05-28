@@ -869,6 +869,291 @@ begin
 end;
 $$;
 
+create or replace function public.fantasy_vbf_gacha_recycle(
+  p_season text,
+  p_banner_code text,
+  p_item_codes text[]
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_team public.fantasy_vbf_teams%rowtype;
+  v_banner public.fantasy_vbf_gacha_banners%rowtype;
+  v_reward public.fantasy_vbf_gacha_items%rowtype;
+  v_reward_owned_id uuid;
+  v_consumed_ids uuid[];
+  v_consumed jsonb := '[]'::jsonb;
+  v_selected_count integer := 0;
+  v_deleted_count integer := 0;
+  v_min_kind text;
+  v_max_kind text;
+  v_min_rarity text;
+  v_max_rarity text;
+  v_selected_kind text;
+  v_selected_rarity text;
+  v_selected_rank integer;
+begin
+  if v_user is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  if coalesce(array_length(p_item_codes, 1), 0) <> 3 then
+    raise exception 'Select exactly 3 items to recycle';
+  end if;
+
+  select *
+    into v_team
+  from public.fantasy_vbf_teams
+  where season = p_season
+    and user_id = v_user
+  for update;
+
+  if not found then
+    raise exception 'Fantasy team not found for season %', p_season;
+  end if;
+
+  select *
+    into v_banner
+  from public.fantasy_vbf_gacha_banners
+  where season = p_season
+    and code = p_banner_code
+    and active = true
+    and (starts_at is null or starts_at <= timezone('utc', now()))
+    and (ends_at is null or ends_at > timezone('utc', now()))
+  limit 1;
+
+  if not found then
+    raise exception 'Gacha banner not available: %', p_banner_code;
+  end if;
+
+  with input_codes as (
+    select lower(btrim(code)) as code, ordinality as input_order
+    from unnest(p_item_codes) with ordinality as input(code, ordinality)
+    where nullif(btrim(code), '') is not null
+  ),
+  input_ranked as (
+    select
+      code,
+      input_order,
+      row_number() over (partition by code order by input_order) as code_rank
+    from input_codes
+  ),
+  eligible_base as (
+    select
+      oi.id,
+      oi.acquired_at,
+      lower(item.code) as code,
+      item.name,
+      item.kind,
+      item.rarity
+    from public.fantasy_vbf_gacha_owned_items oi
+    join public.fantasy_vbf_gacha_items item on item.id = oi.item_id
+    where oi.season = p_season
+      and oi.team_id = v_team.id
+      and oi.user_id = v_user
+      and lower(item.code) in (select code from input_codes)
+      and item.kind in ('skin', 'equipment')
+      and not exists (
+        select 1
+        from public.fantasy_vbf_gacha_skin_assignments sa
+        where sa.owned_item_id = oi.id
+      )
+      and not exists (
+        select 1
+        from public.fantasy_vbf_gacha_equipped_items ei
+        where ei.owned_item_id = oi.id
+      )
+    for update of oi
+  ),
+  eligible_ranked as (
+    select
+      eligible_base.*,
+      row_number() over (partition by eligible_base.code order by eligible_base.acquired_at, eligible_base.id) as code_rank
+    from eligible_base
+  ),
+  selected_rows as (
+    select
+      er.*,
+      ir.input_order
+    from input_ranked ir
+    join eligible_ranked er
+      on er.code = ir.code
+     and er.code_rank = ir.code_rank
+  )
+  select
+    count(*),
+    min(kind),
+    max(kind),
+    min(rarity),
+    max(rarity),
+    coalesce(array_agg(id order by input_order), '{}'::uuid[]),
+    coalesce(
+      jsonb_agg(
+        jsonb_build_object(
+          'owned_item_id', id,
+          'code', code,
+          'name', name,
+          'kind', kind,
+          'rarity', rarity
+        )
+        order by input_order
+      ),
+      '[]'::jsonb
+    )
+    into
+      v_selected_count,
+      v_min_kind,
+      v_max_kind,
+      v_min_rarity,
+      v_max_rarity,
+      v_consumed_ids,
+      v_consumed
+  from selected_rows;
+
+  if v_selected_count <> 3 then
+    raise exception 'Selected items are unavailable, equipped, or not owned';
+  end if;
+
+  if v_min_kind <> v_max_kind then
+    raise exception 'Recycle items must share the same kind';
+  end if;
+
+  if v_min_rarity <> v_max_rarity then
+    raise exception 'Recycle items must share the same rarity';
+  end if;
+
+  v_selected_kind := v_min_kind;
+  v_selected_rarity := v_min_rarity;
+
+  with rarity_order(rarity, rarity_rank) as (
+    values
+      ('common', 1),
+      ('rare', 2),
+      ('epic', 3),
+      ('legendary', 4),
+      ('mythic', 5)
+  )
+  select rarity_rank
+    into v_selected_rank
+  from rarity_order
+  where rarity = v_selected_rarity;
+
+  if v_selected_rank is null or v_selected_rank >= 5 then
+    raise exception 'Selected rarity cannot be upgraded';
+  end if;
+
+  with rarity_order(rarity, rarity_rank) as (
+    values
+      ('common', 1),
+      ('rare', 2),
+      ('epic', 3),
+      ('legendary', 4),
+      ('mythic', 5)
+  ),
+  target_rank as (
+    select min(ro.rarity_rank) as rarity_rank
+    from public.fantasy_vbf_gacha_banner_items bi
+    join public.fantasy_vbf_gacha_items item on item.id = bi.item_id
+    join rarity_order ro on ro.rarity = item.rarity
+    where bi.banner_id = v_banner.id
+      and item.active = true
+      and item.kind = v_selected_kind
+      and ro.rarity_rank > v_selected_rank
+  ),
+  pool as (
+    select item.*, bi.weight
+    from public.fantasy_vbf_gacha_banner_items bi
+    join public.fantasy_vbf_gacha_items item on item.id = bi.item_id
+    join rarity_order ro on ro.rarity = item.rarity
+    join target_rank tr on tr.rarity_rank = ro.rarity_rank
+    where bi.banner_id = v_banner.id
+      and item.active = true
+      and item.kind = v_selected_kind
+  ),
+  prepared as (
+    select
+      pool.*,
+      sum(pool.weight) over (order by pool.weight desc, pool.id) as cumulative_weight,
+      sum(pool.weight) over () as total_weight
+    from pool
+  ),
+  draw as (
+    select random() as r
+  )
+  select
+    id, code, name, kind, rarity, slot, target_player_slug, target_rule,
+    asset_path, effect_summary, duplicate_compensation_coins, stackable,
+    active, created_at, updated_at
+    into v_reward
+  from prepared, draw
+  where prepared.cumulative_weight >= draw.r * prepared.total_weight
+  order by prepared.cumulative_weight
+  limit 1;
+
+  if v_reward.id is null then
+    raise exception 'No higher rarity reward available for %', v_selected_kind;
+  end if;
+
+  delete from public.fantasy_vbf_gacha_owned_items oi
+  where oi.id = any(v_consumed_ids)
+    and oi.season = p_season
+    and oi.team_id = v_team.id
+    and oi.user_id = v_user;
+
+  get diagnostics v_deleted_count = row_count;
+
+  if v_deleted_count <> 3 then
+    raise exception 'Could not consume selected recycle items';
+  end if;
+
+  insert into public.fantasy_vbf_gacha_owned_items (
+    season,
+    team_id,
+    user_id,
+    item_id,
+    source_pull_id
+  )
+  values (
+    p_season,
+    v_team.id,
+    v_user,
+    v_reward.id,
+    null
+  )
+  returning id into v_reward_owned_id;
+
+  return jsonb_build_object(
+    'ok', true,
+    'season', p_season,
+    'team_id', v_team.id,
+    'banner_code', v_banner.code,
+    'balance', v_team.coins,
+    'consumed', v_consumed,
+    'reward', jsonb_build_object(
+      'owned_item_id', v_reward_owned_id,
+      'item_id', v_reward.id,
+      'code', v_reward.code,
+      'name', v_reward.name,
+      'kind', v_reward.kind,
+      'rarity', v_reward.rarity,
+      'slot', v_reward.slot,
+      'target_player_slug', v_reward.target_player_slug,
+      'target_rule', v_reward.target_rule,
+      'asset_path', v_reward.asset_path,
+      'effect_summary', v_reward.effect_summary,
+      'duplicate', false,
+      'compensation_coins', 0,
+      'pity_before', 0,
+      'pity_after', 0
+    )
+  );
+end;
+$$;
+
 alter table public.fantasy_vbf_gacha_banners enable row level security;
 alter table public.fantasy_vbf_gacha_items enable row level security;
 alter table public.fantasy_vbf_gacha_banner_items enable row level security;
@@ -982,12 +1267,14 @@ revoke all on function public.fantasy_vbf_gacha_apply_skin(text, text, uuid) fro
 revoke all on function public.fantasy_vbf_gacha_remove_skin(text, text) from public;
 revoke all on function public.fantasy_vbf_gacha_equip_item(text, text, uuid, integer) from public;
 revoke all on function public.fantasy_vbf_gacha_unequip_item(text, text, integer) from public;
+revoke all on function public.fantasy_vbf_gacha_recycle(text, text, text[]) from public;
 
 grant execute on function public.fantasy_vbf_gacha_pull(text, text, integer, uuid) to authenticated;
 grant execute on function public.fantasy_vbf_gacha_apply_skin(text, text, uuid) to authenticated;
 grant execute on function public.fantasy_vbf_gacha_remove_skin(text, text) to authenticated;
 grant execute on function public.fantasy_vbf_gacha_equip_item(text, text, uuid, integer) to authenticated;
 grant execute on function public.fantasy_vbf_gacha_unequip_item(text, text, integer) to authenticated;
+grant execute on function public.fantasy_vbf_gacha_recycle(text, text, text[]) to authenticated;
 
 -- Seed mock OP15. Edit freely before running in production.
 
@@ -1178,3 +1465,4 @@ commit;
 -- select public.fantasy_vbf_gacha_apply_skin('OP15', 'ernest', '<owned_item_uuid>');
 -- select public.fantasy_vbf_gacha_equip_item('OP15', 'ernest', '<owned_item_uuid>', 1);
 -- select public.fantasy_vbf_gacha_unequip_item('OP15', 'ernest', 1);
+-- select public.fantasy_vbf_gacha_recycle('OP15', 'mixed-op15', array['eq-of-br-01', 'eq-of-br-02', 'eq-of-br-03']);

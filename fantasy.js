@@ -4574,7 +4574,7 @@
     const activeSkinUrl = activeSkinItem?.asset_path || null;
     const overlayTopName = activeSkinItem ? escapeHtml(activeSkinItem.name) : escapeHtml(player.name);
     const modalOverlay = `<div class="playerOverlayBottom"><div class="overlayNamePlain">${overlayTopName}</div><div class="overlaySubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div>`;
-    const skinEditBtn = source === 'team' && state.gachaReady ? `<button class="skinEditBtn" type="button" data-open-gacha-picker="skin" data-gacha-player="${escapeAttr(player.slug || '')}" data-gacha-slot="0" title="${activeSkinItem ? 'Cambiar skin' : 'Elegir skin'}" aria-label="${activeSkinItem ? 'Cambiar skin' : 'Elegir skin'}">&#9998;</button>` : '';
+    const skinEditBtn = source === 'team' && state.currentTeam && state.currentUser ? `<button class="skinEditBtn" type="button" data-open-gacha-picker="skin" data-gacha-player="${escapeAttr(player.slug || '')}" data-gacha-slot="0" title="${activeSkinItem ? 'Cambiar skin' : 'Elegir skin'}" aria-label="${activeSkinItem ? 'Cambiar skin' : 'Elegir skin'}">&#9998;</button>` : '';
     const clauseValue = source === 'team' ? Number(rosterEntry?.clause_price || player.clausePrice || defaultClauseForPrice(player.price || 0)) : Number(marketPlayer?.minClause || defaultClauseForPrice(player.price || 0));
     const copiesLabel = source === 'market' ? `${intFmt.format(Number(marketPlayer?.copiesUsed || 0))}/${intFmt.format(config().maxPlayerCopies)}` : `${intFmt.format((derived.ownershipBySlug.get(String(player.slug || ''))?.count) || 0)}/${intFmt.format(config().maxPlayerCopies)}`;
     const fullHistory = Array.isArray(player.history) ? player.history : [];
@@ -4637,12 +4637,17 @@
     const marketContent = source === 'market' ? marketOwnershipBlock : teamOwnershipBlock;
     const itemsContent = source === 'team' ? renderPlayerItemsPanel(player, rosterEntry) : '';
     const footerActions = source === 'market' ? directAction : captainAction;
-    const activeTab = new Set(['summary', 'history', 'stats', 'market']).has(String(state.modalPlayerTab || '')) ? String(state.modalPlayerTab) : 'summary';
+    const availableTabs = new Set(['summary', 'history', 'stats', 'market']);
+    if (source === 'team') availableTabs.add('items');
+    const activeTab = availableTabs.has(String(state.modalPlayerTab || '')) ? String(state.modalPlayerTab) : 'summary';
     state.modalPlayerTab = activeTab;
     const statsContent = renderPlayerModalStatsContent(player);
     const tabButton = (id, label) => `<button class="${activeTab === id ? 'active' : ''}" type="button" data-player-modal-tab="${escapeAttr(id)}" aria-pressed="${activeTab === id ? 'true' : 'false'}">${escapeHtml(label)}</button>`;
     const panel = (id, html) => `<div class="playerModalTabPanel ${activeTab === id ? 'active' : ''}" data-player-modal-panel="${escapeAttr(id)}">${html}</div>`;
-    body.innerHTML = `<div class="modalVisual modalVisualSticky"><article class="playerCard ${frameClass(player.tier)} ${isBench ? 'isBenchSlot' : ''}"><div class="playerHead">${isBench ? '<span class="squadSlotBadge bench">Suplente</span>' : ''}${renderPlayerVisual(player, modalOverlay)}</div></article>${tournamentHistory}${watchAction}</div><div class="modalPanel playerModalPanel"><div class="playerModalHeader"><div><div class="modalEyebrow">${source === 'team' ? (isBench ? 'Tu suplente' : 'Tu plantilla') : 'Pool de jugadores'}</div><h3 class="modalTitle">${escapeHtml(player.name)}</h3><div class="modalSubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div></div><div class="playerModalTabs">${tabButton('summary', 'Resumen')}${tabButton('history', 'Historial')}${tabButton('stats', 'Stats')}${tabButton('market', source === 'team' ? 'Plantilla' : 'Mercado')}</div><div class="playerModalTabPanels">${panel('summary', summaryContent)}${panel('history', historyContent)}${panel('stats', statsContent)}${panel('market', marketContent)}</div>${footerActions ? `<div class="playerModalActionRail">${footerActions}</div>` : ''}</div>`;
+    const modalPlayerVisual = source === 'team'
+      ? `<div class="playerVisualBtnWrap">${renderPlayerVisual(player, modalOverlay, activeSkinUrl)}${skinEditBtn}</div>`
+      : renderPlayerVisual(player, modalOverlay);
+    body.innerHTML = `<div class="modalVisual modalVisualSticky"><article class="playerCard ${frameClass(player.tier)} ${isBench ? 'isBenchSlot' : ''}"><div class="playerHead">${isBench ? '<span class="squadSlotBadge bench">Suplente</span>' : ''}${modalPlayerVisual}</div></article>${tournamentHistory}${watchAction}</div><div class="modalPanel playerModalPanel"><div class="playerModalHeader"><div><div class="modalEyebrow">${source === 'team' ? (isBench ? 'Tu suplente' : 'Tu plantilla') : 'Pool de jugadores'}</div><h3 class="modalTitle">${escapeHtml(player.name)}</h3><div class="modalSubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div></div><div class="playerModalTabs">${tabButton('summary', 'Resumen')}${tabButton('history', 'Historial')}${tabButton('stats', 'Stats')}${source === 'team' ? tabButton('items', 'Equipables') : ''}${tabButton('market', source === 'team' ? 'Plantilla' : 'Mercado')}</div><div class="playerModalTabPanels">${panel('summary', summaryContent)}${panel('history', historyContent)}${panel('stats', statsContent)}${source === 'team' ? panel('items', itemsContent) : ''}${panel('market', marketContent)}</div>${footerActions ? `<div class="playerModalActionRail">${footerActions}</div>` : ''}</div>`;
     wrap.classList.remove('hidden');
     wrap.setAttribute('aria-hidden', 'false');
     wrap.scrollTop = 0;

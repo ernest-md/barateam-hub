@@ -253,19 +253,21 @@
     body[data-fantasy-view="gacha"] .gachaPointer::after{bottom:0;border-bottom:16px solid #facc15}
     body[data-fantasy-view="gacha"] .gachaTrack{
       display:flex;
+      align-items:center;
       gap:16px;
       padding:28px calc(50% - 92px);
       will-change:transform;
       transform:translateX(0);
     }
     body[data-fantasy-view="gacha"] .gachaItem{
+      position:relative;
       width:184px;
       flex:0 0 184px;
       overflow:hidden;
       border-radius:16px;
-      background:#fff;
-      border:1px solid rgba(255,255,255,.34);
-      box-shadow:0 14px 30px rgba(0,0,0,.28);
+      background:#0f172a;
+      border:1px solid rgba(2,6,23,.72);
+      box-shadow:0 14px 30px rgba(0,0,0,.28), inset 0 0 0 1px rgba(15,23,42,.62);
       opacity:.9;
     }
     body[data-fantasy-view="gacha"] .gachaItem.isWinner{
@@ -273,15 +275,62 @@
       opacity:1;
     }
     body[data-fantasy-view="gacha"] .gachaArt{
+      --rarity-glow:rgba(148,163,184,.42);
+      --rarity-bg:rgba(15,23,42,.72);
+      --rarity-ring:rgba(148,163,184,.32);
       position:relative;
       aspect-ratio:5 / 6;
       display:flex;
       align-items:center;
       justify-content:center;
       overflow:hidden;
-      background:linear-gradient(160deg, #e2e8f0, #f8fafc);
+      background:rgba(15,23,42,.72);
+      isolation:isolate;
+    }
+    body[data-fantasy-view="gacha"] .gachaItem > .gachaArt{
+      width:100%;
+      height:264px;
+      min-height:0;
+      aspect-ratio:auto;
+    }
+    body[data-fantasy-view="gacha"] .gachaItem.isEquipmentCard > .gachaArt,
+    body[data-fantasy-view="gacha"] .gachaItem.isBerriesCard > .gachaArt{
+      height:248px;
+    }
+    body[data-fantasy-view="gacha"] .gachaArt.rarity-common{
+      --rarity-glow:rgba(251,146,60,.52);
+      --rarity-bg:linear-gradient(160deg, rgba(67,20,7,.92), rgba(15,23,42,.92));
+      --rarity-ring:rgba(251,146,60,.38);
+    }
+    body[data-fantasy-view="gacha"] .gachaArt.rarity-rare{
+      --rarity-glow:rgba(148,163,184,.58);
+      --rarity-bg:linear-gradient(160deg, rgba(51,65,85,.92), rgba(15,23,42,.92));
+      --rarity-ring:rgba(100,116,139,.34);
+    }
+    body[data-fantasy-view="gacha"] .gachaArt.rarity-epic{
+      --rarity-glow:rgba(168,85,247,.56);
+      --rarity-bg:linear-gradient(160deg, rgba(88,28,135,.90), rgba(15,23,42,.92));
+      --rarity-ring:rgba(147,51,234,.36);
+    }
+    body[data-fantasy-view="gacha"] .gachaArt.rarity-legendary{
+      --rarity-glow:rgba(250,204,21,.62);
+      --rarity-bg:linear-gradient(160deg, rgba(113,63,18,.92), rgba(15,23,42,.92));
+      --rarity-ring:rgba(217,119,6,.38);
+    }
+    body[data-fantasy-view="gacha"] .gachaArt.rarity-mythic{
+      --rarity-glow:rgba(34,211,238,.62);
+      --rarity-bg:linear-gradient(160deg, rgba(21,94,117,.92), rgba(15,23,42,.92));
+      --rarity-ring:rgba(8,145,178,.38);
+    }
+    body[data-fantasy-view="gacha"] .gachaArt::before{
+      content:"";
+      position:absolute;
+      pointer-events:none;
+      z-index:0;
     }
     body[data-fantasy-view="gacha"] .gachaArt img{
+      position:relative;
+      z-index:1;
       width:100%;
       height:100%;
       object-fit:cover;
@@ -292,9 +341,51 @@
       width:62%;
       height:62%;
       object-fit:contain;
+      object-position:center center;
       filter:drop-shadow(0 10px 16px rgba(15,23,42,.22));
     }
+    body[data-fantasy-view="gacha"] .gachaArt.isEquipment{
+      background:
+        radial-gradient(circle at 50% 42%, var(--rarity-glow), transparent 44%),
+        var(--rarity-bg);
+      box-shadow:
+        inset 0 0 0 1px var(--rarity-ring),
+        inset 0 -34px 54px rgba(15,23,42,.12);
+    }
+    body[data-fantasy-view="gacha"] .gachaArt.isEquipment::before{
+      inset:8%;
+      border-radius:999px;
+      background:radial-gradient(circle, var(--rarity-glow), transparent 64%);
+      filter:blur(13px);
+      opacity:.9;
+    }
+    body[data-fantasy-view="gacha"] .gachaArt.isEquipment img{
+      filter:
+        drop-shadow(0 12px 18px rgba(15,23,42,.24))
+        drop-shadow(0 0 18px var(--rarity-glow));
+    }
+    body[data-fantasy-view="gacha"] .gachaArt.isSkin{
+      background:rgba(15,23,42,.72);
+      box-shadow:inset 0 0 0 1px rgba(148,163,184,.12);
+    }
+    body[data-fantasy-view="gacha"] .gachaArt.isSkin::before{
+      inset:16% 10%;
+      border-radius:999px;
+      background:radial-gradient(circle, var(--rarity-glow), transparent 68%);
+      filter:blur(16px);
+      opacity:.95;
+    }
+    body[data-fantasy-view="gacha"] .gachaArt.isSkin img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      object-position:center center;
+      transform:scale(1.08);
+      filter:drop-shadow(0 0 18px var(--rarity-glow));
+    }
     body[data-fantasy-view="gacha"] .rewardFallback{
+      position:relative;
+      z-index:1;
       width:86px;
       height:86px;
       border-radius:999px;
@@ -326,19 +417,26 @@
     body[data-fantasy-view="gacha"] .rarityBadge.legendary{background:#fde68a;color:#92400e}
     body[data-fantasy-view="gacha"] .rarityBadge.mythic{background:#cffafe;color:#155e75}
     body[data-fantasy-view="gacha"] .gachaName{
-      min-height:82px;
-      padding:12px;
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:0;
+      z-index:3;
+      min-height:96px;
+      padding:34px 12px 12px;
       display:grid;
       gap:4px;
-      align-content:start;
-      color:#0f172a;
+      align-content:end;
+      color:#fff;
       font-weight:1000;
       font-size:16px;
       line-height:1.12;
-      background:#fff;
+      background:linear-gradient(180deg, rgba(15,23,42,0), rgba(15,23,42,.72) 42%, rgba(2,6,23,.92));
+      text-shadow:0 2px 8px rgba(0,0,0,.52);
+      pointer-events:none;
     }
     body[data-fantasy-view="gacha"] .gachaName span{
-      color:#64748b;
+      color:rgba(255,255,255,.72);
       font-size:12px;
       letter-spacing:.04em;
       text-transform:uppercase;
@@ -435,7 +533,7 @@
       font-weight:900;
     }
     body[data-fantasy-view="gacha"] .inventoryGrid{
-      grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+      grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
       margin-top:14px;
     }
     body[data-fantasy-view="gacha"] .inventoryTile{
@@ -469,6 +567,13 @@
       flex-wrap:wrap;
       margin-top:14px;
     }
+    body[data-fantasy-view="gacha"] .inventoryActions{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:10px;
+      flex-wrap:wrap;
+    }
     body[data-fantasy-view="gacha"] .inventoryFilters{
       display:flex;
       gap:8px;
@@ -489,6 +594,41 @@
       border-color:rgba(37,99,235,.34);
       background:#dbeafe;
       color:#1d4ed8;
+    }
+    body[data-fantasy-view="gacha"] .recyclePanel{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:12px;
+      border:1px solid rgba(37,99,235,.18);
+      border-radius:16px;
+      background:rgba(219,234,254,.78);
+      padding:10px 12px;
+    }
+    body[data-fantasy-view="gacha"] .recyclePanel strong{
+      display:block;
+      color:#0f172a;
+      font-size:13px;
+      font-weight:1000;
+    }
+    body[data-fantasy-view="gacha"] .recyclePanel span{
+      display:block;
+      margin-top:2px;
+      color:#475569;
+      font-size:12px;
+      font-weight:850;
+      line-height:1.35;
+    }
+    body[data-fantasy-view="gacha"] .recycleActions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    body[data-fantasy-view="gacha"] .recycleActions .filterButton{
+      min-height:36px;
     }
     body[data-fantasy-view="gacha"] .sortControl{
       display:flex;
@@ -519,11 +659,37 @@
       border-color:rgba(250,204,21,.38);
       box-shadow:0 14px 30px rgba(15,23,42,.14);
     }
+    body[data-fantasy-view="gacha"] .inventoryTile.isRecycleMode{
+      padding-top:42px;
+    }
+    body[data-fantasy-view="gacha"] .inventoryTile.isRecycleSelected{
+      border-color:rgba(37,99,235,.52);
+      background:rgba(219,234,254,.88);
+      box-shadow:0 14px 30px rgba(37,99,235,.16);
+    }
+    body[data-fantasy-view="gacha"] .inventoryTile.isRecycleBlocked{
+      opacity:.56;
+    }
     body[data-fantasy-view="gacha"] .inventoryTile:disabled{
       cursor:not-allowed;
       opacity:.58;
       transform:none;
       box-shadow:none;
+    }
+    body[data-fantasy-view="gacha"] .recyclePickCount{
+      position:absolute;
+      left:10px;
+      top:10px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:28px;
+      min-height:28px;
+      border-radius:999px;
+      background:#2563eb;
+      color:#fff;
+      font-size:12px;
+      font-weight:1000;
     }
     body[data-fantasy-view="gacha"] .inventoryThumb{
       width:54px;
@@ -546,13 +712,6 @@
       width:68%;
       height:68%;
       object-fit:contain;
-    }
-    body[data-fantasy-view="gacha"] .inventoryAction{
-      color:#1d4ed8;
-      font-size:11px;
-      font-weight:1000;
-      text-transform:uppercase;
-      letter-spacing:.04em;
     }
     body[data-fantasy-view="gacha"] .mockNote{
       margin-top:12px;
@@ -577,15 +736,14 @@
     body[data-fantasy-view="gacha"] .hidden{display:none!important}
     body[data-fantasy-view="gacha"] .gachaMachineFull{
       position:relative;
-      width:100vw;
+      width:100%;
       min-height:460px;
-      margin:14px 0 0 calc(50% - 50vw);
+      margin:14px auto 0;
       overflow:hidden;
       display:flex;
       align-items:center;
       justify-content:center;
-      border-top:1px solid rgba(255,255,255,.18);
-      border-bottom:1px solid rgba(255,255,255,.18);
+      border-radius:22px;
       box-shadow:0 26px 70px rgba(0,0,0,.42);
     }
     body[data-fantasy-view="gacha"] .gachaMachineFull::after{
@@ -602,9 +760,8 @@
       position:absolute;
       inset:0;
       min-height:100%;
-      border-radius:0;
-      border-left:0;
-      border-right:0;
+      border:0;
+      border-radius:22px;
       opacity:.94;
     }
     body[data-fantasy-view="gacha"] .gachaMachineFull .gachaPointer{
@@ -816,6 +973,19 @@
       height:40px;
       padding:0;
       border-radius:999px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      color:#0f172a;
+      background:#fff;
+      border:1px solid rgba(15,23,42,.12);
+      box-shadow:0 12px 26px rgba(15,23,42,.12);
+    }
+    body[data-fantasy-view="gacha"] .gachaPullModalCard .modalClose:hover{
+      color:#0f172a;
+      background:#f8fafc;
+      border-color:rgba(37,99,235,.28);
+      transform:translateY(-1px);
     }
     body[data-fantasy-view="gacha"] .gachaModalStage{
       min-height:330px;
@@ -863,6 +1033,17 @@
     body[data-fantasy-view="gacha"] .modalActions .btnPrimary{
       min-width:138px;
     }
+    body[data-fantasy-view="gacha"] .modalActions .btn:not(.btnPrimary){
+      color:#0f172a;
+      background:#fff;
+      border:1px solid rgba(15,23,42,.12);
+      box-shadow:0 10px 22px rgba(15,23,42,.10);
+    }
+    body[data-fantasy-view="gacha"] .modalActions .btn:not(.btnPrimary):hover{
+      color:#0f172a;
+      background:#f8fafc;
+      border-color:rgba(37,99,235,.28);
+    }
     body[data-fantasy-view="gacha"] .catalogSplit{
       display:grid;
       grid-template-columns:repeat(2,minmax(0,1fr));
@@ -908,6 +1089,9 @@
       body[data-fantasy-view="gacha"] .gachaStage{min-height:260px}
       body[data-fantasy-view="gacha"] .gachaTrack{padding:20px calc(50% - 70px);gap:12px}
       body[data-fantasy-view="gacha"] .gachaItem{width:140px;flex-basis:140px}
+      body[data-fantasy-view="gacha"] .gachaItem > .gachaArt{height:218px}
+      body[data-fantasy-view="gacha"] .gachaItem.isEquipmentCard > .gachaArt,
+      body[data-fantasy-view="gacha"] .gachaItem.isBerriesCard > .gachaArt{height:204px}
       body[data-fantasy-view="gacha"] .gachaName{min-height:74px;font-size:14px}
       body[data-fantasy-view="gacha"] .pullControls .btn{flex:1 1 100%}
       body[data-fantasy-view="gacha"] .gachaTitleRow{align-items:flex-start}
@@ -1040,13 +1224,26 @@
             <button class="filterButton" type="button" data-inventory-filter="skin">Skins</button>
             <button class="filterButton" type="button" data-inventory-filter="equipment">Equipables</button>
           </div>
-          <label class="sortControl" for="inventorySort">
-            Orden
-            <select id="inventorySort">
-              <option value="date">Fecha</option>
-              <option value="rarity">Rareza</option>
-            </select>
-          </label>
+          <div class="inventoryActions">
+            <button class="filterButton" id="recycleToggleButton" type="button">Reciclar</button>
+            <label class="sortControl" for="inventorySort">
+              Orden
+              <select id="inventorySort">
+                <option value="date">Fecha</option>
+                <option value="rarity">Rareza</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="recyclePanel hidden" id="recyclePanel">
+          <div>
+            <strong>Reciclaje</strong>
+            <span id="recycleStatus">0/3 seleccionados</span>
+          </div>
+          <div class="recycleActions">
+            <button class="filterButton isActive" id="recycleConfirmButton" type="button" disabled>Reciclar</button>
+            <button class="filterButton" id="recycleCancelButton" type="button">Cancelar</button>
+          </div>
         </div>
         <div class="inventoryGrid" id="inventoryGrid"></div>
       </section>
@@ -1098,6 +1295,8 @@
         legendary: "Oro",
         mythic: "Diamante"
       };
+      const RECYCLE_COST = 3;
+      const RECYCLE_RARITIES = ["common", "rare", "epic", "legendary", "mythic"];
       const INVENTORY_FILTERS = [
         { code: "all", label: "Todo" },
         { code: "skin", label: "Skins" },
@@ -1173,7 +1372,10 @@
         remoteReady: false,
         remoteRewards: {},
         inventoryFilter: "all",
-        inventorySort: "date"
+        inventorySort: "date",
+        recycleMode: false,
+        recycleSelection: [],
+        recycleBusy: false
       };
 
       function escapeHtml(value){
@@ -1251,10 +1453,11 @@
           const quantity = Math.max(0, Number(value.quantity || 0));
           const lastAcquiredAt = Number(value.lastAcquiredAt || value.firstAcquiredAt || 0);
           const firstAcquiredAt = Number(value.firstAcquiredAt || lastAcquiredAt || 0);
-          return { quantity, firstAcquiredAt, lastAcquiredAt };
+          const ownedItemIds = Array.isArray(value.ownedItemIds) ? value.ownedItemIds.filter(Boolean).map(String) : [];
+          return { quantity, firstAcquiredAt, lastAcquiredAt, ownedItemIds };
         }
         const quantity = Math.max(0, Number(value || 0));
-        return { quantity, firstAcquiredAt: 0, lastAcquiredAt: 0 };
+        return { quantity, firstAcquiredAt: 0, lastAcquiredAt: 0, ownedItemIds: [] };
       }
 
       function inventoryEntry(id){
@@ -1351,7 +1554,7 @@
         if (!client || !state.currentTeam?.id) return;
         const { data, error } = await client
           .from("fantasy_vbf_gacha_owned_items")
-          .select("id,item_id,acquired_at,item:fantasy_vbf_gacha_items(id,code,name,kind,rarity,slot,target_player_slug,target_rule,asset_path,effect_summary,active)")
+          .select("id,item_id,acquired_at,item:fantasy_vbf_gacha_items(id,code,name,kind,rarity,slot,target_player_slug,target_rule,asset_path,effect_summary,duplicate_compensation_coins,active)")
           .eq("season", CURRENT_SEASON)
           .eq("team_id", state.currentTeam.id)
           .order("acquired_at", { ascending: false });
@@ -1366,10 +1569,41 @@
           inventory[reward.id] = {
             quantity: current.quantity + 1,
             firstAcquiredAt: current.firstAcquiredAt || acquiredAt,
-            lastAcquiredAt: Math.max(current.lastAcquiredAt || 0, acquiredAt)
+            lastAcquiredAt: Math.max(current.lastAcquiredAt || 0, acquiredAt),
+            ownedItemIds: current.ownedItemIds.concat(row.id || []).filter(Boolean)
           };
         });
         state.inventory = inventory;
+      }
+
+      async function loadRemoteBannerCatalog(client, bannerId){
+        if (!client || !bannerId) return;
+        const { data, error } = await client
+          .from("fantasy_vbf_gacha_banner_items")
+          .select("weight,featured,item:fantasy_vbf_gacha_items(id,code,name,kind,rarity,slot,target_player_slug,target_rule,asset_path,effect_summary,duplicate_compensation_coins,active)")
+          .eq("banner_id", bannerId);
+        if (error) throw error;
+        const rows = Array.isArray(data) ? data : [];
+        const rewards = rows
+          .map((row) => remoteRewardFromItem(row.item, ""))
+          .filter(Boolean);
+        if (!rewards.length) return;
+        rewards.forEach(rememberRemoteReward);
+        BANNERS.mixed.rewards = rewards;
+        const weightsByRarity = {};
+        let totalWeight = 0;
+        rows.forEach((row) => {
+          const rarity = String(row.item?.rarity || "").toLowerCase();
+          const weight = Math.max(0, Number(row.weight || 0));
+          if (!rarity || !weight) return;
+          weightsByRarity[rarity] = (weightsByRarity[rarity] || 0) + weight;
+          totalWeight += weight;
+        });
+        if (totalWeight > 0){
+          Object.keys(BANNERS.mixed.odds).forEach((rarity) => {
+            BANNERS.mixed.odds[rarity] = Number((((weightsByRarity[rarity] || 0) / totalWeight) * 100).toFixed(2));
+          });
+        }
       }
 
       function rewardsForRarity(banner, rarity){
@@ -1461,15 +1695,27 @@
 
       function rewardArt(reward){
         const fallback = escapeHtml(String(reward.name || "?").slice(0, 2).toUpperCase());
+        const category = String(reward?.category || "").toLowerCase();
+        const rarity = String(reward?.rarity || "").toLowerCase();
+        const artClasses = [
+          "gachaArt",
+          isContainReward(reward) ? "isEquip" : "",
+          category === "equipment" ? "isEquipment" : "",
+          category === "skin" ? "isSkin" : "",
+          category === "berries" ? "isCurrency" : "",
+          rarity ? `rarity-${rarity}` : ""
+        ].filter(Boolean).join(" ");
         const image = reward.image
           ? `<img src="${escapeAttr(reward.image)}" alt="${escapeAttr(reward.name)}" onerror="this.onerror=null;this.remove();this.parentNode.innerHTML='&lt;div class=&quot;rewardFallback&quot;&gt;${fallback}&lt;/div&gt;'">`
           : `<div class="rewardFallback">${fallback}</div>`;
-        return `<div class="gachaArt${isContainReward(reward) ? " isEquip" : ""}">${image}<span class="rarityBadge ${escapeAttr(reward.rarity)}">${escapeHtml(RARITY_LABELS[reward.rarity] || reward.rarity)}</span></div>`;
+        return `<div class="${escapeAttr(artClasses)}">${image}<span class="rarityBadge ${escapeAttr(rarity)}">${escapeHtml(RARITY_LABELS[rarity] || rarity)}</span></div>`;
       }
 
       function renderTrackItem(reward, isWinner){
+        const category = String(reward?.category || "").toLowerCase();
+        const categoryClass = category ? ` is${category.charAt(0).toUpperCase()}${category.slice(1)}Card` : "";
         return `
-          <div class="gachaItem${isWinner ? " isWinner" : ""}">
+          <div class="gachaItem${categoryClass}${isWinner ? " isWinner" : ""}">
             ${rewardArt(reward)}
             <div class="gachaName">
               <span>${escapeHtml(reward.type)}</span>
@@ -1533,6 +1779,25 @@
         }
         const sort = $("inventorySort");
         if (sort && sort.value !== state.inventorySort) sort.value = state.inventorySort;
+        const toggle = $("recycleToggleButton");
+        if (toggle){
+          toggle.textContent = state.recycleMode ? "Cancelar reciclaje" : "Reciclar";
+          toggle.classList.toggle("isActive", state.recycleMode);
+          toggle.disabled = state.recycleBusy || state.spinning;
+        }
+        const panel = $("recyclePanel");
+        if (panel) panel.classList.toggle("hidden", !state.recycleMode);
+        const status = $("recycleStatus");
+        const confirm = $("recycleConfirmButton");
+        if (status || confirm){
+          const validation = validateRecycleSelection();
+          if (status){
+            status.textContent = validation.ok
+              ? `${RARITY_LABELS[validation.rarity] || validation.rarity} -> ${RARITY_LABELS[validation.targetRarity] || validation.targetRarity}`
+              : validation.message;
+          }
+          if (confirm) confirm.disabled = !validation.ok || state.recycleBusy || state.spinning;
+        }
       }
 
       function inventoryRows(){
@@ -1545,6 +1810,131 @@
             firstAcquiredAt: row.entry.firstAcquiredAt || 0,
             lastAcquiredAt: row.entry.lastAcquiredAt || row.entry.firstAcquiredAt || 0
           }));
+      }
+
+      function recycleSelectedCount(rewardId){
+        const id = String(rewardId || "");
+        return state.recycleSelection.filter((itemId) => itemId === id).length;
+      }
+
+      function recycleSelectionCounts(selection){
+        return (selection || state.recycleSelection).reduce((acc, id) => {
+          acc[id] = (acc[id] || 0) + 1;
+          return acc;
+        }, {});
+      }
+
+      function recycleTargetRarity(kind, rarity){
+        const start = RECYCLE_RARITIES.indexOf(String(rarity || ""));
+        if (start < 0) return "";
+        const banner = currentBanner();
+        for (let index = start + 1; index < RECYCLE_RARITIES.length; index += 1){
+          const candidate = RECYCLE_RARITIES[index];
+          const hasPool = banner.rewards.some((reward) =>
+            reward.category === kind
+            && reward.rarity === candidate
+            && reward.category !== "berries"
+          );
+          if (hasPool) return candidate;
+        }
+        return "";
+      }
+
+      function recyclePool(kind, targetRarity){
+        return currentBanner().rewards.filter((reward) =>
+          reward.category === kind
+          && reward.rarity === targetRarity
+          && reward.category !== "berries"
+        );
+      }
+
+      function validateRecycleSelection(selection){
+        const selectedIds = Array.isArray(selection) ? selection : state.recycleSelection;
+        const selectedRewards = selectedIds.map((id) => findReward(id)).filter(Boolean);
+        if (selectedRewards.length !== RECYCLE_COST){
+          return {
+            ok: false,
+            selected: selectedRewards,
+            message: `${selectedRewards.length}/${RECYCLE_COST} seleccionados`
+          };
+        }
+        const counts = recycleSelectionCounts(selectedIds);
+        for (const [id, count] of Object.entries(counts)){
+          if (count > inventoryEntry(id).quantity){
+            return { ok: false, selected: selectedRewards, message: "Seleccion duplicada no disponible" };
+          }
+        }
+        const kind = selectedRewards[0]?.category || "";
+        const rarity = selectedRewards[0]?.rarity || "";
+        if (!["skin", "equipment"].includes(kind)){
+          return { ok: false, selected: selectedRewards, message: "Solo skins o equipables" };
+        }
+        if (selectedRewards.some((reward) => reward.category !== kind)){
+          return { ok: false, selected: selectedRewards, message: "Mismo tipo de recompensa" };
+        }
+        if (selectedRewards.some((reward) => reward.rarity !== rarity)){
+          return { ok: false, selected: selectedRewards, message: "Misma rareza" };
+        }
+        const targetRarity = recycleTargetRarity(kind, rarity);
+        if (!targetRarity || !recyclePool(kind, targetRarity).length){
+          return { ok: false, selected: selectedRewards, message: "No hay tier superior disponible" };
+        }
+        return { ok: true, kind, rarity, targetRarity, selected: selectedRewards };
+      }
+
+      function canAddRecycleReward(reward){
+        if (!reward || !["skin", "equipment"].includes(reward.category)){
+          return { ok: false, message: "Solo skins o equipables" };
+        }
+        if (!recycleTargetRarity(reward.category, reward.rarity)){
+          return { ok: false, message: "No hay tier superior disponible" };
+        }
+        const selectedCount = recycleSelectedCount(reward.id);
+        if (selectedCount >= inventoryEntry(reward.id).quantity){
+          return { ok: false, message: "No quedan copias libres" };
+        }
+        if (state.recycleSelection.length >= RECYCLE_COST){
+          return { ok: false, message: "Ya hay 3 seleccionados" };
+        }
+        const currentRewards = state.recycleSelection.map((id) => findReward(id)).filter(Boolean);
+        if (currentRewards.length){
+          const first = currentRewards[0];
+          if (first.category !== reward.category) return { ok: false, message: "Mismo tipo de recompensa" };
+          if (first.rarity !== reward.rarity) return { ok: false, message: "Misma rareza" };
+        }
+        return { ok: true, message: "" };
+      }
+
+      function setGachaStatus(message, detail){
+        const result = $("gachaResult");
+        if (!result) return;
+        result.innerHTML = `${escapeHtml(message)}${detail ? `<small>${escapeHtml(detail)}</small>` : ""}`;
+      }
+
+      function cycleRecycleSelection(rewardId){
+        const id = String(rewardId || "");
+        const reward = findReward(id);
+        if (!reward || state.recycleBusy || state.spinning) return;
+        const selectedCount = recycleSelectedCount(id);
+        const maxForItem = Math.min(inventoryEntry(id).quantity, RECYCLE_COST);
+        if (selectedCount > 0 && (selectedCount >= maxForItem || state.recycleSelection.length >= RECYCLE_COST)){
+          state.recycleSelection = state.recycleSelection.filter((itemId) => itemId !== id);
+          renderInventory();
+          return;
+        }
+        const canAdd = canAddRecycleReward(reward);
+        if (!canAdd.ok){
+          setGachaStatus("No se puede reciclar esa pieza", canAdd.message);
+          return;
+        }
+        state.recycleSelection.push(id);
+        renderInventory();
+      }
+
+      function setRecycleMode(enabled){
+        state.recycleMode = !!enabled;
+        state.recycleSelection = [];
+        renderInventory();
       }
 
       function renderInventory(){
@@ -1569,16 +1959,25 @@
           host.innerHTML = '<div class="empty">No hay recompensas para este filtro todavia.</div>';
           return;
         }
-        host.innerHTML = entries.map(({ reward, quantity }) => `
-          <button class="inventoryTile" type="button" data-inventory-reward="${escapeAttr(reward.id)}" title="Gestionar en Mi Plantilla">
+        host.innerHTML = entries.map(({ reward, quantity }) => {
+          const selectedCount = recycleSelectedCount(reward.id);
+          const canClick = !state.recycleMode || selectedCount > 0 || canAddRecycleReward(reward).ok;
+          const recycleClasses = [
+            state.recycleMode ? "isRecycleMode" : "",
+            selectedCount > 0 ? "isRecycleSelected" : "",
+            state.recycleMode && !canClick ? "isRecycleBlocked" : ""
+          ].filter(Boolean).join(" ");
+          return `
+          <button class="inventoryTile ${recycleClasses}" type="button" data-inventory-reward="${escapeAttr(reward.id)}" ${state.recycleMode ? `aria-pressed="${selectedCount > 0 ? "true" : "false"}"` : ""} ${!canClick || state.recycleBusy ? "disabled" : ""}>
+            ${state.recycleMode ? `<span class="recyclePickCount">${selectedCount ? `x${selectedCount}` : "+"}</span>` : ""}
             <span class="inventoryCount">x${quantity}</span>
             ${itemThumb(reward, "inventoryThumb")}
             <strong>${escapeHtml(reward.name)}</strong>
             <span>${escapeHtml(RARITY_LABELS[reward.rarity] || reward.rarity)} &middot; ${escapeHtml(reward.type)}</span>
             <span>${escapeHtml(rewardMetaText(reward))}</span>
-            <span class="inventoryAction">Gestionar en Mi Plantilla</span>
           </button>
-        `).join("");
+        `;
+        }).join("");
       }
 
       function inventoryTotal(){
@@ -1587,7 +1986,7 @@
 
       function setButtons(){
         const banner = currentBanner();
-        const disabled = state.spinning;
+        const disabled = state.spinning || state.recycleBusy;
         const single = $("singlePullButton");
         const multi = $("multiPullButton");
         if (single) single.disabled = disabled || state.balance < banner.singleCost;
@@ -1739,6 +2138,105 @@
             : `Tirada x10 completada<small>Mejor recompensa: ${escapeHtml(winner.name)} (${escapeHtml(RARITY_LABELS[winner.rarity] || winner.rarity)})</small>`;
         }
         renderAll();
+      }
+
+      function consumeLocalRecycleSelection(selection){
+        const counts = recycleSelectionCounts(selection);
+        Object.entries(counts).forEach(([id, count]) => {
+          const current = inventoryEntry(id);
+          const nextQuantity = Math.max(0, current.quantity - count);
+          if (nextQuantity <= 0){
+            delete state.inventory[id];
+            return;
+          }
+          state.inventory[id] = {
+            quantity: nextQuantity,
+            firstAcquiredAt: current.firstAcquiredAt,
+            lastAcquiredAt: current.lastAcquiredAt,
+            ownedItemIds: current.ownedItemIds
+          };
+        });
+      }
+
+      function resolveLocalRecycle(validation){
+        const pool = recyclePool(validation.kind, validation.targetRarity);
+        const reward = randomFrom(pool);
+        if (!reward) throw new Error("No hay recompensa superior disponible");
+        consumeLocalRecycleSelection(state.recycleSelection);
+        applyDropToInventory(reward);
+        return reward;
+      }
+
+      function remoteRewardFromRecycle(payload){
+        const reward = payload?.reward && typeof payload.reward === "object" ? payload.reward : payload;
+        return remoteRewardFromPull(reward);
+      }
+
+      function openRecycleResult(reward, validation){
+        if (!reward) return;
+        state.spinning = true;
+        setButtons();
+        openPullModal(1, 0);
+        $("gachaModalTitle").textContent = "Reciclaje";
+        $("gachaModalSubtitle").textContent = `${RARITY_LABELS[validation.rarity] || validation.rarity} -> ${RARITY_LABELS[reward.rarity] || reward.rarity}`;
+        $("gachaModalResult").innerHTML = "Reciclando...";
+        spinReward(reward, {
+          duration: 2800,
+          onDone: () => {
+            state.spinning = false;
+            state.lastDrops = [reward];
+            saveLocalState();
+            const detail = `${RARITY_LABELS[reward.rarity] || reward.rarity} - ${rewardMetaText(reward)}`;
+            $("gachaResult").innerHTML = `Reciclaje completado<small>${escapeHtml(reward.name)} - ${escapeHtml(detail)}</small>`;
+            $("gachaModalResult").innerHTML = `${escapeHtml(reward.name)}<small>${escapeHtml(detail)}</small>`;
+            setMultiButtons(false, true);
+            renderAll();
+          }
+        });
+      }
+
+      async function recycleSelected(){
+        if (state.recycleBusy || state.spinning) return;
+        const validation = validateRecycleSelection();
+        if (!validation.ok){
+          setGachaStatus("Reciclaje incompleto", validation.message);
+          renderInventory();
+          return;
+        }
+        state.recycleBusy = true;
+        setButtons();
+        renderInventory();
+        setGachaStatus("Reciclando", `${RARITY_LABELS[validation.rarity] || validation.rarity} -> ${RARITY_LABELS[validation.targetRarity] || validation.targetRarity}`);
+        try{
+          let reward = null;
+          if (state.remoteReady && state.currentTeam?.id){
+            if (!App.createClient) throw new Error("Cliente Supabase no disponible");
+            const client = App.createClient();
+            const { data, error } = await client.rpc("fantasy_vbf_gacha_recycle", {
+              p_season: CURRENT_SEASON,
+              p_banner_code: REMOTE_BANNER_CODE,
+              p_item_codes: state.recycleSelection
+            });
+            if (error) throw error;
+            reward = remoteRewardFromRecycle(data);
+            if (Number.isFinite(Number(data?.balance))) state.balance = Number(data.balance);
+            await loadRemoteInventory(client);
+          } else {
+            reward = resolveLocalRecycle(validation);
+          }
+          if (!reward) throw new Error("No se ha generado recompensa");
+          state.recycleMode = false;
+          state.recycleSelection = [];
+          state.recycleBusy = false;
+          saveLocalState();
+          renderAll();
+          openRecycleResult(reward, validation);
+        } catch (error){
+          state.recycleBusy = false;
+          setButtons();
+          renderInventory();
+          setGachaStatus("No pude reciclar", error?.message || String(error || ""));
+        }
       }
 
       function spinReward(winner, options){
@@ -1893,6 +2391,7 @@
               BANNERS.mixed.singleCost = Number(bannerRes.data.single_cost || BANNERS.mixed.singleCost);
               BANNERS.mixed.multiCost = Number(bannerRes.data.multi_cost || BANNERS.mixed.multiCost);
               BANNERS.mixed.pityLimit = Number(bannerRes.data.pity_limit || DEFAULT_PITY);
+              await loadRemoteBannerCatalog(sb, bannerRes.data.id);
               const pityRes = await sb
                 .from("fantasy_vbf_gacha_pity_state")
                 .select("pity_counter")
@@ -1902,6 +2401,7 @@
                 .maybeSingle();
               if (!pityRes.error && pityRes.data) state.pity = pityRemainingFromCounter(pityRes.data.pity_counter);
               await loadRemoteInventory(sb);
+              renderTrackPreview();
               state.remoteReady = true;
             }
           } catch (gachaError){
@@ -1943,8 +2443,20 @@
         saveLocalState();
         renderInventory();
       });
+      $("recycleToggleButton")?.addEventListener("click", () => {
+        setRecycleMode(!state.recycleMode);
+      });
+      $("recycleCancelButton")?.addEventListener("click", () => {
+        setRecycleMode(false);
+      });
+      $("recycleConfirmButton")?.addEventListener("click", recycleSelected);
       $("inventoryGrid")?.addEventListener("click", (event) => {
-        if (!event.target.closest("[data-inventory-reward]")) return;
+        const button = event.target.closest("[data-inventory-reward]");
+        if (!button) return;
+        if (state.recycleMode){
+          cycleRecycleSelection(button.getAttribute("data-inventory-reward") || "");
+          return;
+        }
         const result = $("gachaResult");
         if (result) result.innerHTML = 'Inventario guardado.<small>Equipa skins e items desde Mi Plantilla > jugador > Items.</small>';
       });
