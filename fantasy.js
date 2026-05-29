@@ -224,6 +224,8 @@
     modalPlayerSlug: '',
     modalSource: '',
     modalPlayerTab: 'summary',
+    playerModalStatsBySlug: new Map(),
+    playerModalStatsLoadingSlugs: new Set(),
     benchSwapSlug: '',
     modalTeamId: '',
     modalMarketPanel: '',
@@ -1451,6 +1453,60 @@
     return `<div class="fantasyScoringLegend"><div><span>Victoria</span><strong>+3 pts</strong></div><div><span>Derrota</span><strong>-1 pt</strong></div><div><span>4+ victorias</span><strong>+2 pts</strong></div><div><span>Ganador</span><strong>+5 pts</strong></div><p>Si gana el torneo, solo recibe el bonus de ganador; no se suma tambien el bonus de 4 victorias.</p></div>`;
   }
 
+  function normalizeRecentTournamentKey(value){
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  }
+
+  function addRecentTournamentKey(map, key, row){
+    const normalized = normalizeRecentTournamentKey(key);
+    if (normalized && !map.has(normalized)) map.set(normalized, row);
+  }
+
+  function recentTournamentMapForPlayer(player){
+    const stats = state.playerModalStatsBySlug.get(playerModalStatsCacheKey(player));
+    if (!stats || !Array.isArray(stats.recent) || !stats.recent.length) return null;
+    if (stats.recentByKey) return stats.recentByKey;
+    const map = new Map();
+    stats.recent.forEach((row) => {
+      addRecentTournamentKey(map, row.roundKey, row);
+      addRecentTournamentKey(map, row.roundLabel, row);
+      addRecentTournamentKey(map, row.eventDate, row);
+      if (row.eventDate) addRecentTournamentKey(map, `${CURRENT_SEASON}:${row.eventDate}`, row);
+    });
+    stats.recentByKey = map;
+    return map;
+  }
+
+  function recentTournamentForHistoryEntry(player, entry){
+    const map = recentTournamentMapForPlayer(player);
+    if (!map || !entry) return null;
+    const roundKey = String(entry.round_key || '').trim();
+    const candidates = [
+      roundKey,
+      String(entry.round_label || '').trim(),
+      roundKey.includes(':') ? roundKey.split(':').pop() : ''
+    ];
+    for (const key of candidates){
+      const row = map.get(normalizeRecentTournamentKey(key));
+      if (row) return row;
+    }
+    return null;
+  }
+
+  function renderRecentTournamentTooltip(row){
+    if (!row) return '';
+    const losses = Math.max(0, Number(row.games || 0) - Number(row.wins || 0));
+    const balance = Number(row.games || 0) > 0
+      ? `${intFmt.format(row.wins || 0)}-${intFmt.format(losses)} · ${intFmt.format(row.games || 0)} rondas · ${formatStatsWinRate(row)} WR`
+      : 'Sin rondas registradas';
+    const placement = row.position && row.playerCount ? `${intFmt.format(row.position)}/${intFmt.format(row.playerCount)}` : '';
+    return `<span class="playerTournamentHover" role="tooltip">
+      <strong>${escapeHtml(row.name || row.code || 'Lider registrado')}</strong>
+      <small>${escapeHtml([row.tournamentName || row.roundLabel || 'Torneo registrado', row.eventDate || '', placement].filter(Boolean).join(' - '))}</small>
+      <em>${escapeHtml(balance)}${row.topResult ? ` · ${escapeHtml(row.topResult)}` : ''}</em>
+    </span>`;
+  }
+
   function renderPlayerTournamentHistory(player){
     const rows = (Array.isArray(player?.history) ? player.history : [])
       .filter((entry) => entry?.counts_for_fantasy === true)
@@ -1464,9 +1520,197 @@
       const label = String(entry.round_label || entry.round_key || '').trim();
       const result = String(entry.result_label || `${Number(entry.wins || 0)}-${Number(entry.losses || 0)}`).trim();
       const points = Number(entry.fantasy_points || 0);
-      return `<div class="playerTournamentRow"><span>${escapeHtml(label)}</span><strong>${escapeHtml(result)}</strong><em>${formatPointsLabel(points)}</em></div>`;
+      const recent = recentTournamentForHistoryEntry(player, entry);
+      const image = leaderStatsImage(recent);
+      const className = `playerTournamentRow ${recent ? 'hasLeaderInfo' : ''}`.trim();
+      const style = image ? ` style="${escapeAttr(`--leader-bg-image:url(\"${String(image).replace(/"/g, '\\"')}\")`)}"` : '';
+      const title = recent ? ` title="${escapeAttr(`${recent.name || recent.code || 'Lider'} - ${recent.tournamentName || recent.roundLabel || label}`)}"` : '';
+      const focus = recent ? ' tabindex="0"' : '';
+      return `<div class="${escapeAttr(className)}"${style}${title}${focus}><span>${escapeHtml(label)}</span><strong>${escapeHtml(result)}</strong><em>${formatPointsLabel(points)}</em>${renderRecentTournamentTooltip(recent)}</div>`;
     }).join('');
     return `<div class="playerTournamentHistory"><div class="historyTitle">Jornadas recientes</div><div class="playerTournamentRows">${items}</div></div>`;
+  }
+
+  function playerModalStatsCacheKey(player){
+    return String(player?.slug || '').trim();
+  }
+
+  function leaderStatsImage(row){
+    return String(row?.leader_parallel_image_url || row?.parallel_image_url || row?.leader_image_url || row?.image_url || row?.imageUrl || '').trim();
+  }
+
+  function winRateFromStats(games, wins, directValue){
+    const direct = Number(directValue);
+    if (Number.isFinite(direct)) return direct;
+    const total = Number(games || 0);
+    if (!total) return 0;
+    return (Number(wins || 0) / total) * 100;
+  }
+
+  function normalizePlayerModalStats(rows){
+    const safeRows = Array.isArray(rows) ? rows : [];
+    const statusRow = safeRows.find((row) => row?.has_vdbf_player === true || row?.has_profile_link === true) || safeRows[0] || {};
+    const profileLabel = String(statusRow?.linked_profile_display_name || statusRow?.linked_profile_username || '').trim();
+    const result = {
+      loaded: true,
+      error: '',
+      hasVdbfPlayer: safeRows.some((row) => row?.has_vdbf_player === true),
+      hasProfileLink: safeRows.some((row) => row?.has_profile_link === true),
+      profileLabel,
+      baraweb: [],
+      tournaments: [],
+      recent: []
+    };
+
+    safeRows.forEach((row) => {
+      const sourceKey = String(row?.source_key || '').trim().toLowerCase();
+      const code = String(row?.leader_code || '').trim();
+      if (sourceKey === 'recent'){
+        if (!code) return;
+        const games = Math.max(0, Number(row?.games || 0));
+        const wins = Math.max(0, Math.min(games, Number(row?.wins || 0)));
+        result.recent.push({
+          rank: Number(row?.leader_rank || 999),
+          code,
+          name: String(row?.leader_name || code).trim(),
+          imageUrl: leaderStatsImage(row),
+          games,
+          wins,
+          winrate: winRateFromStats(games, wins, row?.winrate),
+          roundKey: String(row?.event_round_key || '').trim(),
+          roundLabel: String(row?.event_round_label || '').trim(),
+          roundOrder: Number(row?.event_round_order || 0),
+          eventDate: String(row?.event_date || '').slice(0, 10),
+          tournamentName: String(row?.tournament_name || '').trim(),
+          resultLabel: String(row?.tournament_result || '').trim(),
+          position: Number(row?.tournament_position || 0),
+          playerCount: Number(row?.tournament_player_count || 0),
+          topResult: String(row?.tournament_top_result || '').trim()
+        });
+        return;
+      }
+      const games = Math.max(0, Number(row?.games || 0));
+      if (!sourceKey || !code || !games) return;
+      const wins = Math.max(0, Math.min(games, Number(row?.wins || 0)));
+      const entry = {
+        rank: Number(row?.leader_rank || 999),
+        code,
+        name: String(row?.leader_name || code).trim(),
+        imageUrl: leaderStatsImage(row),
+        games,
+        wins,
+        winrate: winRateFromStats(games, wins, row?.winrate)
+      };
+      if (sourceKey === 'tournament') result.tournaments.push(entry);
+      else if (sourceKey === 'baraweb') result.baraweb.push(entry);
+    });
+
+    const byRank = (a, b) => Number(a.rank || 999) - Number(b.rank || 999)
+      || Number(b.winrate || 0) - Number(a.winrate || 0)
+      || Number(b.games || 0) - Number(a.games || 0)
+      || collator.compare(a.name || a.code, b.name || b.code);
+    result.baraweb.sort(byRank);
+    result.tournaments.sort(byRank);
+    result.recent.sort((a, b) => Number(b.roundOrder || 0) - Number(a.roundOrder || 0) || String(b.eventDate || '').localeCompare(String(a.eventDate || '')));
+    return result;
+  }
+
+  async function ensurePlayerModalStatsLoaded(player){
+    const key = playerModalStatsCacheKey(player);
+    if (!key || state.playerModalStatsBySlug.has(key) || state.playerModalStatsLoadingSlugs.has(key)) return;
+    state.playerModalStatsLoadingSlugs.add(key);
+    try{
+      const { data, error } = await rpcWithTimeout(
+        'get_fantasy_player_modal_stats_v1',
+        {
+          p_player_name: String(player?.name || ''),
+          p_player_slug: key,
+          p_season: CURRENT_SEASON
+        },
+        `stats de ${player?.name || key}`,
+        12000
+      );
+      if (error) throw error;
+      state.playerModalStatsBySlug.set(key, normalizePlayerModalStats(data));
+    } catch (error){
+      console.warn('player modal stats:', error?.message || error);
+      state.playerModalStatsBySlug.set(key, {
+        loaded: true,
+        error: 'No se pudieron cargar las stats del jugador.',
+        hasVdbfPlayer: false,
+        hasProfileLink: false,
+        profileLabel: '',
+        baraweb: [],
+        tournaments: [],
+        recent: []
+      });
+    } finally {
+      state.playerModalStatsLoadingSlugs.delete(key);
+      if (String(state.modalPlayerSlug || '') === key){
+        renderPlayerModal();
+      }
+    }
+  }
+
+  function formatStatsWinRate(entry){
+    const value = Number(entry?.winrate || 0);
+    return `${decFmt.format(Number.isFinite(value) ? value : 0)}%`;
+  }
+
+  function renderLeaderStatsRows(rows, limit){
+    if (!Array.isArray(rows) || !rows.length) return '';
+    const maxRows = Math.max(1, Number(limit || 3));
+    return `<div class="playerStatsLeaderList">${rows.slice(0, maxRows).map((entry, index) => {
+      const losses = Math.max(0, Number(entry.games || 0) - Number(entry.wins || 0));
+      const image = String(entry.imageUrl || '').trim();
+      return `<div class="playerStatsLeaderRow">
+        <span class="playerStatsLeaderRank">#${intFmt.format(index + 1)}</span>
+        <span class="playerStatsLeaderArt">${image ? `<img src="${escapeAttr(image)}" alt="${escapeAttr(entry.name || entry.code || 'Lider')}" loading="lazy" decoding="async" />` : ''}</span>
+        <span class="playerStatsLeaderMain"><strong>${escapeHtml(entry.name || entry.code || 'Lider')}</strong><small>${intFmt.format(entry.wins || 0)}-${intFmt.format(losses)} - ${intFmt.format(entry.games || 0)} partidas</small></span>
+        <span class="playerStatsLeaderWr"><strong>${escapeHtml(formatStatsWinRate(entry))}</strong><small>WR</small></span>
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  function renderPlayerStatsSection(title, subtitle, rows, emptyText, limit){
+    return `<section class="playerStatsSection">
+      <div class="playerStatsSectionHead">
+        <div><span>${escapeHtml(title)}</span>${subtitle ? `<strong>${escapeHtml(subtitle)}</strong>` : ''}</div>
+      </div>
+      ${rows.length ? renderLeaderStatsRows(rows, limit) : `<div class="empty compactEmpty playerStatsEmpty">${escapeHtml(emptyText || 'Sin datos registrados.')}</div>`}
+    </section>`;
+  }
+
+  function renderPlayerModalStatsContent(player){
+    const key = playerModalStatsCacheKey(player);
+    const stats = key ? state.playerModalStatsBySlug.get(key) : null;
+    if (!key){
+      return '<div class="empty compactEmpty">No se pudo identificar al jugador.</div>';
+    }
+    if (!stats){
+      return '<div class="empty compactEmpty">Cargando stats del jugador...</div>';
+    }
+    if (stats.error){
+      return `<div class="empty compactEmpty">${escapeHtml(stats.error)}</div>`;
+    }
+
+    const profileSubtitle = stats.hasProfileLink
+      ? `Vinculado a ${stats.profileLabel || 'perfil Baraweb'}`
+      : 'Sin user Baraweb vinculado';
+    const barawebEmpty = stats.hasProfileLink
+      ? 'Vinculado, pero sin partidas SIM registradas.'
+      : 'No hay user Baraweb vinculado a este jugador VDBF.';
+    const tournamentSubtitle = stats.hasVdbfPlayer
+      ? 'Lideres mas jugados en torneos'
+      : 'Sin ficha VDBF sincronizada';
+    const tournamentEmpty = stats.hasVdbfPlayer
+      ? 'Sin lideres registrados en torneos.'
+      : 'No se ha encontrado este jugador en VDBF.';
+
+    return `<div class="playerStatsGrid">
+      ${renderPlayerStatsSection('Torneos registrados', tournamentSubtitle, stats.tournaments, tournamentEmpty, 3)}
+      ${renderPlayerStatsSection('Baraweb SIM', profileSubtitle, stats.baraweb, barawebEmpty, 5)}
+    </div>`;
   }
 
   const TIER_WIN_POINTS = {
@@ -2920,6 +3164,37 @@
     return `<span class="${escapeAttr(tone || '')}"><small>${escapeHtml(label)}</small><strong>${escapeHtml(value)}</strong></span>`;
   }
 
+  function rosterEntryTradeInValue(entry){
+    if (!entry) return 0;
+    const player = playerForRosterRow(entry);
+    return Math.max(0, Number(player?.price || entry.buy_price || 0));
+  }
+
+  function clauseTradeInCosts(clauseCost, outgoingEntry){
+    const fullCost = Math.max(0, Number(clauseCost || 0));
+    const credit = outgoingEntry ? Math.min(fullCost, rosterEntryTradeInValue(outgoingEntry)) : 0;
+    return {
+      clauseCost: fullCost,
+      tradeInCredit: credit,
+      netCost: Math.max(fullCost - credit, 0)
+    };
+  }
+
+  function maxClauseTradeInCredit(roster, clauseCost){
+    const fullCost = Math.max(0, Number(clauseCost || 0));
+    return (roster || []).reduce((best, entry) => Math.max(best, Math.min(fullCost, rosterEntryTradeInValue(entry))), 0);
+  }
+
+  function renderClauseCostBreakdown(costs, targetOwner){
+    if (!costs || !Number.isFinite(Number(costs.clauseCost))) return '';
+    return `<div class="clauseCostBreakdown">
+      <span><small>Clausula rival</small><strong>${renderCoinInline(costs.clauseCost || 0, false)}</strong></span>
+      <span class="${costs.tradeInCredit > 0 ? 'discount' : ''}"><small>Valor sustituido</small><strong>${costs.tradeInCredit > 0 ? '-' : ''}${renderCoinInline(costs.tradeInCredit || 0, false)}</strong></span>
+      <span class="net"><small>Pagas tu</small><strong>${renderCoinInline(costs.netCost || 0, false)}</strong></span>
+      <p>${targetOwner ? `El equipo ${escapeHtml(targetOwner.teamName || 'rival')} cobra la clausula completa: ${renderCoinInline(costs.clauseCost || 0, false)}.` : 'El rival cobra siempre la clausula completa.'}</p>
+    </div>`;
+  }
+
   function renderComparePlayerCard(player, label, factsHtml, options){
     const opts = options || {};
     if (!player){
@@ -2952,14 +3227,16 @@
       targetOwner ? compareFact('Origen', targetOwner.teamName || 'Equipo rival') : ''
     ].join('');
     const outgoingClause = outgoingEntry ? Number(outgoingEntry.clause_price || outgoingPlayer?.clausePrice || defaultClauseForPrice(outgoingPlayer?.price || 0)) : 0;
+    const outgoingValue = outgoingEntry ? rosterEntryTradeInValue(outgoingEntry) : 0;
+    const tradeInCredit = mode === 'buyout' && outgoingPlayer ? Math.min(Number(cost || 0), outgoingValue) : 0;
     const outgoingFacts = outgoingPlayer ? [
-      compareFact('Valor', formatCoins(outgoingPlayer.price || 0)),
-      compareFact('Clausula', formatCoins(outgoingClause))
-    ].join('') : '';
+      compareFact('Valor', formatCoins(outgoingValue), tradeInCredit > 0 ? 'good' : ''),
+      compareFact('Clausula', formatCoins(outgoingClause)),
+      tradeInCredit > 0 ? compareFact('Descuenta', formatCoins(tradeInCredit), 'good') : ''
+    ].filter(Boolean).join('') : '';
     const targetWeekly = Number(targetPlayer.currentFantasyPoints || 0);
     const outgoingWeekly = Number(outgoingPlayer?.currentFantasyPoints || 0);
     const targetValue = Number(targetPlayer.price || cost || 0);
-    const outgoingValue = Number(outgoingPlayer?.price || 0);
     const rankIncoming = Number(targetPlayer.rank || 9999);
     const rankOutgoing = Number(outgoingPlayer?.rank || 9999);
     return `<div class="transferCompare">
@@ -3726,7 +4003,7 @@
           <article class="fantasyInfoCard">
             <span>Clausulazos</span>
             <strong>Mas caro que fichar normal</strong>
-            <p>Si un jugador ya esta en equipos rivales, puedes pagar la clausula de una copia concreta. La clausula cuesta mas que su precio normal, ahora x1,5 por defecto. El vendedor recibe esas berries y tu nuevo jugador queda protegido 24 horas.</p>
+            <p>Si un jugador ya esta en equipos rivales, puedes pagar la clausula de una copia concreta. Si sustituyes uno de tus jugadores, su valor descuenta lo que pagas tu, pero el vendedor cobra la clausula completa. Tu nuevo jugador queda protegido 24 horas.</p>
           </article>
           <article class="fantasyInfoCard">
             <span>Venta manual</span>
@@ -3812,8 +4089,8 @@
     if (roster.some((row) => String(row.player_slug) === String(player.slug))) return 'Ya en plantilla';
     if (mode === 'market' && !player?.canDirectBuy) return 'Solo disponible por clausula';
     if (mode === 'buyout' && !targetOwner) return 'Elige un equipo propietario';
-    if (Number(state.currentTeam?.coins || 0) < Number(cost || 0)) return 'Sin berries';
     if (roster.length >= squadCapacity() && !state.confirmBuyOutgoingSlug) return 'Elige a quien sustituyes';
+    if (Number(state.currentTeam?.coins || 0) < Number(cost || 0)) return 'Sin berries';
     return '';
   }
 
@@ -3836,23 +4113,46 @@
     const roster = derived.myRoster || [];
     const targetOwner = player?.owners?.find((owner) => String(owner.teamId || '') === String(state.confirmBuyTargetTeamId || '')) || null;
     const mode = targetOwner ? 'buyout' : (player?.canDirectBuy ? 'market' : 'buyout');
-    const cost = targetOwner ? Number(targetOwner.clausePrice || 0) : Number(player?.price || 0);
+    const baseCost = targetOwner ? Number(targetOwner.clausePrice || 0) : Number(player?.price || 0);
+    const outgoingEntry = roster.find((row) => String(row.player_slug || '') === String(state.confirmBuyOutgoingSlug || '')) || null;
+    const costs = mode === 'buyout'
+      ? clauseTradeInCosts(baseCost, outgoingEntry)
+      : { clauseCost: baseCost, tradeInCredit: 0, netCost: baseCost };
+    const cost = costs.netCost;
     const blocked = player ? buyConfirmBlockReason(player, mode, cost, roster, targetOwner) : 'Jugador invalido';
     const actionLabel = mode === 'buyout' ? 'Pagar clausula' : 'Fichar';
     title.textContent = mode === 'buyout' ? 'Confirmar clausulazo' : 'Confirmar fichaje';
-    text.innerHTML = player
-      ? `Vas a ${mode === 'buyout' ? 'pagar la clausula de' : 'fichar a'} <strong>${escapeHtml(player.name)}</strong> por ${renderCoinInline(cost, false)}.`
-      : 'No pude encontrar el jugador seleccionado.';
+    if (player && mode === 'buyout'){
+      const outgoingPlayer = outgoingEntry ? playerForRosterRow(outgoingEntry) : null;
+      text.innerHTML = outgoingEntry
+        ? `Vas a pagar la clausula de <strong>${escapeHtml(player.name)}</strong>. ${escapeHtml(outgoingPlayer?.name || outgoingEntry.player_name || 'El jugador saliente')} descuenta ${renderCoinInline(costs.tradeInCredit || 0, false)} y pagas ${renderCoinInline(costs.netCost || 0, false)}.`
+        : `Vas a pagar la clausula de <strong>${escapeHtml(player.name)}</strong> por ${renderCoinInline(costs.clauseCost || 0, false)}. Si sustituyes un jugador, su valor se descuenta del coste.`;
+    } else {
+      text.innerHTML = player
+        ? `Vas a fichar a <strong>${escapeHtml(player.name)}</strong> por ${renderCoinInline(cost, false)}.`
+        : 'No pude encontrar el jugador seleccionado.';
+    }
     action.innerHTML = player ? `${actionLabel} - ${renderCoinInline(cost, true)}` : 'Comprar';
     action.disabled = !!blocked;
     if (blocked) text.innerHTML = `${text.innerHTML} ${escapeHtml(blocked)}.`;
-    const outgoingEntry = roster.find((row) => String(row.player_slug || '') === String(state.confirmBuyOutgoingSlug || '')) || null;
     const needsReplacement = roster.length >= squadCapacity();
-    const comparisonHtml = player ? renderTransferComparison(player, outgoingEntry, mode, cost, targetOwner, needsReplacement) : '';
+    const comparisonHtml = player ? renderTransferComparison(player, outgoingEntry, mode, baseCost, targetOwner, needsReplacement) : '';
+    const clauseBreakdownHtml = mode === 'buyout' ? renderClauseCostBreakdown(costs, targetOwner) : '';
     const replacementOptions = roster.map((row) => {
       const rosterPlayer = playerForRosterRow(row);
       const checked = String(state.confirmBuyOutgoingSlug || '') === String(row.player_slug || '');
-      return `<label class="replaceOption"><input type="radio" name="buyReplacePlayer" value="${escapeAttr(row.player_slug || '')}" ${checked ? 'checked' : ''} /><div><strong>${escapeHtml(rosterPlayer.name || row.player_name || 'Jugador')}</strong><span>#${intFmt.format(rosterPlayer.rank || 0)} - ${escapeHtml(tierLabel(rosterPlayer.tier))}</span></div></label>`;
+      const portrait = playerPortraitUrl(rosterPlayer);
+      const isBench = String(row.lineup_slot || LINEUP_SLOT_ACTIVE) === LINEUP_SLOT_BENCH;
+      const isCaptain = String(state.currentTeam?.captain_player_slug || '') === String(row.player_slug || '');
+      const roleLabel = isCaptain ? 'Capitan' : isBench ? 'Suplente' : 'Activo';
+      const optionCosts = mode === 'buyout' ? clauseTradeInCosts(baseCost, row) : null;
+      const economyHtml = optionCosts
+        ? `<span class="replaceOptionEconomy">
+            <span class="replaceOptionValue discount"><small>Descuenta</small><strong>${renderCoinInline(optionCosts.tradeInCredit, true)}</strong></span>
+            <span class="replaceOptionValue net"><small>Pagas</small><strong>${renderCoinInline(optionCosts.netCost, true)}</strong></span>
+          </span>`
+        : '';
+      return `<label class="replaceOption"><input type="radio" name="buyReplacePlayer" value="${escapeAttr(row.player_slug || '')}" ${checked ? 'checked' : ''} /><span class="replaceOptionAvatar ${escapeAttr(tierClass(rosterPlayer.tier))}">${portrait ? `<img src="${escapeAttr(portrait)}" alt="${escapeAttr(rosterPlayer.name || row.player_name || 'Jugador')}" loading="lazy" decoding="async" />` : ''}</span><span class="replaceOptionContent"><span class="replaceOptionTop"><span><strong class="replaceOptionName">${escapeHtml(rosterPlayer.name || row.player_name || 'Jugador')}</strong><span class="replaceOptionMeta">#${intFmt.format(rosterPlayer.rank || 0)} - ${escapeHtml(tierLabel(rosterPlayer.tier))}</span></span><small class="replaceOptionRole">${escapeHtml(roleLabel)}</small></span>${economyHtml}</span></label>`;
     }).join('');
     const ownerInfo = targetOwner
       ? `<div class="helper">La clausula sale del equipo <strong>${escapeHtml(targetOwner.teamName || 'Equipo')}</strong> de ${escapeHtml(targetOwner.coachName || 'Manager')} y le abona ${renderCoinInline(targetOwner.clausePrice || 0, false)}.</div>`
@@ -3860,7 +4160,7 @@
     const freeSlotLabel = activeRosterEntries(roster).length >= activeRosterLimit()
       ? 'Tienes libre el hueco de suplente: esta ficha entra ahi.'
       : 'Tienes un hueco libre en plantilla, asi que esta ficha entra directa.';
-    body.innerHTML = `${ownerInfo}${comparisonHtml}${needsReplacement ? `<div class="confirmPicker"><div class="confirmPickerLabel">Jugador que sale de tu plantilla</div><div class="replaceGrid">${replacementOptions}</div></div>` : `<div class="helper">${escapeHtml(freeSlotLabel)}</div>`}`;
+    body.innerHTML = `${ownerInfo}${clauseBreakdownHtml}${comparisonHtml}${needsReplacement ? `<div class="confirmPicker"><div class="confirmPickerLabel">Jugador que sale de tu plantilla</div><div class="replaceGrid">${replacementOptions}</div></div>` : `<div class="helper">${escapeHtml(freeSlotLabel)}</div>`}`;
     wrap.classList.remove('hidden');
     wrap.setAttribute('aria-hidden', 'false');
     lockPageScroll();
@@ -3917,6 +4217,7 @@
       closePlayerModal();
       return;
     }
+    void ensurePlayerModalStatsLoaded(player);
     const derived = leagueDerived();
     const roster = derived.myRoster;
     const marketPlayer = source === 'market' ? marketDetailsForPlayer(player, derived) : null;
@@ -3930,15 +4231,23 @@
     const ownerRows = (marketPlayer?.owners || []).slice(0, config().maxPlayerCopies).map((owner) => {
       const protectedDate = owner.protectedUntil ? new Date(owner.protectedUntil) : null;
       const protectedLabel = protectedDate && Number.isFinite(protectedDate.getTime()) ? protectedDate.toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-      const disabled = owner.isMine || owner.isProtected || !marketOpenNow() || Number(state.currentTeam?.coins || 0) < Number(owner.clausePrice || 0);
+      const clauseCost = Number(owner.clausePrice || 0);
+      const bestTradeInCredit = roster.length >= squadCapacity() ? maxClauseTradeInCredit(roster, clauseCost) : 0;
+      const bestNetCost = Math.max(clauseCost - bestTradeInCredit, 0);
+      const hasEnoughBerries = Number(state.currentTeam?.coins || 0) >= bestNetCost;
+      const canUseTradeIn = bestTradeInCredit > 0 && bestNetCost < clauseCost;
+      const disabled = owner.isMine || owner.isProtected || !marketOpenNow() || !hasEnoughBerries;
       const ownerIsBench = String(owner.lineupSlot || LINEUP_SLOT_ACTIVE) === LINEUP_SLOT_BENCH;
       const ownerSlotLabel = ownerIsBench ? 'Suplente' : 'Activo';
       const title = owner.isMine
         ? 'Ya tienes esta copia'
         : owner.isProtected
           ? `Protegido hasta ${protectedLabel || 'dentro de unas horas'}`
-          : (!marketOpenNow() ? 'Mercado economico cerrado' : (Number(state.currentTeam?.coins || 0) < Number(owner.clausePrice || 0) ? 'Sin berries suficientes' : `Pagar clausula a ${owner.teamName}`));
-      return `<div class="ownerCard ${ownerIsBench ? 'isBenchOwner' : ''}"><div class="ownerMeta"><strong>${escapeHtml(owner.teamName || 'Equipo')}</strong><span>${escapeHtml(owner.coachName || 'Manager')}</span><span class="ownerHint">${owner.isMine ? (ownerIsBench ? 'Tu suplente' : 'Tu copia activa') : owner.isProtected ? `Protegido ${escapeHtml(protectedLabel || '')}` : `Copia ${escapeHtml(ownerSlotLabel.toLowerCase())}`}</span></div><span class="ownerSlotBadge ${ownerIsBench ? 'bench' : 'active'}">${escapeHtml(ownerSlotLabel)}</span><button class="btn btnPrimary compactBtn" type="button" data-buy-confirm="${escapeAttr(player.slug || '')}" data-buy-target-team="${escapeAttr(owner.teamId || '')}" ${disabled ? 'disabled' : ''} title="${escapeAttr(title)}"><span class="clauseBtnLabel">Clausula</span>${renderCoinInline(owner.clausePrice || 0, true)}</button></div>`;
+          : (!marketOpenNow() ? 'Mercado economico cerrado' : (!hasEnoughBerries ? 'Sin berries suficientes incluso sustituyendo' : (canUseTradeIn ? `Pagar clausula a ${owner.teamName}; neto desde ${formatCoins(bestNetCost)} sustituyendo un jugador` : `Pagar clausula a ${owner.teamName}`)));
+      const buttonLabel = canUseTradeIn && Number(state.currentTeam?.coins || 0) < clauseCost
+        ? `<span class="clauseBtnLabel">Neto desde</span>${renderCoinInline(bestNetCost, true)}`
+        : `<span class="clauseBtnLabel">Clausula</span>${renderCoinInline(clauseCost, true)}`;
+      return `<div class="ownerCard ${ownerIsBench ? 'isBenchOwner' : ''}"><div class="ownerMeta"><strong>${escapeHtml(owner.teamName || 'Equipo')}</strong><span>${escapeHtml(owner.coachName || 'Manager')}</span><span class="ownerHint">${owner.isMine ? (ownerIsBench ? 'Tu suplente' : 'Tu copia activa') : owner.isProtected ? `Protegido ${escapeHtml(protectedLabel || '')}` : `Copia ${escapeHtml(ownerSlotLabel.toLowerCase())}`}</span></div><span class="ownerSlotBadge ${ownerIsBench ? 'bench' : 'active'}">${escapeHtml(ownerSlotLabel)}</span><button class="btn btnPrimary compactBtn" type="button" data-buy-confirm="${escapeAttr(player.slug || '')}" data-buy-target-team="${escapeAttr(owner.teamId || '')}" ${disabled ? 'disabled' : ''} title="${escapeAttr(title)}">${buttonLabel}</button></div>`;
     }).join('');
     const marketHint = source === 'market'
       ? (marketPlayer?.canDirectBuy
@@ -3983,11 +4292,12 @@
     const historyContent = `<div class="historyWrap"><div class="historyTitle">Progresion de sabados</div>${renderHistoryChart(player)}${renderPriceChart(player)}</div>`;
     const marketContent = source === 'market' ? marketOwnershipBlock : teamOwnershipBlock;
     const footerActions = source === 'market' ? directAction : captainAction;
-    const activeTab = new Set(['summary', 'history', 'market']).has(String(state.modalPlayerTab || '')) ? String(state.modalPlayerTab) : 'summary';
+    const activeTab = new Set(['summary', 'history', 'stats', 'market']).has(String(state.modalPlayerTab || '')) ? String(state.modalPlayerTab) : 'summary';
     state.modalPlayerTab = activeTab;
+    const statsContent = renderPlayerModalStatsContent(player);
     const tabButton = (id, label) => `<button class="${activeTab === id ? 'active' : ''}" type="button" data-player-modal-tab="${escapeAttr(id)}" aria-pressed="${activeTab === id ? 'true' : 'false'}">${escapeHtml(label)}</button>`;
     const panel = (id, html) => `<div class="playerModalTabPanel ${activeTab === id ? 'active' : ''}" data-player-modal-panel="${escapeAttr(id)}">${html}</div>`;
-    body.innerHTML = `<div class="modalVisual modalVisualSticky"><article class="playerCard ${frameClass(player.tier)} ${isBench ? 'isBenchSlot' : ''}"><div class="playerHead">${isBench ? '<span class="squadSlotBadge bench">Suplente</span>' : ''}${renderPlayerVisual(player, modalOverlay)}</div></article>${tournamentHistory}${watchAction}</div><div class="modalPanel playerModalPanel"><div class="playerModalHeader"><div><div class="modalEyebrow">${source === 'team' ? (isBench ? 'Tu suplente' : 'Tu plantilla') : 'Pool de jugadores'}</div><h3 class="modalTitle">${escapeHtml(player.name)}</h3><div class="modalSubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div></div><div class="playerModalTabs">${tabButton('summary', 'Resumen')}${tabButton('history', 'Historial')}${tabButton('market', source === 'team' ? 'Plantilla' : 'Mercado')}</div><div class="playerModalTabPanels">${panel('summary', summaryContent)}${panel('history', historyContent)}${panel('market', marketContent)}</div>${footerActions ? `<div class="playerModalActionRail">${footerActions}</div>` : ''}</div>`;
+    body.innerHTML = `<div class="modalVisual modalVisualSticky"><article class="playerCard ${frameClass(player.tier)} ${isBench ? 'isBenchSlot' : ''}"><div class="playerHead">${isBench ? '<span class="squadSlotBadge bench">Suplente</span>' : ''}${renderPlayerVisual(player, modalOverlay)}</div></article>${tournamentHistory}${watchAction}</div><div class="modalPanel playerModalPanel"><div class="playerModalHeader"><div><div class="modalEyebrow">${source === 'team' ? (isBench ? 'Tu suplente' : 'Tu plantilla') : 'Pool de jugadores'}</div><h3 class="modalTitle">${escapeHtml(player.name)}</h3><div class="modalSubtitle">#${intFmt.format(player.rank || 0)} - ${escapeHtml(tierLabel(player.tier))}</div></div></div><div class="playerModalTabs">${tabButton('summary', 'Resumen')}${tabButton('history', 'Historial')}${tabButton('stats', 'Stats')}${tabButton('market', source === 'team' ? 'Plantilla' : 'Mercado')}</div><div class="playerModalTabPanels">${panel('summary', summaryContent)}${panel('history', historyContent)}${panel('stats', statsContent)}${panel('market', marketContent)}</div>${footerActions ? `<div class="playerModalActionRail">${footerActions}</div>` : ''}</div>`;
     wrap.classList.remove('hidden');
     wrap.setAttribute('aria-hidden', 'false');
     wrap.scrollTop = 0;
