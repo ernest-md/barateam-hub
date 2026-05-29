@@ -491,6 +491,63 @@
       "#d8b844", "#73d8db", "#ffbb33", "#ed6ea8"
     ];
 
+    const LOCAL_LEADERS = [
+      {
+        name: "Portgas.D.Ace OP16",
+        code: "OP16-001",
+        alias: "Ace R",
+        aliases: ["Ace R OP16"],
+        colorPrimary: "red",
+        colorSecondary: "",
+        image: "images/leaders/OP16-001_p1.png"
+      },
+      {
+        name: "Monkey.D.Luffy OP16",
+        code: "OP16-022",
+        alias: "Luffy UG",
+        aliases: ["Luffy GU", "Luffy U G", "Luffy G U"],
+        colorPrimary: "blue",
+        colorSecondary: "green",
+        image: "images/leaders/OP16-022_p1.png"
+      },
+      {
+        name: "Buggy OP16",
+        code: "OP16-041",
+        alias: "Buggy U OP16",
+        aliases: ["Buggy U", "Buggy Blue OP16"],
+        colorPrimary: "blue",
+        colorSecondary: "",
+        image: "images/leaders/OP16-041_p1.png"
+      },
+      {
+        name: "Sengoku OP16",
+        code: "OP16-060",
+        alias: "Sengoku P",
+        aliases: ["Sengoku Purple", "Sengoku P OP16"],
+        colorPrimary: "purple",
+        colorSecondary: "",
+        image: "images/leaders/OP16-060_p1.png"
+      },
+      {
+        name: "Yamato OP16",
+        code: "OP16-079",
+        alias: "Yamato B",
+        aliases: ["Yamato Black", "Yamato B OP16"],
+        colorPrimary: "black",
+        colorSecondary: "",
+        image: "images/leaders/OP16-079_p1.png"
+      },
+      {
+        name: "Marshall.D.Teach OP16",
+        code: "OP16-080",
+        alias: "Blackbeard BY",
+        aliases: ["Teach BY", "Marshall D Teach BY", "Blackbeard YB"],
+        colorPrimary: "black",
+        colorSecondary: "yellow",
+        image: "images/leaders/OP16-080_p1.png"
+      }
+    ];
+
     function parseCsvLine(line){
       const out = [];
       let cell = "";
@@ -656,9 +713,12 @@
             image
           });
         }
-        leadersCache = out.filter((x) => x.image);
+        leadersCache = [
+          ...LOCAL_LEADERS,
+          ...out.filter((x) => x.image)
+        ];
       } catch (_e){
-        leadersCache = [];
+        leadersCache = [...LOCAL_LEADERS];
       }
       return leadersCache;
     }
@@ -672,8 +732,11 @@
       const q = normalizeLabel(label);
       if (!q) return null;
       for (const l of leaders){
-        const alias = normalizeLabel(l.alias);
-        if (alias && q === alias){
+        const aliases = [
+          l.alias,
+          ...(Array.isArray(l.aliases) ? l.aliases : [])
+        ];
+        if (aliases.some((alias) => normalizeLabel(alias) === q)){
           return l;
         }
       }
