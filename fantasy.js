@@ -4235,18 +4235,15 @@
       const bestTradeInCredit = roster.length >= squadCapacity() ? maxClauseTradeInCredit(roster, clauseCost) : 0;
       const bestNetCost = Math.max(clauseCost - bestTradeInCredit, 0);
       const hasEnoughBerries = Number(state.currentTeam?.coins || 0) >= bestNetCost;
-      const canUseTradeIn = bestTradeInCredit > 0 && bestNetCost < clauseCost;
-      const disabled = owner.isMine || owner.isProtected || !marketOpenNow() || !hasEnoughBerries;
-      const ownerIsBench = String(owner.lineupSlot || LINEUP_SLOT_ACTIVE) === LINEUP_SLOT_BENCH;
-      const ownerSlotLabel = ownerIsBench ? 'Suplente' : 'Activo';
-      const title = owner.isMine
-        ? 'Ya tienes esta copia'
-        : owner.isProtected
-          ? `Protegido hasta ${protectedLabel || 'dentro de unas horas'}`
-          : (!marketOpenNow() ? 'Mercado economico cerrado' : (!hasEnoughBerries ? 'Sin berries suficientes incluso sustituyendo' : (canUseTradeIn ? `Pagar clausula a ${owner.teamName}; neto desde ${formatCoins(bestNetCost)} sustituyendo un jugador` : `Pagar clausula a ${owner.teamName}`)));
-      const buttonLabel = canUseTradeIn && Number(state.currentTeam?.coins || 0) < clauseCost
-        ? `<span class="clauseBtnLabel">Neto desde</span>${renderCoinInline(bestNetCost, true)}`
-        : `<span class="clauseBtnLabel">Clausula</span>${renderCoinInline(clauseCost, true)}`;
+          const disabled = owner.isMine || owner.isProtected || !marketOpenNow() || !hasEnoughBerries;
+          const ownerIsBench = String(owner.lineupSlot || LINEUP_SLOT_ACTIVE) === LINEUP_SLOT_BENCH;
+          const ownerSlotLabel = ownerIsBench ? 'Suplente' : 'Activo';
+          const title = owner.isMine
+            ? 'Ya tienes esta copia'
+            : owner.isProtected
+              ? `Protegido hasta ${protectedLabel || 'dentro de unas horas'}`
+              : (!marketOpenNow() ? 'Mercado economico cerrado' : (!hasEnoughBerries ? 'Sin berries suficientes incluso sustituyendo' : `Pagar clausula a ${owner.teamName}`));
+          const buttonLabel = `<span class="clauseBtnLabel">Clausula</span>${renderCoinInline(clauseCost, true)}`;
       return `<div class="ownerCard ${ownerIsBench ? 'isBenchOwner' : ''}"><div class="ownerMeta"><strong>${escapeHtml(owner.teamName || 'Equipo')}</strong><span>${escapeHtml(owner.coachName || 'Manager')}</span><span class="ownerHint">${owner.isMine ? (ownerIsBench ? 'Tu suplente' : 'Tu copia activa') : owner.isProtected ? `Protegido ${escapeHtml(protectedLabel || '')}` : `Copia ${escapeHtml(ownerSlotLabel.toLowerCase())}`}</span></div><span class="ownerSlotBadge ${ownerIsBench ? 'bench' : 'active'}">${escapeHtml(ownerSlotLabel)}</span><button class="btn btnPrimary compactBtn" type="button" data-buy-confirm="${escapeAttr(player.slug || '')}" data-buy-target-team="${escapeAttr(owner.teamId || '')}" ${disabled ? 'disabled' : ''} title="${escapeAttr(title)}">${buttonLabel}</button></div>`;
     }).join('');
     const marketHint = source === 'market'
