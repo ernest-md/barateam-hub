@@ -1,6 +1,19 @@
 -- Barateam Hub - historial de torneos hibrido.
 -- IMPORTANTE: esta version elimina las tablas del boceto anterior.
--- Ejecutar en Supabase SQL editor.
+-- NO ejecutar en una base con datos reales: borra historial, vinculos VDBF,
+-- eventos y resultados antes de recrear las tablas.
+--
+-- Para una base existente usa los parches incrementales de supabase/sql/.
+-- Si de verdad quieres hacer un reset destructivo, ejecuta antes:
+--   set app.allow_tournament_history_reset = 'on';
+
+do $$
+begin
+  if coalesce(current_setting('app.allow_tournament_history_reset', true), '') <> 'on' then
+    raise exception 'Script destructivo bloqueado: usa supabase/sql/tournament_history_admin_player_selector.sql en una base con datos. Para reset intencionado, ejecuta set app.allow_tournament_history_reset = ''on'' antes.';
+  end if;
+end;
+$$;
 
 alter table public.leaders
   add column if not exists alias text null;
@@ -230,14 +243,14 @@ for all to authenticated
 using (public.barateam_is_admin(auth.uid()))
 with check (public.barateam_is_admin(auth.uid()));
 
-create policy tournament_history_select_own on public.tournament_history
+create policy tournament_history_select_own_or_admin on public.tournament_history
 for select to authenticated
-using (user_id = auth.uid());
+using (user_id = auth.uid() or public.barateam_is_admin(auth.uid()));
 
-create policy tournament_history_insert_own on public.tournament_history
+create policy tournament_history_insert_own_or_admin on public.tournament_history
 for insert to authenticated
 with check (
-  user_id = auth.uid()
+  (user_id = auth.uid() or public.barateam_is_admin(auth.uid()))
   and (
     source = 'manual'
     or exists (
@@ -245,16 +258,16 @@ with check (
       from public.vdbf_event_results ver
       join public.profile_vdbf_players link on link.vdbf_player_id = ver.vdbf_player_id
       where ver.id = tournament_history.vdbf_event_result_id
-        and link.profile_id = auth.uid()
+        and link.profile_id = tournament_history.user_id
     )
   )
 );
 
-create policy tournament_history_update_own on public.tournament_history
+create policy tournament_history_update_own_or_admin on public.tournament_history
 for update to authenticated
-using (user_id = auth.uid())
+using (user_id = auth.uid() or public.barateam_is_admin(auth.uid()))
 with check (
-  user_id = auth.uid()
+  (user_id = auth.uid() or public.barateam_is_admin(auth.uid()))
   and (
     source = 'manual'
     or exists (
@@ -262,45 +275,45 @@ with check (
       from public.vdbf_event_results ver
       join public.profile_vdbf_players link on link.vdbf_player_id = ver.vdbf_player_id
       where ver.id = tournament_history.vdbf_event_result_id
-        and link.profile_id = auth.uid()
+        and link.profile_id = tournament_history.user_id
     )
   )
 );
 
-create policy tournament_history_delete_own on public.tournament_history
+create policy tournament_history_delete_own_or_admin on public.tournament_history
 for delete to authenticated
-using (user_id = auth.uid());
+using (user_id = auth.uid() or public.barateam_is_admin(auth.uid()));
 
-create policy tournament_rounds_select_own on public.tournament_rounds
+create policy tournament_rounds_select_own_or_admin on public.tournament_rounds
 for select to authenticated
 using (
   exists (
     select 1
     from public.tournament_history th
     where th.id = tournament_rounds.tournament_id
-      and th.user_id = auth.uid()
+      and (th.user_id = auth.uid() or public.barateam_is_admin(auth.uid()))
   )
 );
 
-create policy tournament_rounds_insert_own on public.tournament_rounds
+create policy tournament_rounds_insert_own_or_admin on public.tournament_rounds
 for insert to authenticated
 with check (
   exists (
     select 1
     from public.tournament_history th
     where th.id = tournament_rounds.tournament_id
-      and th.user_id = auth.uid()
+      and (th.user_id = auth.uid() or public.barateam_is_admin(auth.uid()))
   )
 );
 
-create policy tournament_rounds_update_own on public.tournament_rounds
+create policy tournament_rounds_update_own_or_admin on public.tournament_rounds
 for update to authenticated
 using (
   exists (
     select 1
     from public.tournament_history th
     where th.id = tournament_rounds.tournament_id
-      and th.user_id = auth.uid()
+      and (th.user_id = auth.uid() or public.barateam_is_admin(auth.uid()))
   )
 )
 with check (
@@ -308,18 +321,18 @@ with check (
     select 1
     from public.tournament_history th
     where th.id = tournament_rounds.tournament_id
-      and th.user_id = auth.uid()
+      and (th.user_id = auth.uid() or public.barateam_is_admin(auth.uid()))
   )
 );
 
-create policy tournament_rounds_delete_own on public.tournament_rounds
+create policy tournament_rounds_delete_own_or_admin on public.tournament_rounds
 for delete to authenticated
 using (
   exists (
     select 1
     from public.tournament_history th
     where th.id = tournament_rounds.tournament_id
-      and th.user_id = auth.uid()
+      and (th.user_id = auth.uid() or public.barateam_is_admin(auth.uid()))
   )
 );
 

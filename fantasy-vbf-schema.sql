@@ -765,6 +765,8 @@ declare
   v_roster_count integer := 0;
   v_copy_count integer := 0;
   v_buy_cost integer := 0;
+  v_clause_cost integer := 0;
+  v_trade_in_credit integer := 0;
 begin
   if v_user is null then raise exception 'Debes iniciar sesion para fichar.'; end if;
   if v_slug = '' then raise exception 'Jugador invalido.'; end if;
@@ -925,7 +927,19 @@ begin
 
   if not found then raise exception 'No encontre esa copia del jugador para pagar la clausula.'; end if;
 
-  v_buy_cost := greatest(coalesce(v_target.clause_price, v_pool.default_clause), 0);
+  v_clause_cost := greatest(coalesce(v_target.clause_price, v_pool.default_clause), 0);
+  v_trade_in_credit := 0;
+  if v_outgoing.id is not null then
+    select greatest(coalesce(pp.current_price, v_outgoing.buy_price, 0), 0)
+      into v_trade_in_credit
+    from public.fantasy_vbf_player_pool pp
+    where pp.season = v_season
+      and pp.player_slug = v_outgoing.player_slug;
+
+    v_trade_in_credit := least(v_clause_cost, greatest(coalesce(v_trade_in_credit, v_outgoing.buy_price, 0), 0));
+  end if;
+
+  v_buy_cost := greatest(v_clause_cost - v_trade_in_credit, 0);
   if v_team.coins < v_buy_cost then raise exception 'No tienes berries suficientes para pagar la clausula.'; end if;
 
   if v_outgoing.id is not null then
@@ -936,7 +950,7 @@ begin
     )
     values (
       v_season, v_round_key, v_team.id, v_user,
-      v_outgoing.player_slug, v_outgoing.player_name, 'release', 0, v_round_key is not null
+      v_outgoing.player_slug, v_outgoing.player_name, 'release', v_trade_in_credit, v_round_key is not null
     );
   end if;
 
@@ -945,7 +959,7 @@ begin
   where id = v_team.id;
 
   update public.fantasy_vbf_teams
-  set coins = coins + v_buy_cost
+  set coins = coins + v_clause_cost
   where id = v_target.team_id;
 
   update public.fantasy_vbf_roster_players
@@ -954,7 +968,7 @@ begin
       player_name = v_pool.player_name,
       player_tier = v_pool.player_tier,
       player_rank = v_pool.player_rank,
-      buy_price = v_buy_cost,
+      buy_price = v_clause_cost,
       clause_price = v_pool.default_clause,
       acquisition_type = 'buyout',
       acquired_round_key = v_round_key,
@@ -966,7 +980,7 @@ begin
   )
   values
     (v_season, v_round_key, v_team.id, v_user, v_pool.player_slug, v_pool.player_name, 'clause_in', v_buy_cost, v_round_key is not null),
-    (v_season, v_round_key, v_target.team_id, v_target.user_id, v_pool.player_slug, v_pool.player_name, 'clause_out', v_buy_cost, false);
+    (v_season, v_round_key, v_target.team_id, v_target.user_id, v_pool.player_slug, v_pool.player_name, 'clause_out', v_clause_cost, false);
 
   insert into public.fantasy_vbf_notifications (season, user_id, team_id, kind, title, body, payload)
   values
@@ -976,11 +990,14 @@ begin
       v_target.team_id,
       'clause_lost',
       format('Te han pagado la clausula de %s', v_pool.player_name),
-      format('El equipo %s te ha quitado a %s pagando %s berries. Esa cantidad entra en tu saldo.', v_team.team_name, v_pool.player_name, v_buy_cost),
+      format('El equipo %s te ha quitado a %s pagando %s berries. Esa cantidad entra en tu saldo.', v_team.team_name, v_pool.player_name, v_clause_cost),
       jsonb_build_object(
         'player_slug', v_pool.player_slug,
         'player_name', v_pool.player_name,
-        'amount', v_buy_cost,
+        'amount', v_clause_cost,
+        'clause_amount', v_clause_cost,
+        'trade_in_credit', 0,
+        'net_amount', v_clause_cost,
         'team_id', v_target.team_id,
         'seller_team_id', v_target.team_id,
         'seller_user_id', v_target.user_id,
@@ -995,11 +1012,17 @@ begin
       v_team.id,
       'clause_won',
       format('Has fichado a %s por clausula', v_pool.player_name),
-      format('Has pagado %s berries y ya ocupa una plaza en tu plantilla.', v_buy_cost),
+      case
+        when v_trade_in_credit > 0 then format('La clausula era de %s berries, pero el valor de tu jugador saliente descuenta %s. Pagas %s netos y el rival cobra la clausula completa.', v_clause_cost, v_trade_in_credit, v_buy_cost)
+        else format('Has pagado %s berries y ya ocupa una plaza en tu plantilla.', v_buy_cost)
+      end,
       jsonb_build_object(
         'player_slug', v_pool.player_slug,
         'player_name', v_pool.player_name,
         'amount', v_buy_cost,
+        'clause_amount', v_clause_cost,
+        'trade_in_credit', v_trade_in_credit,
+        'net_amount', v_buy_cost,
         'team_id', v_team.id,
         'buyer_team_id', v_team.id,
         'buyer_user_id', v_user,
@@ -1022,6 +1045,8 @@ begin
     'player_slug', v_slug,
     'mode', 'buyout',
     'cost', v_buy_cost,
+    'clause_cost', v_clause_cost,
+    'trade_in_credit', v_trade_in_credit,
     'coins_left', greatest(v_team.coins - v_buy_cost, 0),
     'seller_team_id', v_target.team_id
   );
