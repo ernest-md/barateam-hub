@@ -1195,6 +1195,218 @@
       letter-spacing:.08em;
       text-transform:uppercase;
     }
+    .cardInfoTabs{
+      display:flex;
+      gap:8px;
+      padding:18px 28px 0;
+      background:#f8fafc;
+      border-bottom:1px solid rgba(15,23,42,.08);
+    }
+    .cardInfoTab{
+      border:1px solid rgba(15,23,42,.10);
+      border-bottom:none;
+      border-radius:10px 10px 0 0;
+      background:#fff;
+      color:#475569;
+      padding:9px 14px;
+      font:inherit;
+      font-size:12px;
+      font-weight:1000;
+      cursor:pointer;
+    }
+    .cardInfoTab.is-active{
+      color:#0f172a;
+      background:#f8fafc;
+      box-shadow:0 -8px 20px rgba(15,23,42,.06);
+    }
+    .cardInfoTabPanel[hidden]{ display:none; }
+    .cardInfoUsage{
+      display:grid;
+      gap:12px;
+      padding:28px;
+    }
+    .cardUsageIntro{
+      margin:0;
+      color:#64748b;
+      font-size:13px;
+      font-weight:800;
+    }
+    .cardUsageControls{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .cardUsageControls label{
+      color:#475569;
+      font-size:12px;
+      font-weight:1000;
+    }
+    .cardUsageControls select{
+      min-width:210px;
+      border:1px solid rgba(15,23,42,.08);
+      border-radius:10px;
+      background:#fff;
+      color:#0f172a;
+      padding:8px 10px;
+      font:inherit;
+      font-size:12px;
+      font-weight:900;
+    }
+    .cardUsageList{
+      display:grid;
+      gap:10px;
+    }
+    .cardUsageRow{
+      display:grid;
+      gap:10px;
+      padding:12px;
+      border:1px solid rgba(15,23,42,.08);
+      border-radius:12px;
+      background:#fff;
+    }
+    .cardUsageHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .cardUsageMain{
+      min-width:0;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .cardUsageRank{
+      width:32px;
+      height:32px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:999px;
+      background:#0f172a;
+      color:#fff;
+      font-size:12px;
+      font-weight:1000;
+    }
+    .cardUsageTitle{
+      min-width:0;
+      display:grid;
+      gap:3px;
+      color:#0f172a;
+      font-weight:1000;
+    }
+    .cardUsageTitle a,
+    .cardUsageTitle span{
+      color:inherit;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .cardUsageTitle a{ text-decoration:none; }
+    .cardUsageTitle a:hover{ color:#2563eb; text-decoration:underline; }
+    .cardUsageTitle small{
+      color:#64748b;
+      font-size:11px;
+      font-weight:900;
+    }
+    .cardUsageStats{
+      display:flex;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+    .cardUsagePill{
+      display:inline-flex;
+      align-items:center;
+      min-height:24px;
+      border-radius:999px;
+      padding:4px 8px;
+      background:#f1f5f9;
+      border:1px solid rgba(15,23,42,.08);
+      color:#334155;
+      font-size:11px;
+      font-weight:1000;
+      white-space:nowrap;
+    }
+    .cardUsagePill.is-good{ color:#15803d; background:#dcfce7; border-color:#bbf7d0; }
+    .cardUsagePill.is-bad{ color:#b91c1c; background:#fee2e2; border-color:#fecaca; }
+    .cardUsageDeckCards{
+      display:grid;
+      grid-template-columns:104px minmax(0, 1fr);
+      gap:8px 10px;
+      align-items:start;
+    }
+    .cardUsageDeckMain{
+      min-width:0;
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      align-content:flex-start;
+    }
+    .cardUsageDeckCard{
+      width:50px;
+      position:relative;
+      overflow:visible;
+      border-radius:3px;
+      transition:transform .14s ease;
+    }
+    .cardUsageLeaderCard{
+      width:104px;
+      grid-row:span 2;
+    }
+    .cardUsageDeckCard:hover{ transform:translateY(-2px); z-index:2; }
+    .cardUsageDeckCard img{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:inherit;
+      background:#fff;
+      box-shadow:0 10px 24px rgba(2,6,23,.18);
+    }
+    .cardUsageDeckFallback{
+      width:100%;
+      min-height:70px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:5px;
+      border-radius:inherit;
+      border:1px solid rgba(15,23,42,.08);
+      background:#f8fafc;
+      color:#475569;
+      font-size:9px;
+      font-weight:1000;
+      word-break:break-word;
+    }
+    .cardUsageLeaderCard .cardUsageDeckFallback{
+      min-height:146px;
+    }
+    .cardUsageQty{
+      position:absolute;
+      left:4px;
+      bottom:4px;
+      border-radius:6px;
+      background:rgba(15,23,42,.9);
+      color:#fff;
+      font-size:10px;
+      font-weight:1000;
+      line-height:1;
+      padding:2px 4px;
+    }
+    .cardUsageEmpty{
+      padding:18px;
+      border:1px dashed #cbd5e1;
+      border-radius:12px;
+      background:#fff;
+      color:#64748b;
+      font-size:13px;
+      font-weight:900;
+      text-align:center;
+    }
     .detailOverlay.is-open{
       display:flex;
     }
@@ -1424,6 +1636,14 @@
       .cardInfoTop h3{ font-size:2rem; }
       .cardInfoContent{ padding:16px; }
       .cardInfoBody{ grid-template-columns:1fr; gap:18px; }
+      .cardInfoTabs{ padding:14px 16px 0; }
+      .cardInfoUsage{ padding:16px; }
+      .cardUsageStats{ justify-content:flex-start; }
+      .cardUsageControls{ justify-content:flex-start; }
+      .cardUsageControls select{ width:100%; min-width:0; }
+      .cardUsageDeckCards{ grid-template-columns:78px minmax(0, 1fr); }
+      .cardUsageLeaderCard{ width:78px; }
+      .cardUsageLeaderCard .cardUsageDeckFallback{ min-height:110px; }
       .cardInfoSpecRow{ grid-template-columns:1fr; gap:0; }
     }
   </style>
@@ -1555,6 +1775,12 @@
             <button class="btn" id="reloadButton" type="button">Recargar</button>
           </div>
           <div class="filterBar" aria-label="Filtros de cartas">
+            <label class="filterControl" for="filterExpansion">
+              <span>Expansion</span>
+              <select id="filterExpansion">
+                <option value="">Todas</option>
+              </select>
+            </label>
             <label class="filterControl" for="filterType">
               <span>Tipo</span>
               <select id="filterType">
@@ -1693,6 +1919,24 @@
       { key: "english", label: "English", basePath: "punkrecords/english" },
       { key: "english-asia", label: "English Asia", basePath: "punkrecords/english-asia" }
     ];
+    const BARATORNEO_EXPANSION = "BARATORNEO";
+    const BARATORNEO_METADATA_URL = "CARDS/baratorneo-cards.json";
+    const BARATORNEO_CARD_FILES = [
+      { code:"BT-01", type:"Leader", path:"CARDS/LEADERS/BT-01.png" },
+      { code:"BT-03", type:"Leader", path:"CARDS/LEADERS/BT-03.png" },
+      { code:"BT-05", type:"Leader", path:"CARDS/LEADERS/BT-05.png" },
+      { code:"BT-07", type:"Leader", path:"CARDS/LEADERS/BT-07.png" },
+      { code:"BT-09", type:"Leader", path:"CARDS/LEADERS/BT-09.png" },
+      { code:"BT-11", type:"Leader", path:"CARDS/LEADERS/BT-11.png" },
+      { code:"BT-13", type:"Leader", path:"CARDS/LEADERS/BT-13.png" },
+      { code:"BT-02", type:"Character", path:"CARDS/CARDS/BT-02.png" },
+      { code:"BT-04", type:"Character", path:"CARDS/CARDS/BT-04.png" },
+      { code:"BT-06", type:"Character", path:"CARDS/CARDS/BT-06.png" },
+      { code:"BT-08", type:"Character", path:"CARDS/CARDS/BT-08.png" },
+      { code:"BT-10", type:"Character", path:"CARDS/CARDS/BT-10.png" },
+      { code:"BT-12", type:"Character", path:"CARDS/CARDS/BT-12.png" },
+      { code:"BT-14", type:"Character", path:"CARDS/CARDS/BT-14.png" }
+    ];
     const COLOR_ORDER = ["Red", "Green", "Blue", "Purple", "Black", "Yellow"];
     const COLOR_LABELS = {
       Red: "Rojo",
@@ -1730,6 +1974,8 @@
     const initialDeckId = normalize(params.get("id") || params.get("deck") || "");
     const RECOMMENDATION_DATASET = "west_private";
     const RECOMMENDATION_LIMIT = 12;
+    const CARD_USAGE_MIN_GAMES = 10;
+    const CARD_USAGE_LIMIT = 3;
     let sb = null;
 
     const state = {
@@ -1739,6 +1985,7 @@
       deckCounts: new Map(),
       search: "",
       filters: {
+        expansion: "",
         type: "",
         color: "",
         cost: "",
@@ -1761,11 +2008,103 @@
         error: "",
         cache: new Map(),
         inflight: null
-      }
+      },
+      cardUsageCache: new Map(),
+      accessState: null,
+      canSeeBaratorneo: false,
+      baratorneoMetaByCode: new Map()
     };
+    let recommendationDatasetPromise = null;
+    const IMAGE_CACHE_KEY = "barateam:image-cache:v1";
+    const IMAGE_CACHE_LIMIT = 800;
+    const imageLoadCache = { loaded: new Set(), failed: new Set() };
 
     function $(id){ return document.getElementById(id); }
     function normalize(value){ return String(value ?? "").replace(/\s+/g, " ").trim(); }
+    function imageCacheKey(value){
+      const raw = normalize(value);
+      if (!raw) return "";
+      try{
+        const url = new URL(raw, window.location.href);
+        url.hash = "";
+        return url.href;
+      }catch(_error){
+        return raw;
+      }
+    }
+    function persistImageCache(){
+      try{
+        const payload = {
+          loaded: Array.from(imageLoadCache.loaded).slice(-IMAGE_CACHE_LIMIT),
+          failed: Array.from(imageLoadCache.failed).slice(-IMAGE_CACHE_LIMIT)
+        };
+        sessionStorage.setItem(IMAGE_CACHE_KEY, JSON.stringify(payload));
+      }catch(_error){}
+    }
+    function loadImageCache(){
+      try{
+        const payload = JSON.parse(sessionStorage.getItem(IMAGE_CACHE_KEY) || "{}");
+        (Array.isArray(payload.loaded) ? payload.loaded : []).forEach((url) => imageLoadCache.loaded.add(url));
+        (Array.isArray(payload.failed) ? payload.failed : []).forEach((url) => imageLoadCache.failed.add(url));
+      }catch(_error){}
+    }
+    function rememberImageLoaded(value){
+      const key = imageCacheKey(value);
+      if (!key) return;
+      imageLoadCache.loaded.add(key);
+      imageLoadCache.failed.delete(key);
+      persistImageCache();
+    }
+    function rememberImageFailed(value){
+      const key = imageCacheKey(value);
+      if (!key || imageLoadCache.loaded.has(key)) return;
+      imageLoadCache.failed.add(key);
+      persistImageCache();
+    }
+    function hasImageFailed(value){
+      const key = imageCacheKey(value);
+      return !!(key && imageLoadCache.failed.has(key));
+    }
+    function isBlockedOfficialImageUrl(value){
+      const raw = normalize(value);
+      if (!raw) return false;
+      if (/^\/?images\/cardlist\/card\//i.test(raw)) return true;
+      try{
+        const url = new URL(raw, window.location.href);
+        const host = url.hostname.toLowerCase();
+        return (host === "en.onepiece-cardgame.com" || host === "asia-en.onepiece-cardgame.com")
+          && /\/images\/cardlist\/card\//i.test(url.pathname);
+      }catch(_error){
+        return /onepiece-cardgame\.com\/images\/cardlist\/card\//i.test(raw);
+      }
+    }
+    function usableImageUrls(values){
+      const seen = new Set();
+      return values.map((value) => normalize(value)).filter((value) => {
+        const key = imageCacheKey(value);
+        if (!value || !key || seen.has(key) || isBlockedOfficialImageUrl(value) || hasImageFailed(value)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+    loadImageCache();
+    function isBarateamTeam(value){ return normalize(value).toUpperCase() === "BARATEAM"; }
+    async function refreshBaratorneoAccess(){
+      if (!sb || !window.BarateamApp?.resolveAccessState){
+        state.accessState = null;
+        state.canSeeBaratorneo = false;
+        return false;
+      }
+      try{
+        const access = await window.BarateamApp.resolveAccessState(sb);
+        state.accessState = access || null;
+        state.canSeeBaratorneo = isBarateamTeam(access?.profile?.team || access?.team || "");
+      }catch(_error){
+        state.accessState = null;
+        state.canSeeBaratorneo = false;
+      }
+      return state.canSeeBaratorneo;
+    }
     function escapeHtml(value){
       return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     }
@@ -1812,6 +2151,27 @@
     }
 
     function sourceFilePath(source, filePath){ return `${source.basePath}/${filePath}`; }
+    function baratorneoImagePath(value, fallback){
+      const raw = normalize(value || fallback);
+      if (!raw) return "";
+      if (/^(?:https?:)?\/\//i.test(raw) || raw.startsWith("CARDS/")) return raw;
+      return `CARDS/${raw.replace(/^\/+/, "")}`;
+    }
+    async function loadBaratorneoMetadata(){
+      state.baratorneoMetaByCode = new Map();
+      if (!state.canSeeBaratorneo) return;
+      try{
+        const payload = await fetchJson(BARATORNEO_METADATA_URL);
+        normalizeApiArray(payload).forEach((row) => {
+          const code = normalizeCardCode(row?.code || row?.id || "");
+          if (code) state.baratorneoMetaByCode.set(code, row);
+        });
+      }catch(error){
+        if (!/HTTP 404/i.test(String(error?.message || ""))){
+          console.warn("baratorneo metadata:", error);
+        }
+      }
+    }
     function toYmd(date){
       const d = date instanceof Date ? date : new Date(date);
       const y = d.getFullYear();
@@ -1902,10 +2262,19 @@
       return raw;
     }
     function cardFallbackSource(card){
-      return normalize(card?.fallbackImage) || buildDotggCardImageUrl(card?.code);
+      const urls = usableImageUrls([
+        normalize(card?.fallbackImage),
+        buildDotggCardImageUrl(card?.code)
+      ]);
+      return urls[0] || "";
     }
     function cardImageSource(card){
-      return normalizeCardImageUrl(card?.image, card?.sourceKey) || cardFallbackSource(card);
+      const urls = usableImageUrls([
+        normalizeCardImageUrl(card?.image, card?.sourceKey),
+        normalize(card?.fallbackImage),
+        buildDotggCardImageUrl(card?.code)
+      ]);
+      return urls[0] || "";
     }
     function failedImageFallbackMarkup(label, fallbackClass){
       const node = document.createElement("div");
@@ -1917,23 +2286,32 @@
       const img = event.target;
       if (!(img instanceof HTMLImageElement) || img.dataset.deckBuilderImage !== "1") return;
 
+      rememberImageFailed(img.currentSrc || img.src || img.getAttribute("src"));
       const fallbackSrc = normalize(img.dataset.fallbackSrc || "");
       let fallbackHref = "";
       if (fallbackSrc){
         try{ fallbackHref = new URL(fallbackSrc, window.location.href).href; }catch(_error){ fallbackHref = fallbackSrc; }
       }
 
-      if (fallbackSrc && img.dataset.fallbackApplied !== "1" && img.currentSrc !== fallbackHref){
+      if (fallbackSrc && !hasImageFailed(fallbackSrc) && img.dataset.fallbackApplied !== "1" && img.currentSrc !== fallbackHref){
         img.dataset.fallbackApplied = "1";
         img.src = fallbackSrc;
+        const zoomCard = img.closest(".cardZoom[data-preview-src]");
+        if (zoomCard) zoomCard.dataset.previewSrc = fallbackSrc;
         return;
       }
 
       img.replaceWith(failedImageFallbackMarkup(img.dataset.fallbackLabel || img.alt, img.dataset.fallbackClass));
     }
+    function handleDeckBuilderImageLoad(event){
+      const img = event.target;
+      if (!(img instanceof HTMLImageElement) || img.dataset.deckBuilderImage !== "1") return;
+      rememberImageLoaded(img.currentSrc || img.src || img.getAttribute("src"));
+    }
     function initDeckBuilderImageFallbacks(){
       if (document.body.dataset.deckBuilderImageFallbacks === "1") return;
       document.body.dataset.deckBuilderImageFallbacks = "1";
+      document.addEventListener("load", handleDeckBuilderImageLoad, true);
       document.addEventListener("error", handleDeckBuilderImageError, true);
     }
     function initCardHoverPreview(){
@@ -2169,6 +2547,11 @@
       const name = normalize(raw?.name);
       if (!code || !name) return null;
 
+      const dotggImage = buildDotggCardImageUrl(code);
+      const rawImage = normalize(raw?.card_image);
+      const image = rawImage && !isBlockedOfficialImageUrl(rawImage) ? rawImage : dotggImage;
+      const fallbackImage = dotggImage && dotggImage !== image ? dotggImage : "";
+
       const card = {
         key: code,
         sourceKey: source.key,
@@ -2188,8 +2571,8 @@
         subTypes: normalize(raw?.sub_types),
         text: normalize(raw?.card_text),
         imageId: normalize(raw?.card_image_id),
-        image: normalize(raw?.card_image) || buildDotggCardImageUrl(code),
-        fallbackImage: buildDotggCardImageUrl(code),
+        image,
+        fallbackImage,
         dateScraped: normalize(raw?.date_scraped),
         blockIcon: normalize(raw?.block_number),
         searchable: "",
@@ -2203,6 +2586,60 @@
       refreshCardSearchIndex(card);
       card.preferredScore = preferredCardScore(card);
       return card;
+    }
+    function isBaratorneoCard(card){
+      return card?.isBaratorneo === true;
+    }
+    function cardExpansionKey(card){
+      return isBaratorneoCard(card)
+        ? BARATORNEO_EXPANSION
+        : normalize(card?.expansionCode || card?.expansionName || "Sin expansion");
+    }
+    function createBaratorneoCard(file){
+      const code = normalizeCardCode(file?.code || "");
+      if (!code) return null;
+      const meta = state.baratorneoMetaByCode.get(code) || {};
+      const type = normalize(meta?.type || file?.type || "Character") || "Character";
+      const colors = colorListFromRaw(Array.isArray(meta?.colors) ? meta.colors.join(" / ") : (meta?.colors || meta?.card_color));
+      const counter = toIntOrNull(meta?.counter ?? meta?.counter_amount);
+      const cost = normalize(meta?.cost ?? meta?.card_cost ?? "");
+      const card = {
+        key: `baratorneo:${code}`,
+        sourceKey: "baratorneo",
+        sourceLabel: BARATORNEO_EXPANSION,
+        name: normalize(meta?.name || meta?.card_name || code) || code,
+        code,
+        type,
+        rarity: normalize(meta?.rarity || "-"),
+        expansionName: BARATORNEO_EXPANSION,
+        expansionCode: BARATORNEO_EXPANSION,
+        colors: colors.length ? colors : COLOR_ORDER.slice(),
+        counter,
+        cost,
+        life: normalize(meta?.life ?? ""),
+        power: normalize(meta?.power ?? meta?.card_power ?? ""),
+        attribute: normalize(meta?.attribute ?? ""),
+        subTypes: normalize(meta?.subTypes || meta?.sub_types || ""),
+        text: normalize(meta?.text || meta?.effect || meta?.card_text || ""),
+        imageId: code,
+        image: baratorneoImagePath(meta?.image, file?.path),
+        fallbackImage: "",
+        dateScraped: "",
+        blockIcon: "",
+        searchable: "",
+        searchableCompact: "",
+        costSort: toIntOrNull(cost) ?? Number.MAX_SAFE_INTEGER,
+        variantPenalty: 0,
+        preferredScore: 0,
+        isBaratorneo: true,
+        hasBaratorneoDetails: state.baratorneoMetaByCode.has(code)
+      };
+      refreshCardSearchIndex(card);
+      return card;
+    }
+    function baratorneoCards(){
+      if (!state.canSeeBaratorneo) return [];
+      return BARATORNEO_CARD_FILES.map(createBaratorneoCard).filter(Boolean);
     }
     function mergeSourceVariants(sourceMap){
       const english = sourceMap.get("english") || null;
@@ -2380,6 +2817,8 @@
 
       if (!leader){
         issues.push("Falta elegir leader.");
+      } else if (isBaratorneoCard(leader)){
+        issues.push("No se pueden guardar decklists con cartas de BARATORNEO porque no existen en el catalogo oficial.");
       }
       if (total !== 50){
         issues.push(total < 50 ? `Faltan ${50 - total} cartas del main deck.` : `Sobran ${total - 50} cartas del main deck.`);
@@ -2387,6 +2826,9 @@
 
       entries.forEach((entry) => {
         const qty = Number(entry.qty || 0);
+        if (isBaratorneoCard(entry.card)){
+          issues.push(`${entry.card.code}: carta BARATORNEO no guardable.`);
+        }
         if (qty > 4) issues.push(`${entry.card.code} tiene ${qty} copias; el maximo es 4.`);
         if (leader && !matchesLeaderColors(entry.card)){
           issues.push(`${entry.card.code} no comparte color con ${leader.code}.`);
@@ -2489,19 +2931,301 @@
     }
 
     async function fetchRecommendationDataset(){
+      if (recommendationDatasetPromise) return recommendationDatasetPromise;
       if (!window.BarateamApp?.SUPABASE_URL) throw new Error("Supabase no esta disponible.");
       const requested = toYmd(new Date());
       const url = `${window.BarateamApp.SUPABASE_URL}/functions/v1/matchup-stats?dataset=${encodeURIComponent(RECOMMENDATION_DATASET)}&date=${toCompactDate(requested)}`;
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) throw new Error(`matchup-stats ${res.status}`);
-      const payload = await res.json();
-      const deckRows = normalizeDecklistRows(payload?.data?.decklist || []);
-      return {
-        sourceDate: payload?.date
-          ? `${String(payload.date).slice(0, 4)}-${String(payload.date).slice(4, 6)}-${String(payload.date).slice(6, 8)}`
-          : requested,
-        deckRows
-      };
+      recommendationDatasetPromise = fetch(url, { cache: "no-store" })
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`matchup-stats ${res.status}`);
+          const payload = await res.json();
+          const deckRows = normalizeDecklistRows(payload?.data?.decklist || []);
+          return {
+            sourceDate: payload?.date
+              ? `${String(payload.date).slice(0, 4)}-${String(payload.date).slice(4, 6)}-${String(payload.date).slice(6, 8)}`
+              : requested,
+            deckRows
+          };
+        })
+        .catch((error) => {
+          recommendationDatasetPromise = null;
+          throw error;
+        });
+      return recommendationDatasetPromise;
+    }
+
+    function deckCardsArray(deck){
+      const candidates = [deck?.cards, deck?.decklist, deck?.deck_list, deck?.list, deck?.mainDeck, deck?.main_deck];
+      return candidates.find((value) => Array.isArray(value)) || null;
+    }
+
+    function cardCodeFromDeckCard(raw){
+      return extractCardCode(
+        raw?.code ||
+        raw?.card_code ||
+        raw?.cardCode ||
+        raw?.id ||
+        raw?.card_id ||
+        raw?.cardId ||
+        raw?.name ||
+        raw?.card ||
+        raw ||
+        ""
+      );
+    }
+
+    function cardQtyFromDeckCard(raw){
+      const value = raw?.qty ?? raw?.quantity ?? raw?.count ?? raw?.copies ?? raw?.amount ?? raw?.num;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+    }
+
+    function deckItemsFromRecommendationDeck(deck){
+      const cards = deckCardsArray(deck);
+      if (cards){
+        return cards.map((item) => ({
+          code: cardCodeFromDeckCard(item),
+          qty: cardQtyFromDeckCard(item)
+        })).filter((item) => item.code && item.qty);
+      }
+      return parseSimPaste(deckTextFromRecommendationDeck(deck)).items;
+    }
+
+    function firstDeckValue(deck, keys){
+      for (const key of keys){
+        const value = deck?.[key];
+        if (value !== undefined && value !== null && value !== "") return value;
+      }
+      return "";
+    }
+
+    function parseMetric(value){
+      if (value === null || value === undefined || value === "") return null;
+      if (typeof value === "number") return Number.isFinite(value) ? value : null;
+      const match = String(value).replace(",", ".").match(/-?\d+(?:\.\d+)?/);
+      if (!match) return null;
+      const parsed = Number(match[0]);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function deckWins(deck){ return parseMetric(firstDeckValue(deck, ["wins", "win", "victories", "victorias", "w"])); }
+    function deckLosses(deck){ return parseMetric(firstDeckValue(deck, ["losses", "loss", "defeats", "derrotas", "l"])); }
+    function deckGames(deck){
+      const matchupGames = parseMetric(deck?.matchup?.games_played ?? deck?.matchup?.games ?? deck?.matchup?.matches);
+      if (matchupGames !== null) return matchupGames;
+      const direct = parseMetric(firstDeckValue(deck, ["games", "matches", "number_of_matches", "num_matches", "matches_played", "match_count", "matchCount", "played", "total_games", "totalGames", "total_matches", "totalMatches", "partidas"]));
+      if (direct !== null) return direct;
+      const wins = deckWins(deck);
+      const losses = deckLosses(deck);
+      if (wins !== null && losses !== null) return wins + losses;
+      return null;
+    }
+    function deckWinrate(deck){
+      const matchupWr = parseMetric(deck?.matchup?.win_rate ?? deck?.matchup?.wr ?? deck?.matchup?.winrate);
+      if (matchupWr !== null) return matchupWr <= 1 ? matchupWr * 100 : matchupWr;
+      const direct = parseMetric(firstDeckValue(deck, ["wr", "winrate", "win_rate", "winRate", "raw_win_rate", "winrate_pct", "winRatePct", "win_percentage", "winPercentage"]));
+      if (direct !== null) return direct <= 1 ? direct * 100 : direct;
+      const wins = deckWins(deck);
+      const games = deckGames(deck);
+      if (wins !== null && games > 0) return (wins / games) * 100;
+      return null;
+    }
+    function deckSourceUrl(deck){ return normalize(firstDeckValue(deck, ["url", "sourceUrl", "source_url", "link", "href", "deckUrl", "deck_url"])); }
+    function deckUsageTitle(deck, leaderName, index){
+      const player = normalize(firstDeckValue(deck, ["player", "player_name", "playerName", "pilot", "author", "username", "user"]));
+      const title = normalize(firstDeckValue(deck, ["name", "title", "deckName", "deck_name", "event", "tournament"]));
+      return [player, title].filter(Boolean).join(" · ") || leaderName || `Lista ${index + 1}`;
+    }
+    function cardUsageQty(items, cardCode){
+      return items.reduce((sum, item) => (
+        normalizeCardCode(item?.code || "") === cardCode ? sum + Number(item?.qty || 0) : sum
+      ), 0);
+    }
+    function usageDeckItems(leaderCode, items){
+      const leader = normalizeCardCode(leaderCode);
+      const normalized = (Array.isArray(items) ? items : []).map((item) => ({
+        code: normalizeCardCode(item?.code || ""),
+        qty: Number(item?.qty || 0) || 1
+      })).filter((item) => item.code);
+      const main = normalized.filter((item) => item.code !== leader);
+      return leader ? [{ code:leader, qty:1, isLeader:true }, ...main] : main;
+    }
+    function buildCardUsageRows(cardCode, loaded){
+      const code = normalizeCardCode(cardCode);
+      if (!code || !loaded?.deckRows?.length) return [];
+      const rows = [];
+      loaded.deckRows.forEach((leaderRow) => {
+        const leader = normalizeCardCode(leaderRow?.leader || "");
+        const leaderName = normalize(leaderRow?.leaderName || leader || "Leader");
+        (leaderRow?.bestDecklists || []).forEach((deck, index) => {
+          const items = deckItemsFromRecommendationDeck(deck);
+          const qty = cardUsageQty(items, code) || (leader === code ? 1 : 0);
+          if (!qty) return;
+          const games = deckGames(deck);
+          if (!(games >= CARD_USAGE_MIN_GAMES)) return;
+          const winrate = deckWinrate(deck);
+          rows.push({
+            leader,
+            leaderName,
+            qty,
+            games,
+            winrate,
+            title: deckUsageTitle(deck, leaderName, index),
+            url: deckSourceUrl(deck),
+            items: usageDeckItems(leader, items)
+          });
+        });
+      });
+      return rows.sort((a, b) => {
+        const awr = a.winrate === null ? -1 : a.winrate;
+        const bwr = b.winrate === null ? -1 : b.winrate;
+        if (bwr !== awr) return bwr - awr;
+        const ag = a.games === null ? -1 : a.games;
+        const bg = b.games === null ? -1 : b.games;
+        if (bg !== ag) return bg - ag;
+        if (b.qty !== a.qty) return b.qty - a.qty;
+        return collator.compare(a.title, b.title);
+      });
+    }
+    function cardUsageLoadingMarkup(){
+      return '<div class="cardUsageEmpty">Cargando uso en decklists top...</div>';
+    }
+    function cardUsageLeaderOptions(rows){
+      const leaders = new Map();
+      (Array.isArray(rows) ? rows : []).forEach((row) => {
+        const code = normalizeCardCode(row?.leader || "");
+        if (!code || leaders.has(code)) return;
+        leaders.set(code, row?.leaderName || code);
+      });
+      return Array.from(leaders.entries())
+        .map(([code, name]) => ({ code, name:normalize(name || code) || code }))
+        .sort((a, b) => collator.compare(a.name, b.name) || collator.compare(a.code, b.code));
+    }
+    function cardUsageFilteredRows(rows, leaderCode){
+      const leader = normalizeCardCode(leaderCode || "");
+      const base = leader ? rows.filter((row) => row.leader === leader) : rows;
+      return base.slice(0, CARD_USAGE_LIMIT);
+    }
+    function cardUsageControlsMarkup(cardCode, rows, selectedLeader){
+      const leaders = cardUsageLeaderOptions(rows);
+      if (!leaders.length) return "";
+      const id = `cardUsageLeader-${String(cardCode || "").replace(/[^a-z0-9_-]/gi, "-")}`;
+      const options = leaders.map((leader) => (
+        `<option value="${escapeAttr(leader.code)}"${leader.code === selectedLeader ? " selected" : ""}>${escapeHtml(leader.name)} (${escapeHtml(leader.code)})</option>`
+      )).join("");
+      return `
+        <div class="cardUsageControls">
+          <label for="${escapeAttr(id)}">Lider</label>
+          <select id="${escapeAttr(id)}" data-card-usage-leader="${escapeAttr(cardCode)}">
+            <option value="">Todos los lideres</option>
+            ${options}
+          </select>
+        </div>
+      `;
+    }
+    function cardUsageRowMarkup(row, index){
+      const wr = row.winrate === null ? null : Number(row.winrate);
+      const wrText = wr === null ? "WR n/d" : `${wr.toFixed(1)}% WR`;
+      const wrClass = wr === null ? "" : (wr >= 50 ? " is-good" : " is-bad");
+      const gamesText = row.games === null ? "Partidas n/d" : `${Math.round(row.games)} partida${Math.round(row.games) === 1 ? "" : "s"}`;
+      const deckItems = row.items || [];
+      const leaderItem = deckItems.find((item) => item?.isLeader) || null;
+      const mainItems = leaderItem ? deckItems.filter((item) => item !== leaderItem) : deckItems;
+      const title = row.url
+        ? `<a href="${escapeAttr(row.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(row.title)}</a>`
+        : `<span>${escapeHtml(row.title)}</span>`;
+      return `
+        <article class="cardUsageRow">
+          <div class="cardUsageHeader">
+            <div class="cardUsageMain">
+              <span class="cardUsageRank">${index + 1}</span>
+              <div class="cardUsageTitle">
+                ${title}
+                <small>${escapeHtml(row.leaderName || row.leader || "Leader")}</small>
+              </div>
+            </div>
+            <div class="cardUsageStats">
+              <span class="cardUsagePill${wrClass}">${escapeHtml(wrText)}</span>
+              <span class="cardUsagePill">${escapeHtml(gamesText)}</span>
+              <span class="cardUsagePill">${escapeHtml(`${row.qty}x`)}</span>
+            </div>
+          </div>
+          <div class="cardUsageDeckCards">
+            ${leaderItem ? cardUsageDeckCardMarkup(leaderItem, true) : ""}
+            <div class="cardUsageDeckMain">${mainItems.map((item) => cardUsageDeckCardMarkup(item)).join("")}</div>
+          </div>
+        </article>
+      `;
+    }
+    function cardUsageDeckCardMarkup(item, isLeader = false){
+      const code = normalizeCardCode(item?.code || "");
+      const card = state.cardsByCode.get(code);
+      const label = card ? `${card.name} (${card.code})` : code;
+      const src = card ? cardImageSource(card) : cardFallbackSource({ code });
+      const fallbackSrc = card ? cardFallbackSource(card) : "";
+      const classes = `cardUsageDeckCard${src ? " cardZoom" : ""}${isLeader || item?.isLeader ? " cardUsageLeaderCard" : ""}`;
+      const actionAttrs = code ? ` data-card-code="${escapeAttr(code)}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(label)}"` : "";
+      const previewAttrs = src ? ` data-preview-src="${escapeAttr(src)}" data-preview-fallback-src="${escapeAttr(fallbackSrc)}" data-preview-label="${escapeAttr(label)}"` : "";
+      const img = src
+        ? `<img src="${escapeAttr(src)}" alt="${escapeAttr(label)}" loading="lazy" data-deck-builder-image="1" data-fallback-src="${escapeAttr(fallbackSrc)}" data-fallback-label="${escapeAttr(label)}" data-fallback-class="cardUsageDeckFallback">`
+        : `<div class="cardUsageDeckFallback">${escapeHtml(label || "Carta")}</div>`;
+      return `<div class="${classes}" title="${escapeAttr(label)}"${previewAttrs}${actionAttrs}>${img}<span class="cardUsageQty">${escapeHtml(`${item?.qty || 1}x`)}</span></div>`;
+    }
+    function renderCardUsageStatus(cardCode, nextState){
+      const host = document.querySelector(`[data-card-usage-host="${cardCode}"]`);
+      if (!host) return;
+      if (nextState.status === "loading"){
+        host.innerHTML = cardUsageLoadingMarkup();
+        return;
+      }
+      if (nextState.status === "error"){
+        host.innerHTML = `<div class="cardUsageEmpty">No se pudo cargar el uso: ${escapeHtml(nextState.error || "error desconocido")}</div>`;
+        return;
+      }
+      const rows = nextState.rows || [];
+      if (!rows.length){
+        host.innerHTML = `<div class="cardUsageEmpty">No he encontrado esta carta en decklists top con minimo ${CARD_USAGE_MIN_GAMES} partidas.</div>`;
+        return;
+      }
+      const leaders = cardUsageLeaderOptions(rows);
+      let selectedLeader = normalizeCardCode(host.dataset.selectedLeader || "");
+      if (selectedLeader && !leaders.some((leader) => leader.code === selectedLeader)){
+        selectedLeader = "";
+        host.dataset.selectedLeader = "";
+      }
+      const visibleRows = cardUsageFilteredRows(rows, selectedLeader);
+      const selectedLeaderName = selectedLeader
+        ? leaders.find((leader) => leader.code === selectedLeader)?.name || selectedLeader
+        : "";
+      const scope = selectedLeaderName ? `filtradas por ${selectedLeaderName}` : "mejores globales";
+      const source = nextState.sourceDate ? ` (${nextState.sourceDate})` : "";
+      host.innerHTML = `
+        ${cardUsageControlsMarkup(cardCode, rows, selectedLeader)}
+        <p class="cardUsageIntro">Top ${CARD_USAGE_LIMIT} listas que juegan esta carta, con minimo ${CARD_USAGE_MIN_GAMES} partidas, ordenadas por WR y numero de partidas (${escapeHtml(scope)}). Fuente: CardKaizoku${escapeHtml(source)}.</p>
+        ${visibleRows.length
+          ? `<div class="cardUsageList">${visibleRows.map(cardUsageRowMarkup).join("")}</div>`
+          : '<div class="cardUsageEmpty">No hay listas para este lider con el minimo de partidas.</div>'}
+      `;
+    }
+    async function loadCardUsage(cardCode){
+      const code = normalizeCardCode(cardCode);
+      if (!code) return;
+      if (state.cardUsageCache.has(code)){
+        renderCardUsageStatus(code, { status:"ready", ...state.cardUsageCache.get(code) });
+        return;
+      }
+      renderCardUsageStatus(code, { status:"loading" });
+      try{
+        const loaded = await fetchRecommendationDataset();
+        const rows = buildCardUsageRows(code, loaded);
+        const result = { rows, sourceDate:loaded.sourceDate };
+        state.cardUsageCache.set(code, result);
+        if (state.activeCardCode !== code) return;
+        renderCardUsageStatus(code, { status:"ready", ...result });
+      }catch(error){
+        if (state.activeCardCode !== code) return;
+        renderCardUsageStatus(code, { status:"error", error:error?.message || "No se pudieron cargar las listas." });
+      }
     }
 
     function buildRecommendationsForLeader(leaderCode, decklists, sourceDate){
@@ -2835,6 +3559,7 @@
         state.currentUser = null;
       }
       syncNavUser(state.currentUser);
+      await refreshBaratorneoAccess();
       renderAuthState();
       renderValidation();
       return state.currentUser;
@@ -2893,7 +3618,8 @@
 
       const validation = validateDeck();
       if (!validation.ok){
-        showSaveMessage("La lista aun no es valida para guardar.", "err");
+        const baratorneoIssue = validation.issues.find((issue) => /BARATORNEO/i.test(issue));
+        showSaveMessage(baratorneoIssue || "La lista aun no es valida para guardar.", "err");
         renderValidation();
         return;
       }
@@ -2975,8 +3701,36 @@
       }
       select.dataset.ready = "1";
     }
+    function populateExpansionFilter(){
+      const select = $("filterExpansion");
+      if (!select) return;
+      const current = state.filters.expansion;
+      const counts = new Map();
+      state.allCards.forEach((card) => {
+        const key = cardExpansionKey(card);
+        if (!key) return;
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+      const options = Array.from(counts.entries())
+        .map(([value, count]) => ({ value, count }))
+        .sort((a, b) => {
+          if (a.value === BARATORNEO_EXPANSION) return -1;
+          if (b.value === BARATORNEO_EXPANSION) return 1;
+          return collator.compare(a.value, b.value);
+        });
+      select.innerHTML = '<option value="">Todas</option>' + options
+        .map((option) => `<option value="${escapeAttr(option.value)}">${escapeHtml(option.value)} (${option.count})</option>`)
+        .join("");
+      if (current && options.some((option) => option.value === current)){
+        select.value = current;
+      } else {
+        state.filters.expansion = "";
+        select.value = "";
+      }
+    }
     function syncFilterControls(){
       populateCostFilter();
+      populateExpansionFilter();
 
       const activeColors = leaderColors();
       const colorOptions = activeColors.length ? activeColors : COLOR_ORDER;
@@ -2999,6 +3753,8 @@
         const node = $(id);
         if (node) node.disabled = disabled;
       });
+      const expansionSelect = $("filterExpansion");
+      if (expansionSelect) expansionSelect.disabled = false;
       const clearBtn = $("clearFiltersButton");
       if (clearBtn){
         clearBtn.disabled = disabled && !Object.values(state.filters).some(Boolean);
@@ -3007,6 +3763,7 @@
     function matchesSearchFilters(card){
       if (!state.selectedLeaderCode) return true;
       const filters = state.filters;
+      if (filters.expansion && cardExpansionKey(card) !== filters.expansion) return false;
       if (filters.type && card.type !== filters.type) return false;
       if (filters.color && !card.colors.includes(filters.color)) return false;
       if (filters.cost && String(card.cost) !== filters.cost) return false;
@@ -3054,6 +3811,12 @@
 
       if (query){
         rows = rows.filter((card) => card.searchable.includes(query) || card.searchableCompact.includes(compactQuery));
+      }
+      if (state.filters.expansion !== BARATORNEO_EXPANSION){
+        rows = rows.filter((card) => !isBaratorneoCard(card));
+      }
+      if (state.filters.expansion){
+        rows = rows.filter((card) => cardExpansionKey(card) === state.filters.expansion);
       }
       rows = rows.filter(matchesSearchFilters);
 
@@ -3299,43 +4062,68 @@
       ];
 
       return (
-        `<div class="cardInfoBody">` +
-          `<div class="cardInfoArt">${art}</div>` +
-          `<div class="cardInfoPanel">` +
-            `<div class="cardInfoMetaStrip">` +
-              `<span class="cardInfoTag">${escapeHtml(card.type || "-")}</span>` +
-              `<span class="cardInfoTag">${escapeHtml(card.rarity || "-")}</span>` +
-              colorTags +
-              `<span class="cardInfoTag">${escapeHtml(card.sourceLabel || "-")}</span>` +
-            `</div>` +
-            `<div class="cardInfoSpecs">` +
-              specs.map((row) => `<div class="cardInfoSpecRow">${row.map(cardInfoSpecMarkup).join("")}</div>`).join("") +
-            `</div>` +
-            `<div class="cardInfoSection">` +
-              `<span class="cardInfoSectionLabel">Tipo</span>` +
-              `<strong>${escapeHtml(card.subTypes || card.type || "Sin dato")}</strong>` +
-            `</div>` +
-            `<div class="cardInfoSection">` +
-              `<span class="cardInfoSectionLabel">Efecto</span>` +
-              `<div class="cardInfoText">${escapeHtml(card.text || "Sin texto disponible.")}</div>` +
-            `</div>` +
-            `<div class="cardInfoSet">` +
-              `<span class="cardInfoSectionLabel">Expansion</span>` +
-              `<strong>${escapeHtml(card.expansionName || "Sin expansion")}</strong>` +
-              `<small>${escapeHtml(card.code)} | ${escapeHtml(card.sourceLabel || "-")}</small>` +
+        `<div class="cardInfoTabs" role="tablist" aria-label="Secciones de carta">` +
+          `<button class="cardInfoTab is-active" type="button" role="tab" aria-selected="true" data-card-info-tab="detail">Detalle</button>` +
+          `<button class="cardInfoTab" type="button" role="tab" aria-selected="false" data-card-info-tab="usage">Uso</button>` +
+        `</div>` +
+        `<section class="cardInfoTabPanel" data-card-info-panel="detail">` +
+          `<div class="cardInfoBody">` +
+            `<div class="cardInfoArt">${art}</div>` +
+            `<div class="cardInfoPanel">` +
+              `<div class="cardInfoMetaStrip">` +
+                `<span class="cardInfoTag">${escapeHtml(card.type || "-")}</span>` +
+                `<span class="cardInfoTag">${escapeHtml(card.rarity || "-")}</span>` +
+                colorTags +
+                `<span class="cardInfoTag">${escapeHtml(card.sourceLabel || "-")}</span>` +
+              `</div>` +
+              `<div class="cardInfoSpecs">` +
+                specs.map((row) => `<div class="cardInfoSpecRow">${row.map(cardInfoSpecMarkup).join("")}</div>`).join("") +
+              `</div>` +
+              `<div class="cardInfoSection">` +
+                `<span class="cardInfoSectionLabel">Tipo</span>` +
+                `<strong>${escapeHtml(card.subTypes || card.type || "Sin dato")}</strong>` +
+              `</div>` +
+              `<div class="cardInfoSection">` +
+                `<span class="cardInfoSectionLabel">Efecto</span>` +
+                `<div class="cardInfoText">${escapeHtml(card.text || "Sin texto disponible.")}</div>` +
+              `</div>` +
+              `<div class="cardInfoSet">` +
+                `<span class="cardInfoSectionLabel">Expansion</span>` +
+                `<strong>${escapeHtml(card.expansionName || "Sin expansion")}</strong>` +
+                `<small>${escapeHtml(card.code)} | ${escapeHtml(card.sourceLabel || "-")}</small>` +
+              `</div>` +
             `</div>` +
           `</div>` +
-        `</div>`
+        `</section>` +
+        `<section class="cardInfoTabPanel" data-card-info-panel="usage" hidden>` +
+          `<div class="cardInfoUsage" data-card-usage-host="${escapeAttr(card.code || "")}">${cardUsageLoadingMarkup()}</div>` +
+        `</section>`
       );
+    }
+    function setCardInfoTab(tab){
+      const root = $("cardInfoContent");
+      if (!root) return;
+      const active = tab === "usage" ? "usage" : "detail";
+      root.querySelectorAll("[data-card-info-tab]").forEach((button) => {
+        const selected = button.dataset.cardInfoTab === active;
+        button.classList.toggle("is-active", selected);
+        button.setAttribute("aria-selected", selected ? "true" : "false");
+      });
+      root.querySelectorAll("[data-card-info-panel]").forEach((panel) => {
+        panel.hidden = panel.dataset.cardInfoPanel !== active;
+      });
+      if (active === "usage" && state.activeCardCode) void loadCardUsage(state.activeCardCode);
     }
     function openCardInfo(code){
       const card = state.cardsByCode.get(normalizeCardCode(code));
       if (!card) return;
+      if (isBaratorneoCard(card) && !card.hasBaratorneoDetails) return;
       document.dispatchEvent(new CustomEvent("deckBuilder:hidePreview"));
       state.activeCardCode = card.code;
       $("cardInfoTitle").textContent = card.name;
       $("cardInfoSubtitle").textContent = [card.code, card.rarity, String(card.type || "").toUpperCase()].filter(Boolean).join(" | ");
       $("cardInfoContent").innerHTML = cardInfoModalMarkup(card);
+      void loadCardUsage(card.code);
       $("cardInfoOverlay").classList.add("is-open");
       $("cardInfoOverlay").setAttribute("aria-hidden", "false");
       document.body.classList.add("modal-open");
@@ -3372,7 +4160,7 @@
     function clearLeaderAndDeck(){
       state.selectedLeaderCode = "";
       state.deckCounts = new Map();
-      state.filters = { type: "", color: "", cost: "", counter: "" };
+      state.filters = { expansion: state.filters.expansion || "", type: "", color: "", cost: "", counter: "" };
       state.recommendations.leaderCode = "";
       state.recommendations.status = "idle";
       state.recommendations.rows = [];
@@ -3435,11 +4223,13 @@
       state.cardsByCode = new Map();
       state.selectedLeaderCode = "";
       state.deckCounts = new Map();
-      state.filters = { type: "", color: "", cost: "", counter: "" };
+      state.filters = { expansion: state.filters.expansion || "", type: "", color: "", cost: "", counter: "" };
       state.catalogReady = false;
       setLoading(true, "Cargando catalogo local...");
 
       try{
+        await refreshBaratorneoAccess();
+        await loadBaratorneoMetadata();
         const results = await Promise.allSettled(SOURCE_DEFS.map(loadPunkSource));
         const mappedByCode = new Map();
 
@@ -3487,6 +4277,7 @@
         state.allCards = Array.from(mappedByCode.values())
           .map((sourceMap) => mergeSourceVariants(sourceMap))
           .filter(Boolean)
+          .concat(baratorneoCards())
           .sort((a, b) => {
             if (a.type === "Leader" && b.type !== "Leader") return -1;
             if (a.type !== "Leader" && b.type === "Leader") return 1;
@@ -3514,7 +4305,7 @@
       state.search = event.target.value || "";
       renderAvailable();
     });
-    ["filterType", "filterColor", "filterCost", "filterCounter"].forEach((id) => {
+    ["filterExpansion", "filterType", "filterColor", "filterCost", "filterCounter"].forEach((id) => {
       $(id).addEventListener("change", (event) => {
         const key = id.replace(/^filter/, "").toLowerCase();
         state.filters[key] = event.target.value || "";
@@ -3522,8 +4313,8 @@
       });
     });
     $("clearFiltersButton").addEventListener("click", () => {
-      state.filters = { type: "", color: "", cost: "", counter: "" };
-      ["filterType", "filterColor", "filterCost", "filterCounter"].forEach((id) => {
+      state.filters = { expansion: "", type: "", color: "", cost: "", counter: "" };
+      ["filterExpansion", "filterType", "filterColor", "filterCost", "filterCounter"].forEach((id) => {
         const node = $(id);
         if (node) node.value = "";
       });
@@ -3558,6 +4349,34 @@
       if (event.target === $("cardInfoOverlay")){
         closeCardInfo();
       }
+    });
+    $("cardInfoContent").addEventListener("click", (event) => {
+      const cardTile = event.target.closest(".cardUsageDeckCard[data-card-code]");
+      if (cardTile){
+        event.preventDefault();
+        openCardInfo(cardTile.dataset.cardCode || "");
+        return;
+      }
+      const tab = event.target.closest("[data-card-info-tab]");
+      if (!tab) return;
+      setCardInfoTab(tab.dataset.cardInfoTab || "detail");
+    });
+    $("cardInfoContent").addEventListener("change", (event) => {
+      const select = event.target.closest("[data-card-usage-leader]");
+      if (!select) return;
+      const code = normalizeCardCode(select.dataset.cardUsageLeader || state.activeCardCode);
+      const host = document.querySelector(`[data-card-usage-host="${code}"]`);
+      if (host) host.dataset.selectedLeader = normalizeCardCode(select.value || "");
+      if (state.cardUsageCache.has(code)){
+        renderCardUsageStatus(code, { status:"ready", ...state.cardUsageCache.get(code) });
+      }
+    });
+    $("cardInfoContent").addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const cardTile = event.target.closest(".cardUsageDeckCard[data-card-code]");
+      if (!cardTile) return;
+      event.preventDefault();
+      openCardInfo(cardTile.dataset.cardCode || "");
     });
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
@@ -3609,10 +4428,19 @@
     });
     if (sb?.auth?.onAuthStateChange){
       sb.auth.onAuthStateChange((_event, session) => {
+        const before = state.canSeeBaratorneo;
         state.currentUser = session?.user || null;
         syncNavUser(state.currentUser);
-        renderAuthState();
-        renderValidation();
+        window.BarateamApp.clearAccessStateCache?.(state.currentUser?.id || null);
+        void (async () => {
+          await refreshBaratorneoAccess();
+          renderAuthState();
+          renderValidation();
+          if (before !== state.canSeeBaratorneo) {
+            await loadCatalog();
+            await loadDeckFromUrl();
+          }
+        })();
       });
     }
 

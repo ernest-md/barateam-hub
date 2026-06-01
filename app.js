@@ -362,6 +362,7 @@
         profile: null,
         isLoggedIn: false,
         isMember: false,
+        team: "",
         hasFantasy: false,
         isAdmin: false,
         isPrivileged: false
@@ -374,7 +375,7 @@
     if (!profile && sb){
       const { data } = await sb
         .from("profiles")
-        .select("id,username,display_name,avatar_url,app_role,member,fantasy")
+        .select("id,username,display_name,avatar_url,team,app_role,member,fantasy")
         .eq("id", user.id)
         .maybeSingle();
       profile = data || null;
@@ -386,6 +387,7 @@
       profile: profile || null,
       isLoggedIn: true,
       isMember: profile?.member === true,
+      team: profile?.team || "",
       hasFantasy: profile?.fantasy === true,
       isAdmin: profile?.app_role === "admin",
       isPrivileged: profile?.app_role === "admin" || profile?.app_role === "vdj"
