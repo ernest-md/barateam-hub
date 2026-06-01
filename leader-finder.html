@@ -265,6 +265,81 @@
     .deckActions{ display:grid; grid-template-columns:1fr; gap:8px; }
     .deckActions .btn2{ width:100%; text-align:center; }
     .deckStatus{ color:#475569; font-size:12px; font-weight:800; min-height:18px; }
+    .deckVisual{
+      min-height:300px;
+      max-height:min(48vh, 440px);
+      overflow:auto;
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(70px, 1fr));
+      align-items:start;
+      gap:8px;
+      padding:8px;
+      border:1px solid rgba(15,23,42,.10);
+      border-radius:8px;
+      background:#f8fafc;
+    }
+    .deckEmpty{
+      grid-column:1 / -1;
+      min-height:180px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      color:#64748b;
+      font-size:12px;
+      font-weight:900;
+      padding:16px;
+    }
+    .deckCard{
+      width:70px;
+      justify-self:center;
+      position:relative;
+      border-radius:4px;
+      overflow:visible;
+      transition:transform .14s ease;
+    }
+    .deckCard:hover{ transform:translateY(-2px) scale(1.03); z-index:2; }
+    .deckCard img{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:inherit;
+      background:#fff;
+      box-shadow:0 10px 24px rgba(2,6,23,.18);
+    }
+    .deckCardFallback{
+      width:100%;
+      aspect-ratio:2 / 3;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:6px;
+      color:#0f172a;
+      font-size:10px;
+      font-weight:1000;
+      word-break:break-word;
+      border-radius:inherit;
+      border:1px solid rgba(15,23,42,.10);
+      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(226,232,240,.94));
+      box-shadow:0 10px 24px rgba(2,6,23,.10);
+    }
+    .deckCardBadge{
+      position:absolute;
+      left:4px;
+      right:4px;
+      bottom:4px;
+      font-size:10px;
+      font-weight:1000;
+      color:#fff;
+      background:rgba(15,23,42,.88);
+      border-radius:6px;
+      padding:2px 4px;
+      text-align:center;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
     .leaderPlayersPanel{
       border:1px solid rgba(15,23,42,.10);
       border-radius:8px;
@@ -317,15 +392,13 @@
       font-size:12px;
       font-weight:1000;
     }
-    .leaderPlayerName{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#0f172a; }
+    .leaderPlayerName{ display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#0f172a; }
+    a.leaderPlayerName{ text-decoration:none; }
+    a.leaderPlayerName:hover{ color:#2563eb; text-decoration:underline; }
     .leaderPlayerStats{ display:flex; flex-wrap:wrap; gap:8px; margin-top:2px; }
     .leaderPlayerGames{ color:#475569; font-size:12px; white-space:nowrap; }
     .leaderPlayerWr{ color:#16a34a; font-size:12px; white-space:nowrap; }
     .leaderPlayerWr.is-low{ color:#dc2626; }
-    .deckOutput{
-      width:100%; height:min(44vh, 380px); min-height:300px; resize:vertical; border:1px solid rgba(15,23,42,.12); border-radius:8px;
-      background:#0f172a; color:#e2e8f0; padding:14px; font:700 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space:pre;
-    }
     .rouletteCard{
       width:min(1100px, calc(100vw - 36px));
       overflow:hidden;
@@ -444,7 +517,7 @@
       .modalLayout{ grid-template-columns:minmax(220px, 320px) minmax(0, 1fr); }
       .deckPanel{ grid-column:2; }
       .deckActions{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
-      .deckOutput{ height:260px; min-height:220px; }
+      .deckVisual{ min-height:220px; max-height:300px; }
     }
     @media (max-width: 1040px){
       .layout{ grid-template-columns:1fr; }
@@ -475,7 +548,7 @@
       .leaderPlayersHead{ flex-wrap:wrap; }
       .leaderStatsExpansionSelect{ width:100%; }
       .deckActions{ grid-template-columns:1fr; }
-      .deckOutput{ height:240px; min-height:200px; }
+      .deckVisual{ min-height:200px; max-height:300px; }
       .rouletteCard{ width:calc(100vw - 20px); }
       .rouletteHead{ padding:0 38px 10px; }
       .rouletteHead h3{ font-size:24px; }
@@ -665,7 +738,9 @@
             <a class="btn2 btnSoft" id="openLimitlessLink" href="#" target="_blank" rel="noopener noreferrer">Abrir fuente</a>
           </div>
           <div class="deckStatus" id="deckStatus">Selecciona un lider para generar la lista del simulador.</div>
-          <textarea class="deckOutput" id="deckOutput" readonly placeholder="Aqui aparecera la decklist en formato simulador."></textarea>
+          <div class="deckVisual" id="deckVisual" role="list" aria-live="polite">
+            <div class="deckEmpty">Aqui aparecera la decklist con imagenes.</div>
+          </div>
         </section>
       </div>
     </div>
@@ -690,6 +765,7 @@
       leaders: [],
       filteredLeaders: [],
       selectedLeader: null,
+      selectedDeckText: "",
       deckCache: new Map(),
       playerStatsCache: new Map(),
       activeStatsExpansion: null,
@@ -708,6 +784,7 @@
     });
 
     window.BarateamApp.bindProtectedNavLinks(sb);
+    document.addEventListener("error", handleDeckCardImageError, true);
 
     function $(id){ return document.getElementById(id); }
     function escapeHtml(value){ return window.BarateamApp.escapeHtml(value); }
@@ -737,6 +814,56 @@
       const remoteArt = String(leader?.parallel_image_url || leader?.image_url || "").trim();
       if (remoteArt) return remoteArt;
       return fallbackLeaderImagePath(leader?.code);
+    }
+    function normalizeCardCode(value){
+      const raw = String(value || "")
+        .trim()
+        .toUpperCase()
+        .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015]/g, "-")
+        .replace(/\s+/g, "");
+      if (!raw) return "";
+      const normalized = raw.replace(/_/g, "-");
+      const promoMatch = normalized.match(/^P-?0*(\d{1,3})$/);
+      if (promoMatch) return `P-${promoMatch[1].padStart(3, "0")}`;
+      return normalized;
+    }
+    function extractCardCode(value){
+      const raw = String(value || "");
+      const match = raw.match(/\b(?:OP|ST|EB)-?\d{2,3}-\d{3}\b/i) || raw.match(/\bP-?\d{1,3}\b/i);
+      return match ? normalizeCardCode(match[0]) : "";
+    }
+    function buildDotggCardImageUrl(value){
+      const code = normalizeCardCode(value);
+      return code ? `https://static.dotgg.gg/onepiece/card/${encodeURIComponent(code)}.webp` : "";
+    }
+    function buildOfficialCardImageUrl(value){
+      const code = normalizeCardCode(value);
+      return code ? `https://en.onepiece-cardgame.com/images/cardlist/card/${encodeURIComponent(code)}.png` : "";
+    }
+    function buildAsiaOfficialCardImageUrl(value){
+      const code = normalizeCardCode(value);
+      return code ? `https://asia-en.onepiece-cardgame.com/images/cardlist/card/${encodeURIComponent(code)}.png` : "";
+    }
+    function uniqueUrls(values){
+      const seen = new Set();
+      return values.map((value) => String(value || "").trim()).filter((value) => {
+        if (!value || seen.has(value)) return false;
+        seen.add(value);
+        return true;
+      });
+    }
+    function cardImageSources(code){
+      const normalized = normalizeCardCode(code);
+      const urls = uniqueUrls([
+        buildDotggCardImageUrl(normalized),
+        buildOfficialCardImageUrl(normalized),
+        buildAsiaOfficialCardImageUrl(normalized)
+      ]);
+      return { primary: urls[0] || "", fallbacks: urls.slice(1) };
+    }
+    function userProfileHref(profileId){
+      const id = String(profileId || "").trim();
+      return id ? `user.html?id=${encodeURIComponent(id)}` : "";
     }
     function isRotatedLeader(code){
       const value = String(code || "").trim().toUpperCase();
@@ -769,6 +896,73 @@
       if (!entry.deckText) throw new Error("La fuente no devolvio ninguna decklist.");
       state.deckCache.set(cacheKey, entry);
       return entry;
+    }
+    function parseDeckTextItems(text){
+      const items = [];
+      const byCode = new Map();
+      String(text || "").split(/\r?\n/).forEach((line) => {
+        const clean = line.trim();
+        if (!clean) return;
+        const match = clean.match(/^(\d+)\s*[x\u00d7]?\s*(.+)$/i);
+        if (!match) return;
+        const qty = Number(match[1] || 0);
+        const code = extractCardCode(match[2]);
+        if (!qty || !code) return;
+        if (byCode.has(code)){
+          byCode.get(code).qty += qty;
+          return;
+        }
+        const item = { qty, code };
+        byCode.set(code, item);
+        items.push(item);
+      });
+      return items;
+    }
+    function renderDeckCard(item){
+      const code = normalizeCardCode(item?.code || "");
+      const qty = Number(item?.qty || 0);
+      const label = `${code} · ${qty}x`;
+      const sources = cardImageSources(code);
+      const art = sources.primary
+        ? `<img src="${escapeAttr(sources.primary)}" alt="${escapeAttr(label)}" loading="lazy" data-deck-card-img="1" data-fallback-srcs="${escapeAttr(sources.fallbacks.join("|"))}" data-card-label="${escapeAttr(code)}">`
+        : `<div class="deckCardFallback">${escapeHtml(code || "Carta")}</div>`;
+      return `
+        <article class="deckCard" role="listitem" title="${escapeAttr(label)}">
+          ${art}
+          <div class="deckCardBadge">${escapeHtml(`${qty}x ${code}`)}</div>
+        </article>
+      `;
+    }
+    function renderDeckVisual(deckText){
+      const host = $("deckVisual");
+      if (!host) return;
+      const trimmed = String(deckText || "").trim();
+      if (!trimmed){
+        host.innerHTML = '<div class="deckEmpty">No hay decklist disponible.</div>';
+        return;
+      }
+      const items = parseDeckTextItems(trimmed);
+      if (!items.length){
+        host.innerHTML = '<div class="deckEmpty">Decklist encontrada, pero no se pudo convertir a cartas.</div>';
+        return;
+      }
+      host.innerHTML = items.map(renderDeckCard).join("");
+    }
+    function handleDeckCardImageError(event){
+      const target = event.target;
+      if (!(target instanceof HTMLImageElement) || target.dataset.deckCardImg !== "1") return;
+      const fallbacks = String(target.dataset.fallbackSrcs || "").split("|").map((value) => value.trim()).filter(Boolean);
+      const fallbackIndex = Number(target.dataset.fallbackIndex || 0);
+      const fallbackSrc = fallbacks[fallbackIndex] || "";
+      if (fallbackSrc){
+        target.dataset.fallbackIndex = String(fallbackIndex + 1);
+        target.src = fallbackSrc;
+        return;
+      }
+      const fallback = document.createElement("div");
+      fallback.className = "deckCardFallback";
+      fallback.textContent = target.dataset.cardLabel || target.alt || "Carta";
+      target.replaceWith(fallback);
     }
     function playerDisplayName(row){
       return String(row?.profile_username || row?.profile_display_name || row?.player_name || "Jugador").trim() || "Jugador";
@@ -848,6 +1042,7 @@
       if (error) throw error;
       const topPlayers = (Array.isArray(data) ? data : []).map((row) => ({
         playerId: row?.player_id || "",
+        profileId: row?.profile_id || "",
         name: playerDisplayName({
           player_name: row?.player_name,
           profile_username: row?.profile_username,
@@ -860,6 +1055,12 @@
       const result = { expansion: selectedExpansion, players: topPlayers };
       state.playerStatsCache.set(statsCacheKey, result);
       return result;
+    }
+    function renderLeaderPlayerName(row){
+      const name = String(row?.name || "Jugador").trim() || "Jugador";
+      const href = userProfileHref(row?.profileId);
+      if (!href) return `<div class="leaderPlayerName" title="${escapeAttr(name)}">${escapeHtml(name)}</div>`;
+      return `<a class="leaderPlayerName" href="${escapeAttr(href)}" title="${escapeAttr(name)}">${escapeHtml(name)}</a>`;
     }
     function renderLeaderPlayerStats(result){
       const rows = Array.isArray(result) ? result : (result?.players || []);
@@ -880,7 +1081,7 @@
           <div class="leaderPlayerRow">
             <span class="leaderPlayerRank">${index + 1}</span>
             <div>
-              <div class="leaderPlayerName" title="${escapeAttr(row.name)}">${escapeHtml(row.name)}</div>
+              ${renderLeaderPlayerName(row)}
               <div class="leaderPlayerStats">
                 <span class="leaderPlayerGames">${row.games} partida${row.games === 1 ? "" : "s"}</span>
                 <span class="leaderPlayerWr${wr >= 50 ? "" : " is-low"}">${wr.toFixed(1)}% WR</span>
@@ -912,7 +1113,8 @@
       try{
         const deckEntry = await fetchLeaderDecklist(leader);
         if (state.selectedLeader?.code !== leader.code) return;
-        $("deckOutput").value = deckEntry.deckText;
+        state.selectedDeckText = deckEntry.deckText;
+        renderDeckVisual(deckEntry.deckText);
         $("deckStatus").textContent = deckEntry.label;
         $("openLimitlessLink").href = deckEntry.sourceUrl || "#";
         $("openLimitlessLink").style.pointerEvents = deckEntry.sourceUrl ? "auto" : "none";
@@ -920,7 +1122,8 @@
         $("copyDeckBtn").disabled = false;
       }catch(err){
         if (state.selectedLeader?.code !== leader.code) return;
-        $("deckOutput").value = "";
+        state.selectedDeckText = "";
+        renderDeckVisual("");
         $("deckStatus").textContent = err?.message || "No se pudo generar la decklist.";
       }
     }
@@ -946,7 +1149,8 @@
       $("openLimitlessLink").href = "#";
       $("openLimitlessLink").style.pointerEvents = "none";
       $("openLimitlessLink").style.opacity = ".55";
-      $("deckOutput").value = "";
+      state.selectedDeckText = "";
+      $("deckVisual").innerHTML = '<div class="deckEmpty">Buscando decklist...</div>';
       $("deckStatus").textContent = "Buscando la decklist mas reciente en One Piece Top Decks...";
       $("leaderPlayersStatus").textContent = "Calculando top de jugadores...";
       $("leaderPlayersList").innerHTML = "";
@@ -965,7 +1169,7 @@
       state.selectedLeader = null;
     }
     async function copyCurrentDecklist(){
-      const text = $("deckOutput").value.trim();
+      const text = String(state.selectedDeckText || "").trim();
       if (!text){
         $("deckStatus").textContent = "No hay decklist disponible para copiar.";
         return;
