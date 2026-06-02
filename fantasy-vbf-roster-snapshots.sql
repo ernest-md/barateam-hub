@@ -289,8 +289,17 @@ begin
       synced_at = timezone('utc', now())
   from public.fantasy_vbf_teams t
   left join (
-    select rs.team_id, sum(coalesce(pp.current_fantasy_points, 0)) as weekly_points
+    select
+      rs.team_id,
+      sum(
+        case
+          when team.captain_player_slug = rs.player_slug then coalesce(pp.current_fantasy_points, 0) * greatest(coalesce(v_cfg.captain_multiplier, 1), 1)
+          else coalesce(pp.current_fantasy_points, 0)
+        end
+      ) as weekly_points
     from public.fantasy_vbf_roster_snapshots rs
+    join public.fantasy_vbf_teams team
+      on team.id = rs.team_id and team.season = rs.season
     left join public.fantasy_vbf_player_pool pp
       on pp.season = rs.season and pp.player_slug = rs.player_slug
     where rs.season = v_season
