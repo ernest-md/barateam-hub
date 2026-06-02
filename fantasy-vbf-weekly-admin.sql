@@ -69,6 +69,7 @@ declare
   v_round_key text := nullif(trim(coalesce(p_round_key, '')), '');
   v_round_label text := trim(coalesce(p_round_label, ''));
   v_round_order integer := greatest(coalesce(p_round_order, 0), 0);
+  v_snapshot jsonb := '{}'::jsonb;
 begin
   perform public.fantasy_vbf_require_admin();
 
@@ -110,10 +111,19 @@ begin
         round_order = excluded.round_order,
         synced_at = timezone('utc', now());
 
+  v_snapshot := public.fantasy_vbf_capture_round_snapshot(
+    v_season,
+    v_round_key,
+    coalesce(nullif(v_round_label, ''), v_round_key),
+    v_round_order,
+    false
+  );
+
   return jsonb_build_object(
     'season', v_season,
     'round_key', v_round_key,
-    'locked', true
+    'locked', true,
+    'snapshot', v_snapshot
   );
 end;
 $$;
@@ -231,6 +241,7 @@ as $$
 declare
   v_season text := upper(trim(coalesce(p_season, '')));
   v_cfg public.fantasy_vbf_seasons%rowtype;
+  v_snapshot jsonb := '{}'::jsonb;
 begin
   select *
   into v_cfg
@@ -278,11 +289,20 @@ begin
         round_order = excluded.round_order,
         synced_at = timezone('utc', now());
 
+  v_snapshot := public.fantasy_vbf_capture_round_snapshot(
+    v_season,
+    v_cfg.current_round_key,
+    coalesce(nullif(v_cfg.current_round_label, ''), v_cfg.current_round_key),
+    coalesce(v_cfg.current_round_order, 0),
+    false
+  );
+
   return jsonb_build_object(
     'season', v_season,
     'round_key', v_cfg.current_round_key,
     'locked', true,
-    'automatic', true
+    'automatic', true,
+    'snapshot', v_snapshot
   );
 end;
 $$;
